@@ -1,0 +1,745 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Warehouse inventory</title>
+    <link rel="stylesheet" href="css/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <nav class="side" aria-label="Locations">
+        <div class="brand">
+          <div class="logo">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="#1a1405"
+              stroke-width="2"
+              stroke-linejoin="round"
+            >
+              <rect x="3" y="13" width="8" height="8" />
+              <rect x="13" y="13" width="8" height="8" />
+              <rect x="8" y="3" width="8" height="8" />
+            </svg>
+          </div>
+          <div><b>Warehouse inventory</b><span>Location look-up</span></div>
+        </div>
+        <div>
+          <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
+        </div>
+        <div class="sidefoot"><button class="ghost" id="editNames">Edit tab names</button></div>
+      </nav>
+      <div class="content">
+        <div class="topwrap">
+          <div class="topbar">
+            <nav class="topnav" id="topnav" aria-label="Sections"></nav>
+            <span class="whoami" id="whoami"></span
+            ><button class="profilebtn" id="profileBtn" title="Your profile" hidden></button
+            ><button class="manage" id="manageBtn" title="Manage users">Manage</button>
+          </div>
+          <header class="bar">
+            <label class="search invonly"
+              ><svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="2.2"
+                stroke-linecap="round"
+              >
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" /></svg
+              ><input
+                id="q"
+                type="search"
+                placeholder="Search item #, description or locator"
+                autocomplete="off"
+                aria-label="Search items"
+              /><kbd>/</kbd></label
+            >
+            <span class="sp"></span>
+            <button class="primary" id="add">Add item</button>
+            <button id="exportJson">Back up</button>
+            <button id="importBtn">Restore</button>
+            <button id="exportCsv" class="invonly">Export CSV</button>
+            <input id="file" type="file" accept=".json,application/json" hidden />
+          </header>
+        </div>
+        <main>
+          <div class="mrow" id="mRow"></div>
+          <section class="panel" id="panel">
+            <div class="head">
+              <div>
+                <div class="eyebrow" id="eyebrow"></div>
+                <h2 id="title"></h2>
+                <p id="status"></p>
+              </div>
+              <div class="stat"><b id="statN"></b><span id="statL"></span></div>
+            </div>
+            <div class="scroll">
+              <table>
+                <thead>
+                  <tr>
+                    <th class="sel">
+                      <input type="checkbox" id="pickAll" aria-label="Select all shown" />
+                    </th>
+                    <th>Item #</th>
+                    <th>Description</th>
+                    <th>Locator</th>
+                    <th>
+                      <span class="qh"
+                        >Quantity<button id="xferBtn" class="xbtn">Transfer</button
+                        ><button id="xferCancel" class="xbtn ghostbtn" hidden>Cancel</button></span
+                      >
+                    </th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="rows"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="empty" hidden></div>
+            <div class="more" id="more" hidden><button id="moreBtn"></button></div>
+          </section>
+          <section class="panel" id="topPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Section</div>
+                <h2 id="topTitle"></h2>
+                <p>Content for this section has not been set up yet.</p>
+              </div>
+            </div>
+            <div class="empty">Nothing here yet.</div>
+          </section>
+          <section class="panel" id="loginPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Account</div>
+                <h2>Log in</h2>
+                <p>Sign in with your email and password.</p>
+              </div>
+            </div>
+            <div class="lgbody" id="lgBody"></div>
+          </section>
+          <section class="panel" id="managePanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Administration</div>
+                <h2>Manage</h2>
+                <p>Tools for the owner and administrators.</p>
+              </div>
+              <div class="stat"><b id="mgN">–</b><span>users</span></div>
+            </div>
+            <div class="mggate" id="mgGate" hidden>
+              <p>
+                Only the owner and administrators can manage users. Sign in with an owner or admin
+                account.
+              </p>
+              <button class="primary" id="mgGo">Go to Log in</button>
+            </div>
+            <div id="mgBody" hidden>
+              <nav class="mgnav" id="mgNav" aria-label="Manage options"></nav>
+              <div class="mgbar">
+                <label class="mgday" id="mgDayWrap" hidden
+                  >Day <input type="date" id="mgDay"
+                /></label>
+                <span class="sp"></span>
+                <label class="mgshow"
+                  ><input type="checkbox" id="mgShowHidden" /> Show hidden users
+                  <span id="mgHidCount"></span
+                ></label>
+              </div>
+              <div id="mgOpt0">
+                <div class="mgtabs" id="mgTabs">
+                  <button data-mg="users">Users</button><button data-mg="perms">Permissions</button>
+                </div>
+                <div id="mgUsersView">
+                  <form class="mgform" id="mgForm" autocomplete="off">
+                    <label>Full name<input name="nm" maxlength="80" autocomplete="off" /></label>
+                    <label
+                      >Email (user name)<input
+                        name="em"
+                        type="email"
+                        required
+                        maxlength="120"
+                        autocomplete="off"
+                    /></label>
+                    <label
+                      >Password<input
+                        name="pw"
+                        type="password"
+                        required
+                        minlength="8"
+                        maxlength="100"
+                        autocomplete="new-password"
+                    /></label>
+                    <label
+                      >Confirm password<input
+                        name="pw2"
+                        type="password"
+                        required
+                        minlength="8"
+                        maxlength="100"
+                        autocomplete="new-password"
+                    /></label>
+                    <label>Access<select name="role"></select></label>
+                    <fieldset class="mgnp">
+                      <legend>Starting permissions</legend>
+                      <div id="mgNewPerms"></div>
+                    </fieldset>
+                    <div class="mgact"><button class="primary" id="mgAdd">Add user</button></div>
+                    <p class="mgmsg" id="mgMsg" role="alert"></p>
+                  </form>
+                  <div class="sumsec">Users</div>
+                  <div class="tw">
+                    <table class="sumtbl">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Email</th>
+                          <th>Access</th>
+                          <th>Added</th>
+                          <th></th>
+                        </tr>
+                      </thead>
+                      <tbody id="mgRows"></tbody>
+                    </table>
+                  </div>
+                </div>
+                <div id="mgPermsView" hidden>
+                  <p class="mgnote">
+                    Tick a box to give someone that permission, and untick it to take it away.
+                    Changes save right away. The owner always has every permission.
+                  </p>
+                  <div class="tw"><table class="sumtbl permtbl" id="mgPerms"></table></div>
+                </div>
+              </div>
+              <div id="mgOpt1" hidden><div class="mgpad" id="mgManifests"></div></div>
+              <div id="mgOpt2" hidden>
+                <div class="mgpad">
+                  <div class="tpbar">
+                    <button class="primary" id="tpUpload">+ Upload PDF</button
+                    ><input
+                      type="file"
+                      id="tpFile"
+                      accept="application/pdf,.pdf"
+                      multiple
+                      hidden
+                    /><span class="m"
+                      >PDF files only, up to 30 MB each. Kept as guides for other functions.</span
+                    >
+                  </div>
+                  <div class="tpdrop" id="tpDrop">Drag PDF files here to upload them</div>
+                  <div id="tpList"></div>
+                </div>
+              </div>
+              <div id="mgOpt3" hidden><div class="mgpad" id="mgMaterial"></div></div>
+              <div id="mgOpt4" hidden>
+                <div class="mgpad">
+                  <div id="mgFolder"></div>
+                  <h3 class="fdsec">Finished inspection sheets</h3>
+                  <div id="mgFinished"></div>
+                </div>
+              </div>
+              <div id="mgOpt5" hidden><div class="empty">Nothing here yet.</div></div>
+            </div>
+          </section>
+          <section class="panel" id="contactsPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Section</div>
+                <h2 id="ctTitle"></h2>
+                <p>Names and numbers you need to reach quickly.</p>
+              </div>
+              <div class="stat"><b id="ctN">0</b><span>contacts</span></div>
+            </div>
+            <div class="ctbar"><button class="primary" id="ctAdd">+ Add contact</button></div>
+            <div class="tw" id="ctWrap" hidden>
+              <table class="sumtbl cttbl">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Department</th>
+                    <th>Phone Number</th>
+                    <th>Extension</th>
+                    <th>Fax Number</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody id="ctRows"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="ctEmpty">
+              No contacts yet. Select Add contact to enter the first name.
+            </div>
+          </section>
+          <section class="panel" id="inspPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Inspections</div>
+                <h2 id="inspTitle">Inspection Sheet</h2>
+                <p id="inspNote"></p>
+              </div>
+            </div>
+            <div class="inhome" id="inHome">
+              <div class="dd" id="inDD">
+                <button class="redbtn" id="inCreate">Create Inspection Sheet</button>
+                <div class="ddmenu" id="inMenu" hidden></div>
+              </div>
+            </div>
+            <div id="inWork" hidden>
+              <div class="inbar">
+                <b id="inName"></b><span class="sp"></span
+                ><button id="inRotate" hidden>Rotate ↻</button
+                ><button id="inQtextBtn" hidden>Type the question text</button
+                ><button id="inCancel">Cancel</button>
+              </div>
+              <div class="inbody">
+                <div class="inpdf" id="inPdf"></div>
+                <aside class="inside">
+                  <div class="infields">
+                    <label>Operator name / Clock ID<input id="inOp" autocomplete="off" /></label
+                    ><label>Date<input id="inDate" autocomplete="off" /></label
+                    ><label class="wide"
+                      >Equipment ID #<input id="inEq" autocomplete="off" maxlength="40"
+                    /></label>
+                  </div>
+                  <p class="inwarn" id="inWarn" hidden></p>
+                  <div class="inprog">
+                    <span id="inProg"></span>
+                    <div class="pbar"><i id="inBar"></i></div>
+                  </div>
+                  <ol class="inqs" id="inQs"></ol>
+                  <div class="innotes">
+                    <label for="inNotes"
+                      >Notes
+                      <small
+                        >(optional — if you add notes they go on a blank page at the end of the
+                        PDF)</small
+                      ></label
+                    ><textarea
+                      id="inNotes"
+                      rows="3"
+                      maxlength="3000"
+                      placeholder="Needed repairs, comments, damage…"
+                    ></textarea>
+                  </div>
+                  <div class="infin">
+                    <button class="primary" id="inFinish" disabled>Finish</button>
+                  </div>
+                </aside>
+              </div>
+            </div>
+          </section>
+          <section class="panel" id="ewoPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Section</div>
+                <h2 id="ewoTitle">EWO</h2>
+                <p id="ewoNote"></p>
+              </div>
+              <div class="stat"><b id="ewoN"></b><span id="ewoL">items</span></div>
+            </div>
+            <div class="ewobar">
+              <label class="search"
+                ><svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" /></svg
+                ><input
+                  id="ewoQ"
+                  type="search"
+                  placeholder="Search item #, description or locator"
+                  autocomplete="off"
+                  aria-label="Search items in EWO"
+              /></label>
+              <button id="ewoCreate" class="redbtn">Create EWO</button>
+              <span class="ewosel" id="ewoSelText"></span>
+              <div class="dd" id="ewoDD">
+                <button id="ewoBtn" class="ddbtn" aria-haspopup="true" aria-expanded="false">
+                  <span id="ewoLabel">All locations</span><i class="chev2"></i>
+                </button>
+                <div class="ddmenu" id="ewoMenu" hidden></div>
+              </div>
+            </div>
+            <div class="tw" id="ewoWrap" hidden>
+              <table class="sumtbl ewotbl">
+                <thead>
+                  <tr>
+                    <th>Item #</th>
+                    <th>Description</th>
+                    <th>Sub-tab</th>
+                    <th>Locator</th>
+                    <th>Quantity</th>
+                  </tr>
+                </thead>
+                <tbody id="ewoRows"></tbody>
+              </table>
+            </div>
+            <div class="empty" id="ewoEmpty"></div>
+            <div id="ewoLog"></div>
+          </section>
+          <section class="panel" id="mapPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Section</div>
+                <h2 id="mapTitle">Delivery Locations</h2>
+                <p>
+                  Search for a delivery location, or choose an area below to browse its locations.
+                </p>
+              </div>
+              <div class="stat"><b id="mapN">0</b><span>locations</span></div>
+            </div>
+            <div class="dlsearch">
+              <label class="search"
+                ><svg
+                  width="16"
+                  height="16"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.2"
+                  stroke-linecap="round"
+                >
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" /></svg
+                ><input
+                  id="dlQ"
+                  type="search"
+                  placeholder="Search delivery locations"
+                  autocomplete="off"
+                  aria-label="Search delivery locations"
+              /></label>
+            </div>
+            <div class="dlres" id="dlResults" hidden></div>
+            <div class="dlmid">
+              <div class="dlbtns" id="dlBtns"></div>
+              <div class="dlmenu" id="dlMenu" hidden></div>
+            </div>
+          </section>
+          <section class="panel" id="ewosPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Reports</div>
+                <h2>EWOs</h2>
+                <p>Every EWO that has been created. Select Edit to change one.</p>
+              </div>
+              <div class="stat"><b id="ewosN"></b><span>EWOs</span></div>
+            </div>
+            <div id="ewosBody"></div>
+          </section>
+          <section class="panel" id="sumPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Reports</div>
+                <h2>Daily summary</h2>
+                <p>
+                  Every quantity added, subtracted or moved, and every EWO created, on a chosen day.
+                </p>
+              </div>
+              <div class="sumctl">
+                <label>Date<input type="date" id="sumDate" /></label
+                ><button class="primary" id="sumCreate">Create daily summary</button>
+              </div>
+            </div>
+            <div id="sumBody"></div>
+          </section>
+        </main>
+      </div>
+    </div>
+
+    <dialog id="xferDlg">
+      <form method="dialog" id="xferForm">
+        <h2>Subinventory transfer</h2>
+        <div class="xlabel">Items and quantities</div>
+        <div class="xitems" id="xItems"></div>
+        <div class="xlabel">Transfer to</div>
+        <div class="xcol">
+          <label class="xstep" for="xMasters">Master tab</label
+          ><select id="xMasters"></select>
+        </div>
+        <div class="xcol" id="xSubWrap" hidden>
+          <label class="xstep" for="xSubs">Sub-tab</label
+          ><select id="xSubs"></select>
+        </div>
+        <div class="xcol" id="xLocWrap" hidden>
+          <label class="xstep" for="xLocs">Item location</label
+          ><select id="xLocs"></select>
+        </div>
+        <p class="hint" id="xHint"></p>
+        <div class="actions">
+          <span class="sp"></span>
+          <button type="button" id="xCancel">Cancel</button>
+          <button class="primary" value="save">Transfer</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="ewoDlg">
+      <form method="dialog" id="ewoForm">
+        <h2 id="ewoDlgTitle">Create EWO</h2>
+        <div class="ewoitem" id="ewoItem"></div>
+        <label>Location<input name="loc" readonly /></label>
+        <div class="two">
+          <label>Master tab<input name="mst" readonly /></label>
+          <label>Sub-tab<input name="sub" readonly /></label>
+        </div>
+        <label
+          >Delivery Location<input
+            name="to"
+            required
+            maxlength="120"
+            autocomplete="off"
+            placeholder="Where should this be delivered?"
+        /></label>
+        <label>How much<input name="q" type="number" min="0" step="any" required /></label>
+        <p class="hint" id="ewoAvail"></p>
+        <label>Requester Name<input name="rn" required maxlength="80" autocomplete="off" /></label>
+        <div class="two">
+          <label>Extension<input name="ext" maxlength="20" autocomplete="off" /></label>
+          <label>Badge<input name="badge" maxlength="20" autocomplete="off" /></label>
+        </div>
+        <label>Area Manager<input name="am" maxlength="80" autocomplete="off" /></label>
+        <div class="actions">
+          <button type="button" class="danger" id="ewoDel" hidden>Delete EWO</button>
+          <span class="sp"></span>
+          <button type="button" id="ewoCancel">Cancel</button>
+          <button class="redbtn" id="ewoSubmit" value="save">Create EWO</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="spotDlg">
+      <form method="dialog" id="spotForm">
+        <h2 id="spotTitle">Add location</h2>
+        <label>Name<input name="nm" required maxlength="80" autocomplete="off" /></label>
+        <label>Pictures<input type="file" id="spotFile" accept="image/*" multiple /></label>
+        <div class="thumbs" id="spotThumbs"></div>
+        <label>Notes<textarea name="notes" rows="3" maxlength="2000"></textarea></label>
+        <div class="actions">
+          <button type="button" class="danger" id="spotDel" hidden>Delete</button>
+          <span class="sp"></span>
+          <button type="button" id="spotCancel">Cancel</button>
+          <button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="viewDlg">
+      <div id="viewBody"></div>
+      <div class="actions">
+        <button type="button" id="viewAdd">Add pictures</button><span class="sp"></span
+        ><button type="button" id="viewEdit">Edit</button
+        ><button type="button" class="primary" id="viewClose">Close</button>
+      </div>
+    </dialog>
+    <dialog id="areaDlg">
+      <form method="dialog" id="areaForm">
+        <h2 id="areaTitle">Add button</h2>
+        <label>Name<input name="nm" required maxlength="40" autocomplete="off" /></label>
+        <div class="xlabel">Outline color</div>
+        <div class="swatches" id="areaColors"></div>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="areaCancel">Cancel</button
+          ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <input type="file" id="dlPhotoIn" accept="image/*" multiple hidden />
+    <dialog id="imgDlg" class="imgdlg"><img id="imgBig" alt="" /></dialog>
+    <dialog id="ctDlg">
+      <form method="dialog" id="ctForm">
+        <h2 id="ctDlgTitle">Add contact</h2>
+        <label>Name<input name="nm" required maxlength="80" autocomplete="off" /></label>
+        <label>Department<input name="dept" maxlength="80" autocomplete="off" /></label>
+        <div class="two">
+          <label
+            >Phone Number<input name="ph" type="tel" maxlength="30" autocomplete="off"
+          /></label>
+          <label
+            >Phone Extension<input name="ext" maxlength="12" inputmode="numeric" autocomplete="off"
+          /></label>
+        </div>
+        <label>Fax Number<input name="fax" type="tel" maxlength="30" autocomplete="off" /></label>
+        <div class="actions">
+          <button type="button" class="danger" id="ctDel" hidden>Delete</button>
+          <span class="sp"></span>
+          <button type="button" id="ctCancel">Cancel</button>
+          <button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="profDlg">
+      <form method="dialog" id="profForm">
+        <h2>Your profile</h2>
+        <div class="pfhead">
+          <div class="pfpic" id="pfPic"></div>
+          <div class="pfpicbtns">
+            <button type="button" id="pfUpload">Upload photo</button>
+            <button type="button" id="pfRemove">Remove photo</button>
+            <input type="file" id="pfFile" accept="image/*" hidden />
+          </div>
+        </div>
+        <p class="pfwho" id="pfWho"></p>
+        <label
+          >Nickname<input
+            name="nick"
+            maxlength="40"
+            autocomplete="off"
+            placeholder="What people call you"
+        /></label>
+        <label
+          >Bio<textarea
+            name="bio"
+            rows="5"
+            maxlength="500"
+            placeholder="A little about you, your role, your area…"
+          ></textarea>
+          <small id="pfCount" class="pfcount"></small>
+        </label>
+        <p class="mgmsg" id="pfMsg" role="alert"></p>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="pfCancel">Cancel</button
+          ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="userDlg">
+      <form method="dialog" id="userForm">
+        <h2>Edit user</h2>
+        <label>Full name<input name="nm" maxlength="80" autocomplete="off" /></label>
+        <label
+          >Email (user name)<input
+            name="em"
+            type="email"
+            required
+            maxlength="120"
+            autocomplete="off"
+        /></label>
+        <label>Access<select name="role"></select></label>
+        <label
+          >New password (leave blank to keep the current one)<input
+            name="pw"
+            type="password"
+            minlength="8"
+            maxlength="100"
+            autocomplete="new-password"
+        /></label>
+        <p class="mgmsg" id="uMsg" role="alert"></p>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="uCancel">Cancel</button
+          ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="qtDlg">
+      <form method="dialog" id="qtForm">
+        <h2>Type the question text</h2>
+        <p class="m" id="qtHelp" style="color: var(--mute); font-size: 13px"></p>
+        <textarea name="t" rows="14" style="width: 100%; font: inherit"></textarea>
+        <p class="mgmsg" id="qtMsg" role="alert"></p>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="qtCancel">Cancel</button
+          ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="sheetDlg">
+      <div class="pdfhead">
+        <h2 id="sheetTitle"></h2>
+        <span class="sp"></span><button type="button" id="sheetDl">Download PDF</button
+        ><button type="button" class="primary" id="sheetClose">Close</button>
+      </div>
+      <p class="m" id="sheetMeta" style="margin: 8px 0 0; color: var(--mute); font-size: 13px"></p>
+      <div class="sheetpages" id="sheetPages"></div>
+    </dialog>
+    <dialog id="pdfDlg">
+      <div class="pdfhead">
+        <h2 id="pdfTitle"></h2>
+        <span class="sp"></span><button type="button" id="pdfDl">Download</button
+        ><button type="button" id="pdfNew">Open in new tab</button
+        ><button type="button" class="primary" id="pdfClose">Close</button>
+      </div>
+      <iframe id="pdfFrame" title="PDF preview"></iframe>
+    </dialog>
+    <dialog id="tplDlg">
+      <form method="dialog" id="tplForm">
+        <h2>Edit template</h2>
+        <label>Name<input name="nm" required maxlength="120" autocomplete="off" /></label>
+        <label
+          >Guide for (optional)<input
+            name="note"
+            maxlength="120"
+            autocomplete="off"
+            placeholder="For example, Pick List"
+        /></label>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="tplCancel">Cancel</button
+          ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <div class="toast" id="toast" role="status" hidden></div>
+    <dialog id="subDlg">
+      <form method="dialog" id="subForm">
+        <h2 id="subTitle">Add sub-tab</h2>
+        <label>Name<input name="nm" required maxlength="40" /></label>
+        <label>Locator prefix<input name="p" list="prefList" required autocomplete="off" /></label>
+        <datalist id="prefList"></datalist>
+        <p class="hint" id="subHint"></p>
+        <div class="actions">
+          <span class="sp"></span>
+          <button type="button" id="subCancel">Cancel</button>
+          <button class="primary" value="save">Add sub-tab</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="namesDlg">
+      <form method="dialog" id="namesForm">
+        <h2>Edit tab names</h2>
+        <p class="hint" id="namesNote"></p>
+        <div id="namesFields"></div>
+        <div class="actions">
+          <button type="button" id="namesReset">Reset names</button>
+          <span class="sp"></span>
+          <button type="button" id="namesCancel">Cancel</button>
+          <button class="primary" value="save">Save names</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="dlg">
+      <form method="dialog" id="form">
+        <h2 id="dlgTitle">Add item</h2>
+        <label>Item number<input name="n" required /></label>
+        <label>Description<textarea name="d" rows="3" required></textarea></label>
+        <label>Locator<input name="l" required /></label>
+        <div class="two">
+          <label
+            >Quantity<input name="q" type="number" min="0" step="any" value="1" required
+          /></label>
+          <label>Unit (EA, FT, LB…)<input name="u" value="EA" /></label>
+        </div>
+        <label>Notes<textarea name="notes" rows="2"></textarea></label>
+        <div class="actions">
+          <button type="button" class="danger" id="del" hidden>Delete</button>
+          <span class="sp"></span>
+          <button type="button" id="cancel">Cancel</button>
+          <button class="primary" value="save">Save item</button>
+        </div>
+      </form>
+    </dialog>
+
+    <script src="js/data/items-data.js"></script>
+    <script src="js/vendor/pdfjs-embedded.js"></script>
+    <script src="js/vendor/jbig2-wasm.js"></script>
+    <script src="js/app.js"></script>
+  </body>
+</html>
