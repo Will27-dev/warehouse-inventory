@@ -21,7 +21,7 @@
  *   Activity log ................................. audit
  *   Summary ...................................... renderSummary
  *
- * Globals from other files: BASE, PDFJS_Z, PDFW_Z, JBIG2_Z.
+ * Globals from other files: BASE, PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z.
  */
 (function () {
   "use strict";
@@ -7454,50 +7454,159 @@
     dvSave(m);
   });
 
-  /* ---------- Camera scanning (uses the browser's built-in barcode reader where available) ---------- */
+  /* ---------- Camera scanning: works in any browser ----------
+     Uses the browser's built-in barcode reader when it has one (fast; Chrome on Android/Mac),
+     otherwise the bundled ZXing reader (iPhone/iPad Safari, Windows, Firefox, ...).
+     ZXING_Z (js/vendor/zxing-embedded.js) is only unpacked the first time the camera opens.
+     The camera itself needs a secure page (https, or localhost while developing). */
+  var zxingP = null,
+    camBusy = false,
+    camCanvas = null;
+  function loadZxing() {
+    if (window.ZXing) return Promise.resolve(window.ZXing);
+    if (zxingP) return zxingP;
+    zxingP = gunzipB64(ZXING_Z)
+      .then(function (buf) {
+        return new Promise(function (res, rej) {
+          var s = document.createElement("script");
+          s.src = URL.createObjectURL(new Blob([buf], { type: "text/javascript" }));
+          s.onload = function () {
+            URL.revokeObjectURL(s.src);
+            window.ZXing ? res(window.ZXing) : rej(new Error("ZXing did not load"));
+          };
+          s.onerror = rej;
+          document.head.appendChild(s);
+        });
+      })
+      .catch(function (e) {
+        zxingP = null;
+        throw e;
+      });
+    return zxingP;
+  }
+  // Returns an object with detect(source) -> Promise<string|null> for a video or canvas.
+  async function camReader() {
+    if ("BarcodeDetector" in window) {
+      try {
+        var fm = await BarcodeDetector.getSupportedFormats();
+        if (fm && fm.length) {
+          var det = new BarcodeDetector({ formats: fm });
+          return {
+            kind: "built-in",
+            detect: function (src) {
+              return det.detect(src).then(function (r) {
+                return r.length ? r[0].rawValue : null;
+              });
+            },
+          };
+        }
+      } catch (x) {}
+    }
+    var Z = await loadZxing(),
+      F = Z.BarcodeFormat,
+      hints = new Map(),
+      reader = new Z.MultiFormatReader();
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [
+      F.CODE_128, F.CODE_39, F.CODE_93, F.CODABAR, F.ITF,
+      F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E,
+      F.QR_CODE, F.DATA_MATRIX, F.PDF_417,
+    ]);
+    hints.set(Z.DecodeHintType.TRY_HARDER, true);
+    reader.setHints(hints);
+    camCanvas = camCanvas || document.createElement("canvas");
+    return {
+      kind: "zxing",
+      detect: function (src) {
+        // Read the middle band of the picture (where the green frame is), at a size ZXing handles quickly.
+        var w = src.videoWidth || src.width,
+          h = src.videoHeight || src.height;
+        if (!w || !h) return Promise.resolve(null);
+        var cw = Math.round(w * 0.9),
+          ch = Math.round(h * 0.6),
+          sc = Math.min(1, 1000 / cw);
+        camCanvas.width = Math.round(cw * sc);
+        camCanvas.height = Math.round(ch * sc);
+        var cx = camCanvas.getContext("2d", { willReadFrequently: true });
+        cx.drawImage(src, (w - cw) / 2, (h - ch) / 2, cw, ch, 0, 0, camCanvas.width, camCanvas.height);
+        try {
+          var bmp = new Z.BinaryBitmap(new Z.HybridBinarizer(new Z.HTMLCanvasElementLuminanceSource(camCanvas)));
+          return Promise.resolve(reader.decodeWithState(bmp).getText());
+        } catch (x) {
+          return Promise.resolve(null); // no barcode in this frame
+        } finally {
+          reader.reset();
+        }
+      },
+    };
+  }
   async function camOpen() {
-    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+    if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast(
-        "Camera scanning isn't supported in this browser. Use a handheld scanner or type the number. (It works in Chrome on Android.)"
+        window.isSecureContext === false
+          ? "The camera only works when the site is opened from its https:// address. Use a handheld scanner or type the number here."
+          : "This browser can't use the camera. Use a handheld scanner or type the number."
       );
       return;
     }
-    var det;
+    var rd;
+    $("camLast").textContent = "Starting the camera…";
     try {
-      var fm = await BarcodeDetector.getSupportedFormats();
-      det = new BarcodeDetector({ formats: fm });
       camStream = await navigator.mediaDevices.getUserMedia({
-        video: { facingMode: "environment" },
+        video: { facingMode: { ideal: "environment" }, width: { ideal: 1280 }, height: { ideal: 720 } },
         audio: false,
       });
     } catch (x) {
-      toast("The camera could not be opened. Check the browser's camera permission.");
+      toast(
+        x && x.name === "NotAllowedError"
+          ? "Camera access was blocked. Allow the camera for this site in the browser's settings, then try again."
+          : x && x.name === "NotFoundError"
+            ? "No camera was found on this device."
+            : "The camera could not be opened."
+      );
       return;
     }
     var v = $("camVideo");
     v.srcObject = camStream;
-    await v.play().catch(function () {});
-    $("camLast").textContent = "Point the camera at a barcode.";
     $("camDlg").showModal();
+    await v.play().catch(function () {});
+    try {
+      rd = await camReader();
+    } catch (x) {
+      camStop();
+      $("camDlg").close();
+      toast("The barcode reader could not start. Use a handheld scanner or type the number.");
+      return;
+    }
+    $("camLast").textContent = "Point the camera at a barcode.";
     camTimer = setInterval(async function () {
-      if (v.readyState < 2) return;
+      if (camBusy || v.readyState < 2) return;
+      camBusy = true;
       try {
-        var res = await det.detect(v);
-        if (!res.length) return;
-        var code = res[0].rawValue,
+        var code = await rd.detect(v),
           now = Date.now();
-        // Ignore the same code for a moment so one scan doesn't add it many times.
-        if (code === camLastCode && now - camLastAt < 1800) return;
-        camLastCode = code;
-        camLastAt = now;
-        dvAddCode(code);
-        $("camLast").innerHTML = dvFlash || "Scanned <b>" + esc(code) + "</b>.";
+        if (code) {
+          // The same label still in view counts once; it counts again only after it has
+          // been out of view for a moment (e.g. the next box with the same receipt #).
+          if (code === camLastCode && now - camLastAt < 1500) camLastAt = now;
+          else {
+            camLastCode = code;
+            camLastAt = now;
+            dvAddCode(code);
+            $("camLast").innerHTML = dvFlash || "Scanned <b>" + esc(code) + "</b>.";
+            var dg = $("camDlg");
+            dg.classList.remove("hit");
+            void dg.offsetWidth;
+            dg.classList.add("hit");
+          }
+        }
       } catch (x) {}
-    }, 250);
+      camBusy = false;
+    }, 200);
   }
   function camStop() {
     clearInterval(camTimer);
     camTimer = null;
+    camBusy = false;
     if (camStream)
       camStream.getTracks().forEach(function (t) {
         t.stop();

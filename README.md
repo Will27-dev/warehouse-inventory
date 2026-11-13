@@ -15,6 +15,7 @@ An offline warehouse inventory app: plain HTML, CSS and JavaScript, no server, n
 | `js/data/items-data.js` | Item data imported from `source-files/Warehouse_Location_Look_Up.xlsx` (29,532 rows) |
 | `js/vendor/pdfjs-embedded.js` | pdf.js library and worker (gzip + base64) used to open PDF templates |
 | `js/vendor/jbig2-wasm.js` | pdf.js decoder (gzip + base64) needed for scanned PDFs |
+| `js/vendor/zxing-embedded.js` | ZXing barcode reader (gzip + base64) for camera scanning in any browser; license in `ZXING-LICENSE.txt` |
 | `build.py` | Rebuilds `dist/inventory.html` from the files above: `python3 build.py` |
 | `dist/inventory.html` | Single-file build |
 | `source-files/` | The original spreadsheet and the two sample inspection forms |

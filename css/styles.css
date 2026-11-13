@@ -4221,3 +4221,9 @@ html.dark .dvfoot button.primary { background:var(--acc1); color:var(--char); }
 .dvcard.on .dvbox { background:var(--char); color:var(--acc1); }
 /* Keep pop-up messages clear of the pinned Delivered / Submit bar */
 body:has(#dvPanel:not([hidden]) .dvsticky) .toast { bottom:96px; }
+/* Camera: flash the frame when a barcode is read */
+.camdlg.hit .camframe { animation:camHit .45s ease; }
+@keyframes camHit {
+  0% { border-color:#fff; box-shadow:0 0 0 999px rgba(94,230,176,.35); }
+  100% { border-color:var(--acc1); box-shadow:0 0 0 999px rgba(0,0,0,.35); }
+}
