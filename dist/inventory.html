@@ -5,6 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
     <style>
+/* Font for the Soft Bento theme; falls back to Segoe UI when offline. */
+@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 :root {
   --bg: #f3f5f9;
   --panel: #fff;
@@ -3814,6 +3816,152 @@ main > section:not([hidden]),
   .two {
     grid-template-columns: 1fr;
   }
+}
+
+/* Add item, Back up, Restore and Export CSV are for the owner and admins only (see renderAuth). */
+.nomgr #add,
+.nomgr #exportJson,
+.nomgr #importBtn,
+.nomgr #exportCsv {
+  display: none;
+}
+
+/* =====================================================================
+   Theme: Soft Bento, Mint & Coral palette.
+   To change colors, edit only the six palette values just below.
+   ===================================================================== */
+:root, :root * {
+  /* palette: Mint & Coral */
+  --page:#c8efdd;   /* page behind the app frame */
+  --char:#121817;   /* frame, sidebar, dark cards */
+  --canvas:#1e2928; /* main page background (dark) */
+  --tile:#2a3736;   /* tab tiles / pills on the dark canvas */
+  --acc1:#5ee6b0;   /* main accent */
+  --acc2:#ff8a7a;   /* second accent */
+
+  --acc1-hover: color-mix(in srgb, var(--acc1) 82%, #000);
+  --acc1-soft: color-mix(in srgb, var(--acc1) 28%, #fff);
+  --on-dark:#f2f2f3; --on-dark-mute:#a5a6ad;
+  --bg:var(--canvas); --panel:#fff; --ink:#151517; --mute:#76767d; --line:#e6e6e3; --head:#f4f4f2;
+  --side:var(--char); --side2:var(--char); --side-ink:var(--on-dark); --side-mute:var(--on-dark-mute);
+  --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#d92d20; --shadow:none;
+}
+body { font-family:"Plus Jakarta Sans","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; }
+
+/* App frame on the tinted page */
+html, body { background:var(--page); }
+body { padding:16px; }
+.app { background:var(--char); border-radius:30px; overflow:hidden; min-height:calc(100vh - 32px); box-shadow:0 30px 60px rgba(0,0,0,.22); }
+.content { background:var(--canvas); border-radius:24px; margin:10px 10px 10px 0; min-width:0; }
+.side { background:var(--char); height:calc(100vh - 32px); top:16px; padding:26px 16px 18px; }
+
+/* Sidebar */
+.logo { background:var(--acc1); border-radius:12px; }
+.brand b { color:#fff; font-weight:700; }
+.tabs button { border-radius:14px; padding:11px 14px; font-weight:500; }
+.tabs button:hover { background:rgba(255,255,255,.08); padding-left:14px; }
+.tabs .dot { background:var(--acc1); }
+.tabs button[aria-selected="true"] { background:#fff; color:var(--char); font-weight:700; }
+.tabs button[aria-selected="true"]::before { display:none; }
+.sidefoot { display:flex; flex-direction:column; background:var(--acc1); border-radius:20px; padding:16px; }
+.ontop .sidefoot, .onside .sidefoot { display:none; }
+.sidefoot::before { order:-2; content:"Customize"; display:block; font-weight:800; font-size:18px; color:var(--char); margin-bottom:2px; }
+.sidefoot::after { order:-1; content:"Rename tabs to match your floor."; display:block; font-size:12.5px; color:var(--char); opacity:.75; }
+.side .ghost { margin-top:12px; background:var(--char); color:#fff; border:0; border-radius:999px; padding:11px; font-weight:700; }
+
+/* Top tabs: dark tiles on the dark canvas */
+.topbar { background:transparent; border:0; padding:16px 22px 6px; align-items:stretch; }
+.topnav { gap:10px; }
+.topnav button { background:var(--tile); border:0; border-radius:20px; color:var(--on-dark); font-weight:700; font-size:14.5px; padding:16px 8px 14px; }
+.topnav button::before { width:26px; height:26px; }
+.topnav button:hover { background:color-mix(in srgb, var(--tile) 85%, #fff); box-shadow:none; }
+.topnav button.on { background:var(--acc1); color:var(--char); }
+.profilebtn { background:var(--tile); border:0; color:var(--on-dark); border-radius:20px; min-height:0; padding:0 18px 0 6px; }
+.avatar { background:var(--acc2); color:var(--char); }
+.manage { background:var(--acc2); color:var(--char); border:0; border-radius:20px; min-height:0; padding:0 18px; font-weight:800; }
+.manage:hover { background:color-mix(in srgb, var(--acc2) 82%, #000); }
+
+/* Search + tools */
+.bar { background:transparent; border:0; padding:8px 22px 4px; }
+#q, .search input { background:var(--tile); border:0; border-radius:999px; color:var(--on-dark); }
+#q:focus { background:var(--tile); box-shadow:0 0 0 3px var(--acc1); }
+#q::placeholder, .search input::placeholder { color:var(--on-dark-mute); }
+.search svg, .search kbd { color:var(--on-dark-mute); border-color:rgba(255,255,255,.18); }
+.bar button { background:var(--tile); color:var(--on-dark); border:0; border-radius:999px; font-weight:600; }
+.bar button:hover { background:color-mix(in srgb, var(--tile) 85%, #fff); }
+.primary, .bar .primary { background:var(--acc1); color:var(--char); border:0; border-radius:999px; font-size:15px; font-weight:800; }
+.primary:hover, .bar .primary:hover { filter:none; background:var(--acc1-hover); }
+
+/* Location filters on the dark canvas */
+main { padding:10px 22px 26px; }
+.mbtns { flex-wrap:nowrap; overflow-x:auto; scrollbar-width:none; padding-bottom:12px; }
+.mbtn { --oc:var(--char); flex:none; background:var(--tile); color:var(--on-dark); border:0; border-radius:999px; font-size:16px; font-weight:700; padding:12px 20px; box-shadow:none; }
+.mbtn .c { background:rgba(255,255,255,.1); color:var(--on-dark-mute); border-radius:999px; padding:1px 8px; font-weight:700; }
+.mbtn.on { background:var(--acc2); color:var(--char); }
+.mbtn.on .c { background:var(--char); color:var(--acc1); }
+.schips { scrollbar-width:none; }
+.schips::-webkit-scrollbar { display:none; }
+.schip { background:var(--tile); color:var(--on-dark); border:0; border-radius:999px; font-size:14.5px; padding:10px 16px; }
+.schip .dot { background:var(--acc2) !important; }
+.schip .c { color:var(--on-dark-mute); }
+.schip.on { background:var(--acc1); color:var(--char); box-shadow:none; }
+.schip.on .c { color:var(--char); }
+.schip.add { background:transparent; border:1.5px dashed rgba(255,255,255,.25); color:var(--on-dark-mute); }
+
+/* White content cards */
+.panel { background:#fff; border:0; border-radius:26px; }
+.panel::before { display:none; }
+.head h2 { font-size:34px; font-weight:700; letter-spacing:-.03em; }
+.head code { border:0; border-radius:999px; padding:2px 10px; }
+.stat b { font-size:40px; font-weight:700; letter-spacing:-.03em; }
+.panel > .head { background:var(--char); color:#fff; margin:8px; border-radius:20px; padding:22px 24px 20px; }
+.panel > .head .eyebrow { color:var(--acc1); letter-spacing:.04em; }
+.panel > .head p { color:var(--on-dark-mute); }
+.panel > .head code { background:rgba(255,255,255,.1); color:#fff; }
+.panel > .head .stat b { color:var(--acc1); }
+.panel > .head .stat span { display:inline-block; margin-top:6px; padding:2px 10px; border-radius:999px; background:var(--acc2); color:var(--char); font-weight:700; }
+.scroll { border-top:0; }
+body:not(.ontop):not(.onside):not(.onsum) thead tr { background:transparent; }
+.xbtn { background:var(--char); border-color:var(--char); color:#fff; }
+body:not(.ontop):not(.onside):not(.onsum) tbody tr { background:var(--head); border:0; border-radius:22px; padding:18px; }
+body:not(.ontop):not(.onside):not(.onsum) tbody tr:hover { box-shadow:0 0 0 2px var(--acc2); }
+body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked { background:var(--acc1-soft); box-shadow:0 0 0 2px var(--acc1-hover); }
+body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(2) { font-size:22px; font-weight:700; letter-spacing:-.02em; }
+body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { justify-self:start; max-width:100%; white-space:normal; overflow-wrap:anywhere; background:#fff; border-radius:12px; padding:3px 10px; color:#55555b; }
+.qty { background:#fff; border:0; }
+.qty button { background:var(--char); color:#fff; }
+.qty button:hover { background:var(--acc1); color:var(--char); }
+td.act button { background:#fff; border:0; border-radius:999px; }
+
+/* Manage circles */
+.mgic { background:#fff; border:2px solid var(--line); color:var(--char); box-shadow:none; }
+.mgnav { gap:12px; padding-left:16px; padding-right:16px; }
+.mgnav button { width:108px; }
+.mgnav button:hover .mgic { border-color:var(--char); }
+.mgnav button.on .mgic { background:var(--char); color:var(--acc1); border-color:var(--char); }
+dialog { border:0; border-radius:26px; }
+dialog input, dialog textarea, dialog select { border:0; border-radius:14px; }
+
+/* Phones: drop the outer frame, keep the look */
+@media (max-width: 640px) {
+  body { padding:0; }
+  .app { border-radius:0; min-height:100vh; box-shadow:none; }
+  .content { margin:0; border-radius:22px 22px 0 0; }
+  .side { height:auto; padding:14px 12px 12px; }
+  .sidefoot { background:transparent; padding:0; }
+  .sidefoot::before, .sidefoot::after { display:none; }
+  .side .ghost { margin:0; background:var(--acc1); color:var(--char); padding:7px 14px; }
+  .topbar { padding:12px 12px 4px; }
+  .topnav button { border-radius:16px; padding:10px 8px 9px; font-size:12.5px; }
+  .topnav button::before { width:22px; height:22px; }
+  .profilebtn, .manage { min-height:38px; border-radius:999px; }
+  .bar { background:color-mix(in srgb, var(--canvas) 94%, transparent); padding:8px 12px; }
+  main { padding:8px 10px 26px; }
+  .mbtn { padding:10px 16px; font-size:15px; }
+  .head h2 { font-size:26px; }
+  .stat b { font-size:30px; }
+  .panel > .head { margin:6px; padding:16px 16px 14px; border-radius:18px; }
+  body:not(.ontop):not(.onside):not(.onsum) tbody tr { padding:16px; border-radius:20px; }
 }
 </style>
   </head>
@@ -42439,6 +42587,10 @@ var JBIG2_Z = [
     render();
   };
   $("add").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can add items.");
+      return;
+    }
     if (!can("qty")) {
       deny("add or edit quantities");
       return;
@@ -42735,6 +42887,10 @@ var JBIG2_Z = [
     return new Date().toISOString().slice(0, 10);
   };
   $("exportJson").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can back up.");
+      return;
+    }
     download(
       "inventory-backup-" + stamp() + ".json",
       JSON.stringify({
@@ -42756,6 +42912,10 @@ var JBIG2_Z = [
     );
   };
   $("exportCsv").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can export.");
+      return;
+    }
     var rows = [["Item Number", "Description", "Locator", "Quantity", "Unit", "Notes"]].concat(
       matches().list.map(function (i) {
         return [i.n, i.d, i.l, i.q, i.u, i.notes];
@@ -44503,6 +44663,7 @@ var JBIG2_Z = [
     cl.toggle("notabs", !can("tabs"));
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
+    cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
     updateProfileBtn();
   }
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */

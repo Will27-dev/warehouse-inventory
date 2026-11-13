@@ -637,6 +637,10 @@
     render();
   };
   $("add").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can add items.");
+      return;
+    }
     if (!can("qty")) {
       deny("add or edit quantities");
       return;
@@ -933,6 +937,10 @@
     return new Date().toISOString().slice(0, 10);
   };
   $("exportJson").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can back up.");
+      return;
+    }
     download(
       "inventory-backup-" + stamp() + ".json",
       JSON.stringify({
@@ -954,6 +962,10 @@
     );
   };
   $("exportCsv").onclick = function () {
+    if (!isMgr()) {
+      toast("Only the owner or an admin can export.");
+      return;
+    }
     var rows = [["Item Number", "Description", "Locator", "Quantity", "Unit", "Notes"]].concat(
       matches().list.map(function (i) {
         return [i.n, i.d, i.l, i.q, i.u, i.notes];
@@ -2701,6 +2713,7 @@
     cl.toggle("notabs", !can("tabs"));
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
+    cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
     updateProfileBtn();
   }
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */
