@@ -4227,3 +4227,5 @@ body:has(#dvPanel:not([hidden]) .dvsticky) .toast { bottom:96px; }
   0% { border-color:#fff; box-shadow:0 0 0 999px rgba(94,230,176,.35); }
   100% { border-color:var(--acc1); box-shadow:0 0 0 999px rgba(0,0,0,.35); }
 }
+/* QR scanning: square frame in the middle of the picture (matches the area that is read) */
+.camframe { inset:auto; left:50%; top:50%; width:min(62%, 62vw); max-height:84%; aspect-ratio:1; transform:translate(-50%, -50%); }

@@ -6766,7 +6766,7 @@
     camLastCode = "",
     camLastAt = 0;
   var DV_OPTS = [
-    { k: "new", t: "Create new manifest", s: "Start a new trip and scan receipts as you load.", ic: '<path d="M12 5v14M5 12h14"/>' },
+    { k: "new", t: "Create new manifest", s: "Start a new trip and scan each QR code as you load.", ic: '<path d="M12 5v14M5 12h14"/>' },
     { k: "edit", t: "Edit manifest", s: "Continue a trip that is loading or out for delivery.", ic: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>' },
     { k: "past", t: "View past manifests", s: "Look up or print trips that were submitted.", ic: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>' },
     { k: "submit", t: "Submit manifest", s: "Send a fully delivered trip to Manage.", ic: '<path d="M5 12l5 5L20 7"/>' },
@@ -6857,7 +6857,7 @@
       ph +
       '" aria-label="' +
       ph +
-      '"></label><button class="primary" data-dv="add">Enter</button><button data-dv="cam">Scan with camera</button></div>' +
+      '"></label><button class="primary" data-dv="add">Enter</button><button data-dv="cam">Scan QR code</button></div>' +
       (dvFlash ? '<p class="dvflash">' + dvFlash + "</p>" : "")
     );
   }
@@ -6998,12 +6998,12 @@
       dvTripHead(m) +
       '<div class="dvfields"><label>New scans go to department #<input id="dvCurDept" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="e.g. 120" value="' +
       esc(m.curDept || "") +
-      '"></label><label>New scans go to location<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Where these receipts are going" value="' +
+      '"></label><label>Location (when a QR code has none)<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Used only if the QR code has no location" value="' +
       esc(m.curLoc || "") +
       '"></label>' +
       dvPlacesHtml() +
       "</div>" +
-      dvScanBar("Scan or type a receipt number, then press Enter") +
+      dvScanBar("Scan a QR code, or type a receipt number and press Enter") +
       (m.lines.length
         ? '<div class="tw dvtw"><table class="sumtbl dvlines"><thead><tr><th>Receipt #</th><th>Dept #</th><th>Location</th><th>Boxes</th><th></th></tr></thead><tbody>' +
           m.lines
@@ -7024,7 +7024,7 @@
             })
             .join("") +
           "</tbody></table></div>"
-        : '<div class="empty dvempty">Nothing loaded yet. Set the department # and location above, then scan each receipt.</div>') +
+        : '<div class="empty dvempty">Nothing loaded yet. Set the department # above, then scan the QR code on each receipt. The QR code fills in the receipt #, location and box count.</div>') +
       '<div class="dvfoot"><span class="dvtot">' +
       m.lines.length +
       (m.lines.length === 1 ? " receipt" : " receipts") +
@@ -7058,7 +7058,7 @@
       ' boxes left</span><div class="pbar"><i style="width:' +
       pct +
       '%"></i></div></div>' +
-      (left.length ? dvScanBar("Scan a receipt to find it on this trip") : "") +
+      (left.length ? dvScanBar("Scan a receipt's QR code to find it on this trip") : "") +
       (left.length
         ? dvByDept(left)
             .map(function (g) {
@@ -7206,12 +7206,73 @@
       };
     } catch (x) {}
   }
-  // A scanned/typed receipt: while loading it's added (again = one more box);
+  /* Reads the text inside a delivery QR code: receipt #, location, box count (and dept # if present).
+     Accepts JSON {"receipt":..,"location":..,"boxes":..}, labeled text ("Receipt: X\nLocation: Y\nBoxes: 3",
+     "Receipt=X;Location=Y;Box count=3"), values in order ("X|Y|3", "X,Y,3", one per line),
+     or just a receipt number. */
+  var DV_KEYS = {
+    rc: ["receipt", "receiptno", "receiptnum", "receiptnumber", "rc", "rec", "receiptid"],
+    loc: ["location", "loc", "deliverto", "destination", "dest", "to", "dropoff"],
+    boxes: ["boxes", "box", "boxcount", "boxcnt", "count", "qty", "quantity", "pieces", "pcs", "cartons"],
+    dept: ["dept", "department", "deptno", "deptnum", "departmentno", "departmentnumber"],
+  };
+  function dvField(k) {
+    k = String(k).toLowerCase().replace(/[^a-z0-9]/g, "");
+    for (var f in DV_KEYS) if (DV_KEYS[f].indexOf(k) >= 0) return f;
+    return null;
+  }
+  function dvParse(raw) {
+    var s = String(raw || "").trim(),
+      r = { rc: "", loc: "", boxes: 0, dept: "" },
+      set = function (f, v) {
+        v = String(v == null ? "" : v).trim();
+        if (!f || !v) return;
+        if (f === "boxes") r.boxes = parseInt(v.replace(/[^\d]/g, ""), 10) || 0;
+        else r[f] = v;
+      };
+    if (/^[\[{]/.test(s)) {
+      try {
+        var o = JSON.parse(s);
+        if (Array.isArray(o)) o = { receipt: o[0], location: o[1], boxes: o[2] };
+        Object.keys(o).forEach(function (k) {
+          set(dvField(k), o[k]);
+        });
+        return r;
+      } catch (x) {}
+    }
+    var parts = s.split(/\s*(?:\r?\n|\||\t|;|&)\s*/).filter(Boolean),
+      labeled = parts.filter(function (p) {
+        return /^[^:=]{1,24}[:=]/.test(p) && dvField(p.split(/[:=]/)[0]);
+      });
+    if (labeled.length) {
+      labeled.forEach(function (p) {
+        var i = p.search(/[:=]/);
+        set(dvField(p.slice(0, i)), p.slice(i + 1));
+      });
+      // e.g. "R-1001\nLocation: Dock A\nBoxes: 3": the unlabeled first value is the receipt #
+      if (!r.rc && labeled.indexOf(parts[0]) < 0) r.rc = parts[0];
+      return r;
+    }
+    if (parts.length === 1 && s.indexOf(",") > 0) parts = s.split(/\s*,\s*/);
+    if (parts.length >= 2) {
+      set("rc", parts[0]);
+      set("loc", parts[1]);
+      set("boxes", parts[2]);
+    } else r.rc = s;
+    return r;
+  }
+  // A scanned/typed code: while loading it's added (QR box count, or again = one more box);
   // while delivering it selects that receipt so it can be marked delivered.
   function dvAddCode(raw) {
     var m = dvFind(dvId),
-      code = String(raw || "").trim();
-    if (!m || !dvMine(m) || !code) return;
+      p = dvParse(raw),
+      code = p.rc;
+    if (!m || !dvMine(m) || !String(raw || "").trim()) return;
+    if (!code) {
+      dvFlash = "That code has no receipt number in it.";
+      renderDv();
+      return;
+    }
     var same = function (l) {
       return l.rc.toLowerCase() === code.toLowerCase();
     };
@@ -7232,17 +7293,35 @@
     }
     if (m.status !== "loading") return;
     var line = m.lines.find(same);
-    if (line) {
+    if (line && p.boxes) {
+      // A QR code carries the full box count, so scanning it again doesn't add boxes.
+      line.boxes = p.boxes;
+      if (p.loc) line.loc = p.loc;
+      if (p.dept) line.dept = p.dept;
+      dvFlash = "<b>" + esc(code) + "</b> is already loaded (" + line.boxes + (line.boxes === 1 ? " box" : " boxes") + ").";
+    } else if (line) {
       line.boxes = (+line.boxes || 0) + 1;
       dvFlash = "Added another box to <b>" + esc(code) + "</b> (now " + line.boxes + ").";
     } else {
-      m.lines.push({ id: nid("r"), rc: code, dept: m.curDept || "", loc: m.curLoc || "", boxes: 1, at: Date.now(), deliv: 0 });
+      line = {
+        id: nid("r"),
+        rc: code,
+        dept: p.dept || m.curDept || "",
+        loc: p.loc || m.curLoc || "",
+        boxes: p.boxes || 1,
+        at: Date.now(),
+        deliv: 0,
+      };
+      m.lines.push(line);
       dvFlash =
         "Loaded <b>" +
         esc(code) +
         "</b>" +
-        (m.curDept ? " · Dept " + esc(m.curDept) : "") +
-        (m.curLoc ? " · " + esc(m.curLoc) : "") +
+        (line.dept ? " · Dept " + esc(line.dept) : "") +
+        (line.loc ? " · " + esc(line.loc) : "") +
+        " · " +
+        line.boxes +
+        (line.boxes === 1 ? " box" : " boxes") +
         ".";
     }
     dvBeep();
@@ -7489,8 +7568,8 @@
     if ("BarcodeDetector" in window) {
       try {
         var fm = await BarcodeDetector.getSupportedFormats();
-        if (fm && fm.length) {
-          var det = new BarcodeDetector({ formats: fm });
+        if (fm && fm.indexOf("qr_code") >= 0) {
+          var det = new BarcodeDetector({ formats: ["qr_code"] });
           return {
             kind: "built-in",
             detect: function (src) {
@@ -7506,24 +7585,21 @@
       F = Z.BarcodeFormat,
       hints = new Map(),
       reader = new Z.MultiFormatReader();
-    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [
-      F.CODE_128, F.CODE_39, F.CODE_93, F.CODABAR, F.ITF,
-      F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E,
-      F.QR_CODE, F.DATA_MATRIX, F.PDF_417,
-    ]);
+    // Delivery labels are QR codes (receipt #, location, box count); reading only QR is faster and avoids misreads.
+    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [F.QR_CODE]);
     hints.set(Z.DecodeHintType.TRY_HARDER, true);
     reader.setHints(hints);
     camCanvas = camCanvas || document.createElement("canvas");
     return {
       kind: "zxing",
       detect: function (src) {
-        // Read the middle band of the picture (where the green frame is), at a size ZXing handles quickly.
+        // Read the middle square of the picture (where the green frame is), at a size ZXing handles quickly.
         var w = src.videoWidth || src.width,
           h = src.videoHeight || src.height;
         if (!w || !h) return Promise.resolve(null);
-        var cw = Math.round(w * 0.9),
-          ch = Math.round(h * 0.6),
-          sc = Math.min(1, 1000 / cw);
+        var cw = Math.round(Math.min(w, h) * 0.9),
+          ch = cw,
+          sc = Math.min(1, 800 / cw);
         camCanvas.width = Math.round(cw * sc);
         camCanvas.height = Math.round(ch * sc);
         var cx = camCanvas.getContext("2d", { willReadFrequently: true });
@@ -7577,7 +7653,7 @@
       toast("The barcode reader could not start. Use a handheld scanner or type the number.");
       return;
     }
-    $("camLast").textContent = "Point the camera at a barcode.";
+    $("camLast").textContent = "Point the camera at a QR code.";
     camTimer = setInterval(async function () {
       if (camBusy || v.readyState < 2) return;
       camBusy = true;
