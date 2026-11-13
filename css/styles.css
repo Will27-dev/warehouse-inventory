@@ -4052,3 +4052,60 @@ html.dark dialog button.primary { background:var(--acc1); border-color:var(--acc
 .pfdark { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:2px 0 14px; padding:10px 12px; border-radius:14px; background:var(--head); }
 .pfdark small { color:var(--mute); font-size:12px; }
 dialog .dmswitch { padding:4px 6px 4px 4px; border:0; background:none; border-radius:999px; font-weight:700; }
+
+/* =====================================================================
+   Manage options: even spacing + hover descriptions; Analytics placeholder
+   ===================================================================== */
+.mgnav { justify-content:space-evenly; gap:18px 10px; padding:22px 12px; }
+.mgnav button { position:relative; }
+.mgtip {
+  position:absolute; z-index:30; top:calc(100% + 10px); left:50%;
+  width:230px; padding:10px 13px; border-radius:14px;
+  background:var(--char); color:#f2f2f3; box-shadow:0 12px 28px rgba(0,0,0,.28);
+  font-size:12.5px; font-weight:500; line-height:1.45; text-align:left; white-space:normal;
+  opacity:0; visibility:hidden; pointer-events:none;
+  transform:translate(-50%, 6px) scale(.97);
+  transition:opacity .18s ease, transform .2s ease, visibility 0s linear .2s;
+}
+.mgtip::before { content:""; position:absolute; top:-6px; left:50%; width:12px; height:12px; margin-left:-6px; background:inherit; transform:rotate(45deg); border-radius:2px; }
+/* First / last options: keep the bubble inside the card */
+.mgnav button:first-child .mgtip { left:0; transform:translate(0, 6px) scale(.97); }
+.mgnav button:first-child .mgtip::before { left:54px; }
+.mgnav button:last-child .mgtip { left:auto; right:0; transform:translate(0, 6px) scale(.97); }
+.mgnav button:last-child .mgtip::before { left:auto; right:48px; }
+@media (hover: hover) {
+  .mgnav button:hover .mgtip { opacity:1; visibility:visible; transition-delay:.25s, .25s, 0s; transform:translate(-50%, 0) scale(1); }
+  .mgnav button:first-child:hover .mgtip,
+  .mgnav button:last-child:hover .mgtip { transform:translate(0, 0) scale(1); }
+}
+.mgnav button:focus-visible .mgtip { opacity:1; visibility:visible; transition-delay:0s; transform:translate(-50%, 0) scale(1); }
+.mgnav button:first-child:focus-visible .mgtip,
+.mgnav button:last-child:focus-visible .mgtip { transform:translate(0, 0) scale(1); }
+html.dark .mgtip { background:#2a3a38; box-shadow:0 12px 28px rgba(0,0,0,.5); }
+@media (max-width: 640px) {
+  .mgnav { gap:22px 10px; padding:18px 8px; }
+}
+
+.anlsoon { display:flex; flex-direction:column; align-items:center; gap:6px; text-align:center; padding:40px 20px; border:2px dashed var(--line); border-radius:22px; color:var(--mute); }
+.anlsoon svg { color:var(--acc1); background:var(--char); padding:12px; width:64px; height:64px; border-radius:20px; margin-bottom:6px; }
+.anlsoon h3 { margin:0; font-size:22px; font-weight:700; color:var(--ink); letter-spacing:-.02em; }
+.anlsoon p { margin:0; max-width:360px; }
+
+/* Delivery Locations: linked photo folder bar, folder-photo cards */
+.dlfolder { display:flex; align-items:center; flex-wrap:wrap; gap:10px 14px; padding:14px 28px; border-top:1px solid var(--line); font-size:13px; }
+.dlfolder:empty { display:none; }
+.dlfolder .m { color:var(--mute); flex:1 1 240px; }
+.dlfolder .sp { display:none; }
+.dlfolder button { padding:8px 14px; border:0; border-radius:999px; background:var(--head); color:var(--ink); font-weight:700; }
+.dlfolder button[data-dlf="pick"]:first-child,
+.dlfolder button[data-dlf="reconnect"] { background:var(--char); color:#fff; }
+.dlfname { display:inline-flex; align-items:center; gap:8px; color:var(--ink); }
+.dlfname::before { content:""; width:18px; height:14px; border-radius:2px 3px 3px 3px; background:var(--acc1); }
+.dlfnote { margin:0 0 10px; padding:0 2px; color:var(--mute); font-size:12.5px; }
+.dlcard { position:relative; }
+.dlftag { position:absolute; top:8px; left:8px; padding:2px 9px; border-radius:999px; background:var(--char); color:var(--acc1); font-size:11px; font-weight:800; letter-spacing:.03em; }
+@media (max-width: 640px) {
+  .dlfolder { padding:12px 14px; }
+}
+html.dark .dlfolder button[data-dlf="pick"]:first-child,
+html.dark .dlfolder button[data-dlf="reconnect"] { background:var(--acc1); color:var(--char); }

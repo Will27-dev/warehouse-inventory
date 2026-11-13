@@ -1952,7 +1952,9 @@
     dlOpen = null,
     spotEd = null,
     viewRef = null,
-    dlTarget = null;
+    dlTarget = null,
+    // Linked photo folder: one subfolder per button. Photos are read live, never stored in the browser.
+    dlf = { handle: null, state: "loading", cache: {}, missing: {}, err: "" };
   function nid(p) {
     return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
@@ -2050,24 +2052,37 @@
         starterArea("Hot Strip", "#d92d20", 1),
         starterArea("BOF/Caster", "#6b7280", 2),
         starterArea("Blast Furnace", "#ea7a1a", 3),
+        { id: nid("a"), name: "Out Of Plant", color: "#2d9a5b", locs: [] },
       ],
+      mig3: true,
     };
   }
   function migrateDl() {
-    if (dl.mig2) return;
-    var col = { "cold mill": "#2f6fe0", "hot strip": "#d92d20", "bof/caster": "#6b7280" };
-    dl.areas.forEach(function (a) {
-      var c = col[a.name.trim().toLowerCase()];
-      if (c) a.color = c;
-    });
-    if (
-      !dl.areas.some(function (a) {
-        return a.name.trim().toLowerCase() === "blast furnace";
-      })
-    )
-      dl.areas.push(starterArea("Blast Furnace", "#ea7a1a", 3));
-    dl.mig2 = true;
-    saveDl();
+    if (!dl.mig2) {
+      var col = { "cold mill": "#2f6fe0", "hot strip": "#d92d20", "bof/caster": "#6b7280" };
+      dl.areas.forEach(function (a) {
+        var c = col[a.name.trim().toLowerCase()];
+        if (c) a.color = c;
+      });
+      if (
+        !dl.areas.some(function (a) {
+          return a.name.trim().toLowerCase() === "blast furnace";
+        })
+      )
+        dl.areas.push(starterArea("Blast Furnace", "#ea7a1a", 3));
+      dl.mig2 = true;
+      saveDl();
+    }
+    if (!dl.mig3) {
+      if (
+        !dl.areas.some(function (a) {
+          return a.name.trim().toLowerCase() === "out of plant";
+        })
+      )
+        dl.areas.push({ id: nid("a"), name: "Out Of Plant", color: "#2d9a5b", locs: [] });
+      dl.mig3 = true;
+      saveDl();
+    }
   }
   function loadDl() {
     try {
@@ -2095,12 +2110,10 @@
     });
   }
   function findLoc(a, id) {
-    return (
-      a &&
-      a.locs.find(function (l) {
-        return l.id === id;
-      })
-    );
+    var pool = a ? a.locs.concat(dlf.cache[a.id] || []) : [];
+    return pool.find(function (l) {
+      return l.id === id;
+    });
   }
   function dlCard(a, l, showArea) {
     var pic = l.pics[0] || stockPic(3),
@@ -2120,7 +2133,12 @@
       (showArea ? esc(a.name) + " · " : "") +
       n +
       (n === 1 ? " photo" : " photos") +
-      '</small></div><div class="dlcb"><button data-photo>+ Photo</button></div></div>'
+      (l.folder ? " · from folder" : "") +
+      "</small></div>" +
+      (l.folder
+        ? '<span class="dlftag">Folder</span>'
+        : '<div class="dlcb"><button data-photo>+ Photo</button></div>') +
+      "</div>"
     );
   }
   /* =====================================================================
@@ -2130,7 +2148,7 @@
     document.documentElement.style.setProperty("--tab", "#2f7fd1");
     var n = 0;
     dl.areas.forEach(function (a) {
-      n += a.locs.length;
+      n += a.locs.length + (dlf.cache[a.id] || []).length;
     });
     $("mapN").textContent = n;
     $("dlBtns").innerHTML =
@@ -2151,12 +2169,13 @@
           );
         })
         .join("") + '<button class="dlbtn dlnew" id="dlAddArea">+ Add button</button>';
+    dlfRender();
     var q = $("dlQ").value.trim().toLowerCase(),
       res = $("dlResults");
     if (q) {
       var hits = [];
       dl.areas.forEach(function (a) {
-        a.locs.forEach(function (l) {
+        (dlf.cache[a.id] || []).concat(a.locs).forEach(function (l) {
           if ((l.name + " " + l.notes + " " + a.name).toLowerCase().indexOf(q) >= 0)
             hits.push(dlCard(a, l, true));
         });
@@ -2178,17 +2197,35 @@
       return;
     }
     var old = $("dlStrip"),
-      sl = old ? old.scrollLeft : 0;
+      sl = old ? old.scrollLeft : 0,
+      fl = dlf.cache[a.id] || [],
+      all = fl.concat(a.locs),
+      fnote =
+        dlf.state !== "ok"
+          ? ""
+          : dlf.missing[a.id]
+            ? '<p class="dlfnote">No folder named “' +
+              esc(dlfFolderName(a.name)) +
+              "” in “" +
+              esc(dlf.handle.name) +
+              "”. Create one and drop photos in it to show them here.</p>"
+            : '<p class="dlfnote">Showing ' +
+              fl.length +
+              (fl.length === 1 ? " photo location" : " photo locations") +
+              " from the “" +
+              esc(dlfFolderName(a.name)) +
+              "” folder, plus locations added here by hand.</p>";
     menu.innerHTML =
       '<div class="dlmh"><h3>' +
       esc(a.name) +
       '</h3><span class="m">' +
-      a.locs.length +
-      (a.locs.length === 1 ? " location" : " locations") +
+      all.length +
+      (all.length === 1 ? " location" : " locations") +
       '</span><span class="sp"></span><button data-act="addloc">+ Add location</button><button data-act="rename">Rename</button><button data-act="delarea" class="danger">Delete</button></div>' +
-      (a.locs.length
+      fnote +
+      (all.length
         ? '<div class="dlwrap"><button class="dlarrow l" data-dir="-1" aria-label="Scroll left">‹</button><div class="dlstrip" id="dlStrip">' +
-          a.locs
+          all
             .map(function (l) {
               return dlCard(a, l, false);
             })
@@ -2206,6 +2243,7 @@
     if (b && b.dataset.area) {
       dlOpen = dlOpen === b.dataset.area ? null : b.dataset.area;
       renderMap();
+      if (dlOpen) dlfScan(findArea(dlOpen));
       return;
     }
     if (b && b.id === "dlAddArea") {
@@ -2259,6 +2297,189 @@
     },
     { passive: false }
   );
+
+  /* ---------- Delivery Locations: linked photo folder (one subfolder per button) ---------- */
+  var DLF_IMG = /\.(jpe?g|png|webp|gif|bmp|avif)$/i;
+  function dlfKey(s) {
+    return String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
+  }
+  // Folder names can't contain / \ : * ? " < > |, so "BOF/Caster" becomes "BOF-Caster".
+  function dlfFolderName(s) {
+    return String(s).replace(/[\\/:*?"<>|]+/g, "-").trim();
+  }
+  async function dlfInit() {
+    if (typeof window.showDirectoryPicker !== "function") {
+      dlf.state = "unsupported";
+      return;
+    }
+    var row = null;
+    try {
+      row = await tpTx(
+        "readonly",
+        function (os) {
+          return os.get("photoFolder");
+        },
+        "handles"
+      );
+    } catch (x) {}
+    if (!row || !row.h) {
+      dlf.state = "none";
+    } else {
+      dlf.handle = row.h;
+      var p = "prompt";
+      try {
+        p = await dlf.handle.queryPermission({ mode: "read" });
+      } catch (x) {}
+      dlf.state = p === "granted" ? "ok" : "prompt";
+    }
+    if (!$("mapPanel").hidden) {
+      renderMap();
+      if (dlOpen) dlfScan(findArea(dlOpen));
+    }
+  }
+  async function dlfScan(a) {
+    if (!a || dlf.state !== "ok" || !dlf.handle) return;
+    var want = dlfKey(a.name),
+      dir = null,
+      locs = [];
+    try {
+      for await (var e of dlf.handle.values())
+        if (e.kind === "directory" && dlfKey(e.name) === want) {
+          dir = e;
+          break;
+        }
+      if (dir) {
+        for await (var f of dir.values()) {
+          if (f.kind === "file" && DLF_IMG.test(f.name)) {
+            locs.push({ name: f.name.replace(/\.[^.]+$/, ""), files: [await f.getFile()] });
+          } else if (f.kind === "directory") {
+            // A subfolder is one location holding all of its photos.
+            var files = [];
+            for await (var g of f.values())
+              if (g.kind === "file" && DLF_IMG.test(g.name)) files.push(await g.getFile());
+            if (files.length) locs.push({ name: f.name, files: files });
+          }
+        }
+      }
+    } catch (x) {
+      dlf.state = x && x.name === "NotAllowedError" ? "prompt" : "gone";
+      renderMap();
+      return;
+    }
+    (dlf.cache[a.id] || []).forEach(function (l) {
+      l.pics.forEach(function (u) {
+        URL.revokeObjectURL(u);
+      });
+    });
+    locs.sort(function (x, y) {
+      return x.name.localeCompare(y.name, undefined, { numeric: true });
+    });
+    dlf.missing[a.id] = !dir;
+    dlf.cache[a.id] = locs.map(function (l) {
+      return {
+        id: "f:" + l.name,
+        name: l.name,
+        notes: "From the “" + (dir ? dir.name : "") + "” folder.",
+        pics: l.files.map(function (file) {
+          return URL.createObjectURL(file);
+        }),
+        folder: true,
+      };
+    });
+    if (!$("mapPanel").hidden) renderMap();
+  }
+  function dlfRender() {
+    var box = $("dlFolder"),
+      nm = dlf.handle ? esc(dlf.handle.name) : "";
+    if (dlf.state === "loading") box.innerHTML = "";
+    else if (dlf.state === "unsupported")
+      box.innerHTML =
+        '<span class="m">Folder photos need Chrome or Edge on a computer. Photos added by hand still work.</span>';
+    else if (dlf.state === "none")
+      box.innerHTML =
+        '<button data-dlf="pick">Link photo folder</button><span class="m">Pick the <b>delivery-locations</b> folder once. Each button then shows the photos in its own subfolder.</span>';
+    else if (dlf.state === "prompt")
+      box.innerHTML =
+        '<button data-dlf="reconnect">Open photo folder “' +
+        nm +
+        '”</button><span class="m">The browser needs your OK again to read it.</span>';
+    else
+      box.innerHTML =
+        '<span class="dlfname"><b>' +
+        nm +
+        '</b></span><span class="m">' +
+        (dlf.state === "gone"
+          ? "This folder can no longer be read. It may have been moved or renamed."
+          : "Photo folder linked. Each button reads only its own subfolder.") +
+        '</span><span class="sp"></span><button data-dlf="refresh">Refresh</button><button data-dlf="pick">Change folder</button><button data-dlf="unlink">Unlink</button>';
+  }
+  $("dlFolder").addEventListener("click", async function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var act = b.dataset.dlf;
+    if (act === "pick") {
+      var h;
+      try {
+        h = await window.showDirectoryPicker({ id: "wh-photo-folder", mode: "read" });
+      } catch (x) {
+        if (x && x.name !== "AbortError") toast("The folder could not be opened.");
+        return;
+      }
+      try {
+        await tpTx(
+          "readwrite",
+          function (os) {
+            return os.put({ id: "photoFolder", h: h });
+          },
+          "handles"
+        );
+      } catch (x) {}
+      dlf.handle = h;
+      dlf.state = "ok";
+      dlf.cache = {};
+      dlf.missing = {};
+    } else if (act === "reconnect") {
+      var p = "denied";
+      try {
+        p = await dlf.handle.requestPermission({ mode: "read" });
+      } catch (x) {}
+      if (p !== "granted") {
+        toast("The browser was not allowed to read the folder.");
+        return;
+      }
+      dlf.state = "ok";
+    } else if (act === "refresh") {
+      dlf.state = "ok";
+    } else if (act === "unlink") {
+      if (!confirm("Unlink the photo folder? The photos stay in the folder; they just stop showing here."))
+        return;
+      try {
+        await tpTx(
+          "readwrite",
+          function (os) {
+            return os.delete("photoFolder");
+          },
+          "handles"
+        );
+      } catch (x) {}
+      Object.keys(dlf.cache).forEach(function (k) {
+        dlf.cache[k].forEach(function (l) {
+          l.pics.forEach(function (u) {
+            URL.revokeObjectURL(u);
+          });
+        });
+      });
+      dlf.handle = null;
+      dlf.state = "none";
+      dlf.cache = {};
+      dlf.missing = {};
+    }
+    renderMap();
+    if (dlOpen) dlfScan(findArea(dlOpen));
+  });
+  window.addEventListener("focus", function () {
+    if (!$("mapPanel").hidden && dlOpen) dlfScan(findArea(dlOpen));
+  });
 
   function openArea(id) {
     var a = id && findArea(id);
@@ -2425,6 +2646,8 @@
       l = findLoc(a, lId);
     if (!l) return;
     viewRef = { a: aId, l: lId };
+    // Folder photos are changed in the folder itself, so no Add/Edit here.
+    $("viewAdd").hidden = $("viewEdit").hidden = !!l.folder;
     $("viewBody").innerHTML =
       '<div class="vlabel" style="margin:0 0 4px">' +
       esc(a.name) +
@@ -2638,7 +2861,16 @@
       "Templates",
       "Material Transaction",
       "Inspections & Deliveries",
-      "Option 6",
+      "Analytics",
+    ],
+    // Short descriptions shown when hovering over (or tabbing to) each Manage option.
+    MGTIPS = [
+      "Add people, change their access, and choose what each person is allowed to do.",
+      "See every delivery (EWO) created on a chosen day, grouped by the person who made it.",
+      "Upload PDF forms to keep as guides and use as inspection sheet templates.",
+      "See who added, removed or moved stock on a chosen day, with a 7-day view per person.",
+      "Finished inspection sheets, plus every PDF in your linked inspections folder.",
+      "Charts and trends for your inventory. Coming soon.",
     ],
     MGICONS = [
       '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
@@ -2646,7 +2878,7 @@
       '<rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 9v12"/>',
       '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
       '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>',
-      '<circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"/>',
+      '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
     ];
   try {
     sess = JSON.parse(sessionStorage.getItem("wh-session") || "null");
@@ -3019,7 +3251,9 @@
           '"><span class="mgic"><svg viewBox="0 0 24 24" fill="none" ' +
           'stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
           MGICONS[i] +
-          '</svg></span><span class="mgl"></span></button>'
+          '</svg></span><span class="mgl"></span><span class="mgtip" role="tooltip">' +
+          esc(MGTIPS[i]) +
+          "</span></button>"
         );
       }).join("");
     MGOPTS.forEach(function (x, i) {
@@ -6474,4 +6708,5 @@
   load();
   rebuild();
   render();
+  dlfInit();
 })();
