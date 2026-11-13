@@ -75,6 +75,7 @@
     insp: [],
     ewos: [],
     contacts: [],
+    manifests: [],
   };
   var items = [],
     shown = PAGE,
@@ -300,6 +301,7 @@
     if (!st.log) st.log = [];
     if (!st.ewos) st.ewos = [];
     if (!st.contacts) st.contacts = [];
+    if (!st.manifests) st.manifests = [];
     if (!st.users) st.users = [];
     if (!st.audit) st.audit = [];
     if (!st.hidden) st.hidden = {};
@@ -445,8 +447,10 @@
     $("sumPanel").hidden = tp !== 5;
     var ck = onSide ? "s" + st.side : tp >= 2 && tp <= 4 ? "p" + tp : null,
       onInsp = !!ck && ck === inspKey() && (!onSide || st.side > 2);
-    $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp);
+    var onDv = tp === 4 && !onInsp;
+    $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
     $("inspPanel").hidden = !onInsp;
+    $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
     $("loginPanel").hidden = !(onSide && st.side === 0);
     $("managePanel").hidden = !onMg;
@@ -467,6 +471,7 @@
     if (tp >= 2 && tp <= 4) document.documentElement.style.setProperty("--tab", "#f5b335");
     if (onInsp) renderInsp();
     if (tp === 1) renderEwo();
+    if (onDv) renderDv();
     if (onSide && st.side === 2) renderMap();
     if (tp === 5) renderSummary();
     if (onEwos) renderEwosPage();
@@ -954,6 +959,7 @@
         ewos: st.ewos,
         delivery: dl,
         contacts: st.contacts,
+        manifests: st.manifests,
         users: isMgr() ? st.users : [],
         audit: isMgr() ? st.audit : [],
         profiles: isMgr() ? st.profiles : {},
@@ -1016,6 +1022,7 @@
           saveDl();
         }
         if (Array.isArray(d.contacts)) st.contacts = d.contacts;
+        if (Array.isArray(d.manifests)) st.manifests = d.manifests;
         if (Array.isArray(d.users) && isOwner()) st.users = d.users;
         if (Array.isArray(d.audit) && isOwner()) st.audit = d.audit;
         if (d.profiles && typeof d.profiles === "object" && isOwner()) st.profiles = d.profiles;
@@ -3531,7 +3538,42 @@
       .forEach(function (e) {
         if (dayOf(e.ts) === day) (by[e.by || ""] = by[e.by || ""] || []).push(e);
       });
-    var h =
+    // Delivery trips submitted from the Delivery tab on this day.
+    var trips = (st.manifests || [])
+        .filter(function (m) {
+          return m.status === "submitted" && dayOf(m.subTs) === day;
+        })
+        .reverse(),
+      h =
+        '<div class="sumsec" style="padding:0 0 8px">Delivery trips</div>' +
+        (trips.length
+          ? trips
+              .map(function (m) {
+                return (
+                  '<details class="mgdet"><summary><span class="who"><b>' +
+                  dvTripName(m) +
+                  " · " +
+                  esc(whoName(m.by)) +
+                  "</b><small>" +
+                  esc(m.no) +
+                  " · loaded " +
+                  (m.loadedTs ? dvTime(m.loadedTs) : "–") +
+                  " · submitted " +
+                  dvTime(m.subTs) +
+                  '</small></span><span class="cnt">' +
+                  m.lines.length +
+                  " receipts · " +
+                  dvBoxes(m.lines) +
+                  ' boxes</span></summary><div class="mgdbody">' +
+                  dvTripTable(m) +
+                  "</div></details>"
+                );
+              })
+              .join("")
+          : '<div class="empty" style="padding:14px 0 20px">No delivery trips were submitted on ' +
+            esc(fmtDay(day)) +
+            ".</div>") +
+        '<div class="sumsec" style="padding:14px 0 8px">EWOs</div>' +
         '<p class="mgnote" style="padding:0 0 12px">People who created a delivery (EWO) on <b>' +
         esc(fmtDay(day)) +
         "</b>. Select a name to open their manifest. Use the Day box above to look at another day.</p>",
@@ -6703,6 +6745,770 @@
     else if (b.id === "sumCsv") sumCsv();
   });
   $("sumDate").value = dayOf(Date.now());
+
+  /* =====================================================================
+     Delivery tab: delivery trips (manifests)
+     A trip moves through three modes:
+       loading    – scan receipts onto the trip (same receipt again = one more box)
+       delivering – receipts listed by department #; tap one, press Delivered to take it off
+       submitted  – everything delivered and sent to Manage → View Delivery Manifests
+     Deliveries are not taken out of current stock, so inventory never changes here.
+     st.manifests: [{ id, no, trip, by, ts, upd, status, notes, curDept, curLoc,
+                      lines:[{ id, rc, dept, loc, boxes, at, deliv, delivBy }],
+                      loadedTs, subBy, subTs }]
+     ===================================================================== */
+  var dvView = "home",
+    dvId = null,
+    dvFlash = "",
+    dvSel = null,
+    camStream = null,
+    camTimer = null,
+    camLastCode = "",
+    camLastAt = 0;
+  var DV_OPTS = [
+    { k: "new", t: "Create new manifest", s: "Start a new trip and scan receipts as you load.", ic: '<path d="M12 5v14M5 12h14"/>' },
+    { k: "edit", t: "Edit manifest", s: "Continue a trip that is loading or out for delivery.", ic: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>' },
+    { k: "past", t: "View past manifests", s: "Look up or print trips that were submitted.", ic: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>' },
+    { k: "submit", t: "Submit manifest", s: "Send a fully delivered trip to Manage.", ic: '<path d="M5 12l5 5L20 7"/>' },
+  ];
+  var DV_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
+  function dvTripName(m) {
+    return "Trip " + (DV_WORDS[m.trip] || m.trip);
+  }
+  function dvFind(id) {
+    return st.manifests.find(function (m) {
+      return m.id === id;
+    });
+  }
+  function dvMine(m) {
+    return !!sess && (m.by === curEmail() || isMgr());
+  }
+  function dvOpenTrips() {
+    return st.manifests.filter(function (m) {
+      return m.status !== "submitted" && dvMine(m);
+    });
+  }
+  function dvWhen(ts) {
+    return new Date(ts).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  function dvTime(ts) {
+    return new Date(ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  }
+  function dvBoxes(lines) {
+    return lines.reduce(function (s, l) {
+      return s + (+l.boxes || 0);
+    }, 0);
+  }
+  function dvLeft(m) {
+    return m.lines.filter(function (l) {
+      return !l.deliv;
+    });
+  }
+  function dvNewNo() {
+    var d = new Date(),
+      day = d.getFullYear() + ("0" + (d.getMonth() + 1)).slice(-2) + ("0" + d.getDate()).slice(-2),
+      n = st.manifests.filter(function (m) {
+        return m.no.indexOf("M-" + day) === 0;
+      }).length + 1;
+    return "M-" + day + "-" + ("0" + n).slice(-2);
+  }
+  // Departments sorted as numbers where possible ("2" before "10"); blank last.
+  function dvByDept(lines) {
+    var g = {};
+    lines.forEach(function (l) {
+      var k = String(l.dept || "").trim();
+      (g[k] = g[k] || []).push(l);
+    });
+    return Object.keys(g)
+      .sort(function (a, b) {
+        if (!a) return 1;
+        if (!b) return -1;
+        return a.localeCompare(b, undefined, { numeric: true });
+      })
+      .map(function (k) {
+        return { dept: k, lines: g[k] };
+      });
+  }
+  var DV_STATUS = { loading: "Loading", delivering: "Out for delivery", submitted: "Submitted" };
+  function dvChip(m) {
+    return '<span class="dvchip ' + m.status + '">' + DV_STATUS[m.status] + "</span>";
+  }
+  function dvPlacesHtml() {
+    var places = [];
+    dl.areas.forEach(function (a) {
+      places.push(a.name);
+      a.locs.forEach(function (l) {
+        places.push(l.name);
+      });
+    });
+    return (
+      '<datalist id="dvPlaces">' +
+      places
+        .map(function (p) {
+          return '<option value="' + esc(p) + '">';
+        })
+        .join("") +
+      "</datalist>"
+    );
+  }
+  function dvScanBar(ph) {
+    return (
+      '<div class="dvscan"><label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8"/></svg><input id="dvScan" autocomplete="off" placeholder="' +
+      ph +
+      '" aria-label="' +
+      ph +
+      '"></label><button class="primary" data-dv="add">Enter</button><button data-dv="cam">Scan with camera</button></div>' +
+      (dvFlash ? '<p class="dvflash">' + dvFlash + "</p>" : "")
+    );
+  }
+  function dvTripHead(m) {
+    return (
+      '<div class="dvhead"><h3 class="dvh">' +
+      dvTripName(m) +
+      "</h3>" +
+      dvChip(m) +
+      '<span class="dvmeta">' +
+      esc(m.no) +
+      " · " +
+      esc(whoName(m.by)) +
+      " · started " +
+      dvWhen(m.ts) +
+      (m.loadedTs ? " · loaded " + dvTime(m.loadedTs) : "") +
+      (m.subTs ? " · submitted " + dvTime(m.subTs) : "") +
+      "</span></div>"
+    );
+  }
+  function dvList(list, empty) {
+    if (!list.length)
+      return '<div class="empty dvempty">' + empty + '<br><button class="primary" data-dv="new">Create new manifest</button></div>';
+    return (
+      '<div class="tw dvtw"><table class="sumtbl"><thead><tr><th>Trip</th><th>Status</th><th>Receipts</th><th>Last change</th><th></th></tr></thead><tbody>' +
+      list
+        .map(function (m) {
+          var left = dvLeft(m).length,
+            ready = m.status === "delivering" && !left,
+            btn =
+              m.status === "submitted"
+                ? '<button data-dv-open="' + m.id + '">View</button>'
+                : ready && dvView === "submit-list"
+                  ? '<button class="primary" data-dv-sub="' + m.id + '">Submit</button>'
+                  : '<button data-dv-open="' + m.id + '">Open</button>';
+          return (
+            '<tr><td class="cname">' +
+            dvTripName(m) +
+            "<small>" +
+            esc(m.no) +
+            " · " +
+            esc(whoName(m.by)) +
+            "</small></td><td>" +
+            dvChip(m) +
+            (m.status === "delivering" ? "<small>" + (m.lines.length - left) + " of " + m.lines.length + " delivered</small>" : "") +
+            '</td><td class="ph">' +
+            m.lines.length +
+            " · " +
+            dvBoxes(m.lines) +
+            " boxes</td><td>" +
+            dvWhen(m.subTs || m.upd) +
+            '</td><td class="act">' +
+            btn +
+            "</td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+
+  function renderDv() {
+    var box = $("dvBody");
+    $("dvTitle").textContent = oname(4);
+    $("dvN").textContent = sess ? dvOpenTrips().length : "–";
+    if (!sess) {
+      box.innerHTML =
+        '<div class="empty dvempty">Sign in to create and run delivery trips.<br><button class="primary" data-dv="login">Go to Log in</button></div>';
+      return;
+    }
+    var back = '<button class="dvback" data-dv="home">‹ All options</button>';
+    if (dvView === "home") {
+      box.innerHTML =
+        '<div class="dvopts">' +
+        DV_OPTS.map(function (o) {
+          return (
+            '<button class="dvopt" data-dv="' +
+            o.k +
+            '"><span class="dvic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
+            o.ic +
+            "</svg></span><b>" +
+            o.t +
+            "</b><small>" +
+            o.s +
+            "</small></button>"
+          );
+        }).join("") +
+        "</div>";
+      return;
+    }
+    if (dvView === "edit-list" || dvView === "submit-list" || dvView === "past") {
+      var t =
+          dvView === "past"
+            ? ["Past manifests", "Every submitted trip, newest first."]
+            : dvView === "submit-list"
+              ? ["Submit a manifest", "Trips out for delivery. A trip can be submitted once every receipt is delivered."]
+              : ["Edit a manifest", "Trips that are still loading or out for delivery."],
+        list = st.manifests
+          .filter(function (m) {
+            if (dvView === "past") return m.status === "submitted";
+            if (dvView === "submit-list") return m.status === "delivering" && dvMine(m);
+            return m.status !== "submitted" && dvMine(m);
+          })
+          .reverse();
+      box.innerHTML =
+        back +
+        '<h3 class="dvh">' +
+        t[0] +
+        '</h3><p class="dvp">' +
+        t[1] +
+        "</p>" +
+        dvList(
+          list,
+          dvView === "past"
+            ? "No trips have been submitted yet."
+            : dvView === "submit-list"
+              ? "No trips are out for delivery right now."
+              : "There are no trips in progress."
+        );
+      return;
+    }
+    var m = dvFind(dvId);
+    if (!m) {
+      dvView = "home";
+      return renderDv();
+    }
+    var ro = !dvMine(m) || m.status === "submitted";
+    if (m.status === "loading" && !ro) box.innerHTML = back + dvLoadHtml(m);
+    else if (m.status === "delivering" && !ro) box.innerHTML = back + dvDeliverHtml(m);
+    else box.innerHTML = back + dvDoneHtml(m);
+    var sc = $("dvScan");
+    if (sc && !("ontouchstart" in window)) sc.focus();
+  }
+
+  /* ---------- Load mode ---------- */
+  function dvLoadHtml(m) {
+    return (
+      dvTripHead(m) +
+      '<div class="dvfields"><label>New scans go to department #<input id="dvCurDept" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="e.g. 120" value="' +
+      esc(m.curDept || "") +
+      '"></label><label>New scans go to location<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Where these receipts are going" value="' +
+      esc(m.curLoc || "") +
+      '"></label>' +
+      dvPlacesHtml() +
+      "</div>" +
+      dvScanBar("Scan or type a receipt number, then press Enter") +
+      (m.lines.length
+        ? '<div class="tw dvtw"><table class="sumtbl dvlines"><thead><tr><th>Receipt #</th><th>Dept #</th><th>Location</th><th>Boxes</th><th></th></tr></thead><tbody>' +
+          m.lines
+            .map(function (l) {
+              return (
+                '<tr data-l="' +
+                l.id +
+                '"><td class="num">' +
+                esc(l.rc) +
+                '</td><td><input class="dvdept" data-f="dept" inputmode="numeric" maxlength="20" value="' +
+                esc(l.dept) +
+                '" placeholder="Dept #"></td><td><input data-f="loc" list="dvPlaces" maxlength="120" value="' +
+                esc(l.loc) +
+                '" placeholder="Location"></td><td><span class="qty"><button data-dvq="-1" aria-label="One less box">−</button><b>' +
+                esc(l.boxes) +
+                '</b><button data-dvq="1" aria-label="One more box">+</button></span></td><td class="act"><button data-dvrm aria-label="Remove receipt">Remove</button></td></tr>'
+              );
+            })
+            .join("") +
+          "</tbody></table></div>"
+        : '<div class="empty dvempty">Nothing loaded yet. Set the department # and location above, then scan each receipt.</div>') +
+      '<div class="dvfoot"><span class="dvtot">' +
+      m.lines.length +
+      (m.lines.length === 1 ? " receipt" : " receipts") +
+      " · " +
+      dvBoxes(m.lines) +
+      ' boxes</span><span class="sp"></span><span class="dvsaved">Saved automatically</span><button class="danger" data-dv="del">Delete trip</button><button class="primary dvbig" data-dv="loaded">Done Loading</button></div>'
+    );
+  }
+
+  /* ---------- Delivery mode ---------- */
+  function dvDeliverHtml(m) {
+    var left = dvLeft(m),
+      done = m.lines.filter(function (l) {
+        return l.deliv;
+      }),
+      pct = m.lines.length ? Math.round((done.length / m.lines.length) * 100) : 0,
+      sel =
+        dvSel &&
+        left.find(function (l) {
+          return l.id === dvSel;
+        });
+    if (!sel) dvSel = null;
+    return (
+      dvTripHead(m) +
+      '<div class="dvprog"><span><b>' +
+      done.length +
+      " of " +
+      m.lines.length +
+      "</b> receipts delivered · " +
+      dvBoxes(left) +
+      ' boxes left</span><div class="pbar"><i style="width:' +
+      pct +
+      '%"></i></div></div>' +
+      (left.length ? dvScanBar("Scan a receipt to find it on this trip") : "") +
+      (left.length
+        ? dvByDept(left)
+            .map(function (g) {
+              return (
+                '<section class="dvgrp"><h4><span>' +
+                (g.dept ? "Dept " + esc(g.dept) : "No department") +
+                "</span><small>" +
+                g.lines.length +
+                (g.lines.length === 1 ? " receipt · " : " receipts · ") +
+                dvBoxes(g.lines) +
+                ' boxes</small></h4><div class="dvcards">' +
+                g.lines
+                  .map(function (l) {
+                    return (
+                      '<button class="dvcard' +
+                      (l.id === dvSel ? " on" : "") +
+                      '" data-dvpick="' +
+                      l.id +
+                      '" aria-pressed="' +
+                      (l.id === dvSel) +
+                      '"><span class="dvrc">' +
+                      esc(l.rc) +
+                      '</span><span class="dvloc">' +
+                      (esc(l.loc) || "No location") +
+                      '</span><span class="dvbox">' +
+                      l.boxes +
+                      (+l.boxes === 1 ? " box" : " boxes") +
+                      "</span></button>"
+                    );
+                  })
+                  .join("") +
+                "</div></section>"
+              );
+            })
+            .join("")
+        : '<div class="dvalldone"><b>Everything is delivered.</b><span>Select Submit to send this trip to Manage.</span></div>') +
+      (done.length
+        ? '<details class="dvdone"><summary>Delivered (' +
+          done.length +
+          ")</summary>" +
+          done
+            .slice()
+            .sort(function (a, b) {
+              return b.deliv - a.deliv;
+            })
+            .map(function (l) {
+              return (
+                '<div class="dvdrow"><span><b>' +
+                esc(l.rc) +
+                "</b> · Dept " +
+                (esc(l.dept) || "–") +
+                " · " +
+                (esc(l.loc) || "–") +
+                " · " +
+                l.boxes +
+                (+l.boxes === 1 ? " box" : " boxes") +
+                "</span><small>" +
+                dvTime(l.deliv) +
+                '</small><button data-dvundo="' +
+                l.id +
+                '">Undo</button></div>'
+              );
+            })
+            .join("") +
+          "</details>"
+        : "") +
+      '<div class="dvfoot dvsticky">' +
+      (left.length
+        ? sel
+          ? '<span class="dvseltxt"><b>' +
+            esc(sel.rc) +
+            "</b> · " +
+            (esc(sel.loc) || "No location") +
+            " · " +
+            sel.boxes +
+            (+sel.boxes === 1 ? " box" : " boxes") +
+            '</span><span class="sp"></span><button class="primary dvbig" data-dv="delivered">Delivered</button>'
+          : '<span class="dvseltxt">Tap a receipt, then select Delivered.</span><span class="sp"></span><button class="primary dvbig" disabled>Delivered</button>'
+        : '<span class="dvseltxt">All ' + m.lines.length + ' receipts delivered.</span><span class="sp"></span><button class="primary dvbig" data-dv="submit-this">Submit</button>') +
+      "</div>"
+    );
+  }
+
+  /* ---------- Submitted (read-only) ---------- */
+  function dvDoneHtml(m) {
+    return (
+      dvTripHead(m) +
+      (m.notes ? '<p class="dvp">' + esc(m.notes) + "</p>" : "") +
+      dvTripTable(m) +
+      '<div class="dvfoot"><span class="dvtot">' +
+      m.lines.length +
+      " receipts · " +
+      dvBoxes(m.lines) +
+      ' boxes</span><span class="sp"></span><button data-dv="print">Print</button></div>'
+    );
+  }
+  // Receipts grouped by department #, with delivery times (also used in Manage).
+  function dvTripTable(m) {
+    return (
+      '<div class="tw dvtw"><table class="sumtbl"><thead><tr><th>Dept #</th><th>Receipt #</th><th>Location</th><th>Boxes</th><th>Delivered</th></tr></thead><tbody>' +
+      dvByDept(m.lines)
+        .map(function (g) {
+          return g.lines
+            .map(function (l, i) {
+              return (
+                "<tr><td>" +
+                (i ? "" : "<b>" + (esc(g.dept) || "–") + "</b>") +
+                '</td><td class="num">' +
+                esc(l.rc) +
+                "</td><td>" +
+                (esc(l.loc) || "–") +
+                '</td><td class="ph">' +
+                l.boxes +
+                "</td><td>" +
+                (l.deliv ? dvTime(l.deliv) + "<small>" + esc(whoName(l.delivBy)) + "</small>" : "–") +
+                "</td></tr>"
+              );
+            })
+            .join("");
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+
+  function dvSave(m) {
+    m.upd = Date.now();
+    save();
+  }
+  function dvBeep() {
+    try {
+      // Browsers only allow a buzz after the person has tapped the page.
+      if (navigator.vibrate && (!navigator.userActivation || navigator.userActivation.hasBeenActive)) navigator.vibrate(60);
+      var ac = new (window.AudioContext || window.webkitAudioContext)(),
+        o = ac.createOscillator(),
+        g = ac.createGain();
+      o.frequency.value = 880;
+      g.gain.value = 0.08;
+      o.connect(g);
+      g.connect(ac.destination);
+      o.start();
+      o.stop(ac.currentTime + 0.09);
+      o.onended = function () {
+        ac.close();
+      };
+    } catch (x) {}
+  }
+  // A scanned/typed receipt: while loading it's added (again = one more box);
+  // while delivering it selects that receipt so it can be marked delivered.
+  function dvAddCode(raw) {
+    var m = dvFind(dvId),
+      code = String(raw || "").trim();
+    if (!m || !dvMine(m) || !code) return;
+    var same = function (l) {
+      return l.rc.toLowerCase() === code.toLowerCase();
+    };
+    if (m.status === "delivering") {
+      var hit = dvLeft(m).find(same),
+        was = m.lines.find(same);
+      dvSel = hit ? hit.id : null;
+      dvFlash = hit
+        ? "Found <b>" + esc(code) + "</b>. Select Delivered when it's dropped off."
+        : was
+          ? "<b>" + esc(code) + "</b> is already marked delivered."
+          : "<b>" + esc(code) + "</b> isn't on this trip.";
+      if (hit) dvBeep();
+      renderDv();
+      var c = document.querySelector(".dvcard.on");
+      if (c) c.scrollIntoView({ block: "center", behavior: "smooth" });
+      return code;
+    }
+    if (m.status !== "loading") return;
+    var line = m.lines.find(same);
+    if (line) {
+      line.boxes = (+line.boxes || 0) + 1;
+      dvFlash = "Added another box to <b>" + esc(code) + "</b> (now " + line.boxes + ").";
+    } else {
+      m.lines.push({ id: nid("r"), rc: code, dept: m.curDept || "", loc: m.curLoc || "", boxes: 1, at: Date.now(), deliv: 0 });
+      dvFlash =
+        "Loaded <b>" +
+        esc(code) +
+        "</b>" +
+        (m.curDept ? " · Dept " + esc(m.curDept) : "") +
+        (m.curLoc ? " · " + esc(m.curLoc) : "") +
+        ".";
+    }
+    dvBeep();
+    dvSave(m);
+    renderDv();
+    return code;
+  }
+  function dvDoneLoading(m) {
+    if (!m.lines.length) {
+      toast("Scan at least one receipt before you finish loading.");
+      return;
+    }
+    var miss = m.lines.filter(function (l) {
+      return !String(l.dept || "").trim() || !String(l.loc || "").trim();
+    }).length;
+    if (miss && !confirm(miss + " receipt(s) have no department # or location. Start delivering anyway?")) return;
+    m.status = "delivering";
+    m.loadedTs = Date.now();
+    audit("Delivery", dvTripName(m) + " (" + m.no + ") loaded: " + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes");
+    dvSave(m);
+    dvSel = null;
+    dvFlash = "";
+    toast(dvTripName(m) + " is out for delivery.");
+    renderDv();
+  }
+  function dvSubmit(m) {
+    if (!m || !dvMine(m) || m.status !== "delivering") return;
+    if (dvLeft(m).length) {
+      toast("Mark every receipt delivered before submitting.");
+      return;
+    }
+    if (!confirm("Submit " + dvTripName(m) + " (" + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes)? It will be sent to Manage → View Delivery Manifests and locked.")) return;
+    m.status = "submitted";
+    m.subBy = curEmail();
+    m.subTs = Date.now();
+    audit("Delivery", "Submitted " + dvTripName(m) + " (" + m.no + "): " + m.lines.length + " receipts delivered");
+    dvSave(m);
+    dvId = m.id;
+    dvView = "trip";
+    dvFlash = "";
+    toast(dvTripName(m) + " submitted to Manage.");
+    renderDv();
+  }
+  function dvPrint(m) {
+    var w = window.open("", "_blank");
+    if (!w) {
+      toast("Allow pop-ups to print the manifest.");
+      return;
+    }
+    w.document.write(
+      "<!doctype html><meta charset='utf-8'><title>" +
+        esc(m.no) +
+        "</title><style>body{font:14px/1.45 system-ui,sans-serif;margin:32px;color:#111}h1{margin:0 0 4px}p{margin:2px 0;color:#444}table{width:100%;border-collapse:collapse;margin-top:18px}th,td{border-bottom:1px solid #ccc;padding:8px;text-align:left}th{background:#f2f2f2}small{display:block;color:#666}</style><h1>" +
+        dvTripName(m) +
+        " · " +
+        esc(m.no) +
+        "</h1><p>Driver: " +
+        esc(whoName(m.by)) +
+        "</p><p>Started " +
+        dvWhen(m.ts) +
+        (m.loadedTs ? " · loaded " + dvTime(m.loadedTs) : "") +
+        (m.subTs ? " · submitted " + dvTime(m.subTs) : "") +
+        "</p>" +
+        dvTripTable(m).replace(/<div[^>]*>|<\/div>/g, "") +
+        "<p style='margin-top:14px'><b>" +
+        m.lines.length +
+        " receipts · " +
+        dvBoxes(m.lines) +
+        " boxes</b></p><script>print()<\/script>"
+    );
+    w.document.close();
+  }
+
+  $("dvBody").addEventListener("click", function (e) {
+    var b = e.target.closest("button");
+    if (!b) return;
+    var act = b.dataset.dv,
+      m = dvFind(dvId);
+    if (act === "login") {
+      st.top = null;
+      st.side = 0;
+      render();
+      return;
+    }
+    if (act === "home") {
+      dvView = "home";
+      dvFlash = "";
+      dvSel = null;
+    } else if (act === "new") {
+      var today = dayOf(Date.now()),
+        mineToday = st.manifests.filter(function (x) {
+          return x.by === curEmail() && dayOf(x.ts) === today;
+        }).length,
+        nm = {
+          id: nid("m"),
+          no: dvNewNo(),
+          trip: mineToday + 1,
+          by: curEmail(),
+          ts: Date.now(),
+          upd: Date.now(),
+          status: "loading",
+          notes: "",
+          curDept: "",
+          curLoc: "",
+          lines: [],
+        };
+      st.manifests.push(nm);
+      audit("Delivery", "Started " + dvTripName(nm) + " (" + nm.no + ")");
+      save();
+      dvId = nm.id;
+      dvView = "trip";
+      dvFlash = "";
+      dvSel = null;
+    } else if (act === "edit") dvView = "edit-list";
+    else if (act === "submit") dvView = "submit-list";
+    else if (act === "past") dvView = "past";
+    else if (b.dataset.dvOpen) {
+      dvId = b.dataset.dvOpen;
+      dvView = "trip";
+      dvFlash = "";
+      dvSel = null;
+    } else if (b.dataset.dvSub) {
+      dvSubmit(dvFind(b.dataset.dvSub));
+      return;
+    } else if (act === "add") {
+      var inp = $("dvScan");
+      dvAddCode(inp && inp.value);
+      return;
+    } else if (act === "cam") {
+      camOpen();
+      return;
+    } else if (act === "loaded" && m) {
+      dvDoneLoading(m);
+      return;
+    } else if (act === "submit-this" && m) {
+      dvSubmit(m);
+      return;
+    } else if (act === "print" && m) {
+      dvPrint(m);
+      return;
+    } else if (b.dataset.dvpick && m) {
+      dvSel = dvSel === b.dataset.dvpick ? null : b.dataset.dvpick;
+      dvFlash = "";
+    } else if (act === "delivered" && m && dvMine(m)) {
+      var l = m.lines.find(function (x) {
+        return x.id === dvSel;
+      });
+      if (!l) return;
+      var card = document.querySelector('.dvcard[data-dvpick="' + l.id + '"]');
+      l.deliv = Date.now();
+      l.delivBy = curEmail();
+      dvSel = null;
+      dvFlash = "";
+      dvSave(m);
+      // Let the card slide away before the list redraws.
+      if (card) {
+        card.classList.add("gone");
+        setTimeout(renderDv, 260);
+        return;
+      }
+    } else if (b.dataset.dvundo && m && dvMine(m) && m.status === "delivering") {
+      var u = m.lines.find(function (x) {
+        return x.id === b.dataset.dvundo;
+      });
+      if (u) u.deliv = 0;
+      dvSave(m);
+    } else if (act === "del" && m && dvMine(m) && m.status === "loading") {
+      if (!confirm("Delete " + dvTripName(m) + " (" + m.no + ")? This cannot be undone.")) return;
+      st.manifests = st.manifests.filter(function (x) {
+        return x !== m;
+      });
+      audit("Delivery", "Deleted " + dvTripName(m) + " (" + m.no + ") while loading");
+      save();
+      dvView = "home";
+      toast("Trip deleted.");
+    } else if ((b.dataset.dvq || b.hasAttribute("data-dvrm")) && m && dvMine(m) && m.status === "loading") {
+      var tr = b.closest("tr"),
+        idx = m.lines.findIndex(function (x) {
+          return x.id === tr.dataset.l;
+        });
+      if (idx < 0) return;
+      if (b.hasAttribute("data-dvrm")) m.lines.splice(idx, 1);
+      else m.lines[idx].boxes = Math.max(1, (+m.lines[idx].boxes || 1) + +b.dataset.dvq);
+      dvFlash = "";
+      dvSave(m);
+    } else return;
+    renderDv();
+  });
+  $("dvBody").addEventListener("keydown", function (e) {
+    if (e.target.id === "dvScan" && e.key === "Enter") {
+      e.preventDefault();
+      dvAddCode(e.target.value);
+    }
+  });
+  // Typing in a field saves quietly without redrawing (so the cursor stays put).
+  $("dvBody").addEventListener("input", function (e) {
+    var m = dvFind(dvId),
+      t = e.target;
+    if (!m || !dvMine(m) || m.status !== "loading") return;
+    if (t.id === "dvCurDept") m.curDept = t.value.trim();
+    else if (t.id === "dvCurLoc") m.curLoc = t.value;
+    else if (t.dataset.f) {
+      var line = m.lines.find(function (x) {
+        return x.id === t.closest("tr").dataset.l;
+      });
+      if (!line) return;
+      line[t.dataset.f] = t.value;
+    } else return;
+    dvSave(m);
+  });
+
+  /* ---------- Camera scanning (uses the browser's built-in barcode reader where available) ---------- */
+  async function camOpen() {
+    if (!("BarcodeDetector" in window) || !navigator.mediaDevices) {
+      toast(
+        "Camera scanning isn't supported in this browser. Use a handheld scanner or type the number. (It works in Chrome on Android.)"
+      );
+      return;
+    }
+    var det;
+    try {
+      var fm = await BarcodeDetector.getSupportedFormats();
+      det = new BarcodeDetector({ formats: fm });
+      camStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: "environment" },
+        audio: false,
+      });
+    } catch (x) {
+      toast("The camera could not be opened. Check the browser's camera permission.");
+      return;
+    }
+    var v = $("camVideo");
+    v.srcObject = camStream;
+    await v.play().catch(function () {});
+    $("camLast").textContent = "Point the camera at a barcode.";
+    $("camDlg").showModal();
+    camTimer = setInterval(async function () {
+      if (v.readyState < 2) return;
+      try {
+        var res = await det.detect(v);
+        if (!res.length) return;
+        var code = res[0].rawValue,
+          now = Date.now();
+        // Ignore the same code for a moment so one scan doesn't add it many times.
+        if (code === camLastCode && now - camLastAt < 1800) return;
+        camLastCode = code;
+        camLastAt = now;
+        dvAddCode(code);
+        $("camLast").innerHTML = dvFlash || "Scanned <b>" + esc(code) + "</b>.";
+      } catch (x) {}
+    }, 250);
+  }
+  function camStop() {
+    clearInterval(camTimer);
+    camTimer = null;
+    if (camStream)
+      camStream.getTracks().forEach(function (t) {
+        t.stop();
+      });
+    camStream = null;
+    $("camVideo").srcObject = null;
+  }
+  $("camClose").onclick = function () {
+    $("camDlg").close();
+  };
+  $("camDlg").addEventListener("close", camStop);
 
   loadDl();
   load();

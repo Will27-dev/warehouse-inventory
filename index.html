@@ -126,6 +126,17 @@
             </div>
             <div class="empty">Nothing here yet.</div>
           </section>
+          <section class="panel" id="dvPanel" hidden>
+            <div class="head">
+              <div>
+                <div class="eyebrow">Section</div>
+                <h2 id="dvTitle">Delivery</h2>
+                <p>Scan items onto delivery manifests, then submit them as a record.</p>
+              </div>
+              <div class="stat"><b id="dvN">0</b><span>open trips</span></div>
+            </div>
+            <div class="dvbody" id="dvBody"></div>
+          </section>
           <section class="panel" id="loginPanel" hidden>
             <div class="head">
               <div>
@@ -713,6 +724,14 @@
           ><button class="primary" value="save">Save</button>
         </div>
       </form>
+    </dialog>
+    <dialog id="camDlg" class="camdlg">
+      <div class="pdfhead">
+        <h2>Scan with camera</h2>
+        <span class="sp"></span><button type="button" class="primary" id="camClose">Done</button>
+      </div>
+      <div class="camwrap"><video id="camVideo" playsinline muted></video><i class="camframe"></i></div>
+      <p class="camlast" id="camLast">Point the camera at a barcode.</p>
     </dialog>
     <div class="toast" id="toast" role="status" hidden></div>
     <dialog id="subDlg">
