@@ -2714,8 +2714,32 @@
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
     cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
+    applyDark();
     updateProfileBtn();
   }
+  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark) ---------- */
+  function applyDark() {
+    var on = !!(sess && profOf(sess.email).dark);
+    document.documentElement.classList.toggle("dark", on);
+    $("darkSwitch").setAttribute("aria-checked", String(on));
+  }
+  $("darkSwitch").addEventListener("click", function () {
+    if (!sess) return;
+    var root = document.documentElement;
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
+      dark: !profOf(sess.email).dark,
+    });
+    save();
+    root.classList.add("dm-fade");
+    this.classList.add("moved");
+    applyDark();
+    setTimeout(function () {
+      root.classList.remove("dm-fade");
+    }, 450);
+  });
+  $("darkSwitch").addEventListener("animationend", function () {
+    this.classList.remove("moved");
+  });
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */
   function profOf(email) {
     return (st.profiles && st.profiles[email]) || {};
@@ -2817,11 +2841,12 @@
   $("profForm").addEventListener("submit", function () {
     if (!sess) return;
     var f = this.elements;
-    st.profiles[sess.email] = {
+    // Keep other profile settings (like dark mode) that this form doesn't edit.
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
       nick: f.nick.value.trim(),
       bio: f.bio.value.trim(),
       pic: pfPic,
-    };
+    });
     save();
     updateProfileBtn();
     renderLogin();
@@ -3184,9 +3209,14 @@
   $("mgNav").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
-    mgOpt = +b.dataset.opt;
+    var next = +b.dataset.opt;
+    if (next === mgOpt) return;
+    // Lets the CSS slide the new section in from the side you moved toward.
+    $("mgBody").dataset.dir = next > mgOpt ? "fwd" : "back";
+    mgOpt = next;
     renderManage();
   });
+
   var mgShowHid = false,
     mgRange = {};
   function hiddenList() {

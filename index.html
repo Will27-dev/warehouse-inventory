@@ -5,6 +5,17 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
     <link rel="stylesheet" href="css/styles.css" />
+    <script>
+      /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
+      (function () {
+        try {
+          var s = JSON.parse(sessionStorage.getItem("wh-session") || "null"),
+            d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
+            p = d && d.profiles && d.profiles[s.email];
+          if (p && p.dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div class="app">
@@ -605,6 +616,13 @@
           ></textarea>
           <small id="pfCount" class="pfcount"></small>
         </label>
+        <div class="pfdark">
+          <button type="button" class="dmswitch" id="darkSwitch" role="switch" aria-checked="false">
+            <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span
+            ><span class="dml">Dark mode</span>
+          </button>
+          <small>Saved to your profile right away.</small>
+        </div>
         <p class="mgmsg" id="pfMsg" role="alert"></p>
         <div class="actions">
           <span class="sp"></span><button type="button" id="pfCancel">Cancel</button

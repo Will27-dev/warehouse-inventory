@@ -3909,7 +3909,7 @@ main { padding:10px 22px 26px; }
 .schip.add { background:transparent; border:1.5px dashed rgba(255,255,255,.25); color:var(--on-dark-mute); }
 
 /* White content cards */
-.panel { background:#fff; border:0; border-radius:26px; }
+.panel { background:var(--panel); border:0; border-radius:26px; }
 .panel::before { display:none; }
 .head h2 { font-size:34px; font-weight:700; letter-spacing:-.03em; }
 .head code { border:0; border-radius:999px; padding:2px 10px; }
@@ -3927,14 +3927,14 @@ body:not(.ontop):not(.onside):not(.onsum) tbody tr { background:var(--head); bor
 body:not(.ontop):not(.onside):not(.onsum) tbody tr:hover { box-shadow:0 0 0 2px var(--acc2); }
 body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked { background:var(--acc1-soft); box-shadow:0 0 0 2px var(--acc1-hover); }
 body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(2) { font-size:22px; font-weight:700; letter-spacing:-.02em; }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { justify-self:start; max-width:100%; white-space:normal; overflow-wrap:anywhere; background:#fff; border-radius:12px; padding:3px 10px; color:#55555b; }
-.qty { background:#fff; border:0; }
+body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { justify-self:start; max-width:100%; white-space:normal; overflow-wrap:anywhere; background:var(--panel); border-radius:12px; padding:3px 10px; color:#55555b; }
+.qty { background:var(--panel); border:0; }
 .qty button { background:var(--char); color:#fff; }
 .qty button:hover { background:var(--acc1); color:var(--char); }
-td.act button { background:#fff; border:0; border-radius:999px; }
+td.act button { background:var(--panel); border:0; border-radius:999px; }
 
 /* Manage circles */
-.mgic { background:#fff; border:2px solid var(--line); color:var(--char); box-shadow:none; }
+.mgic { background:var(--panel); border:2px solid var(--line); color:var(--char); box-shadow:none; }
 .mgnav { gap:12px; padding-left:16px; padding-right:16px; }
 .mgnav button { width:108px; }
 .mgnav button:hover .mgic { border-color:var(--char); }
@@ -3963,7 +3963,114 @@ dialog input, dialog textarea, dialog select { border:0; border-radius:14px; }
   .panel > .head { margin:6px; padding:16px 16px 14px; border-radius:18px; }
   body:not(.ontop):not(.onside):not(.onsum) tbody tr { padding:16px; border-radius:20px; }
 }
+
+/* =====================================================================
+   Dark mode (switch in Manage; class "dark" on <html>, saved per browser)
+   ===================================================================== */
+html.dark,
+html.dark * {
+  --panel:#16201f; --ink:#e6efed; --mute:#8fa3a0; --line:#2b3a38; --head:#1d2928;
+  --page:#0f1615;
+}
+html.dark .panel > .head { background:#0c1211; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
+html.dark th { background:var(--head); color:var(--mute); }
+html.dark body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { color:var(--mute); }
+html.dark body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked { background:color-mix(in srgb, var(--acc1) 18%, var(--panel)); }
+html.dark .mgnav button.on .mgic { background:var(--acc1); color:var(--char); border-color:var(--acc1); }
+html.dark .mgnav button:hover .mgic { border-color:var(--acc1); }
+html.dark dialog { background:var(--panel); color:var(--ink); }
+html.dark input, html.dark select, html.dark textarea { color-scheme:dark; }
+/* Smooth color change while switching */
+html.dm-fade,
+html.dm-fade * {
+  transition: background-color .4s ease, color .4s ease, border-color .4s ease, box-shadow .4s ease !important;
+}
+
+/* The slide switch */
+.dmswitch { display:inline-flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; border-radius:999px; }
+.dmswitch:focus-visible { outline:2px solid var(--acc1); outline-offset:3px; }
+.dmtrack { position:relative; width:54px; height:30px; flex:none; border-radius:999px; background:#d9dedd; box-shadow:inset 0 1px 3px rgba(0,0,0,.18); transition:background-color .35s ease; }
+.dmknob { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:999px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:left .38s cubic-bezier(.34,1.56,.64,1), background-color .35s ease; }
+/* Sun / moon on the knob */
+.dmknob::after { content:""; position:absolute; inset:6px; border-radius:50%; background:#f5b335; box-shadow:0 0 0 2px rgba(245,179,53,.25); transition:all .35s ease; }
+.dmswitch[aria-checked="true"] .dmtrack { background:var(--acc1); }
+.dmswitch[aria-checked="true"] .dmknob { left:27px; background:var(--char); }
+.dmswitch[aria-checked="true"] .dmknob::after { inset:5px 5px 5px 8px; background:transparent; box-shadow:-4px 0 0 0 #e6efed; }
+/* Stretch-and-settle as the knob slides (only right after a click) */
+.dmswitch.moved .dmknob { animation:dmStretch .4s ease; }
+@keyframes dmStretch {
+  0% { width:24px; }
+  40% { width:34px; }
+  100% { width:24px; }
+}
+.dmswitch.moved[aria-checked="true"] .dmknob { animation-name:dmStretchOn; }
+@keyframes dmStretchOn {
+  0% { width:24px; left:3px; }
+  40% { width:34px; left:10px; }
+  100% { width:24px; left:27px; }
+}
+
+/* =====================================================================
+   Manage: switching between options
+   - New section slides in from the side you moved toward
+   - Its parts rise in one after another
+   - The chosen circle pops with a ripple ring
+   ===================================================================== */
+#mgBody[data-dir="fwd"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromRight .45s cubic-bezier(.2,.8,.2,1) both; }
+#mgBody[data-dir="back"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromLeft .45s cubic-bezier(.2,.8,.2,1) both; }
+@keyframes mgFromRight {
+  from { opacity:0; transform:translateX(48px); filter:blur(3px); }
+  to { opacity:1; transform:none; filter:none; }
+}
+@keyframes mgFromLeft {
+  from { opacity:0; transform:translateX(-48px); filter:blur(3px); }
+  to { opacity:1; transform:none; filter:none; }
+}
+[id^="mgOpt"]:not([hidden]) > *,
+[id^="mgOpt"]:not([hidden]) .mgpad > * { animation:mgRise .42s cubic-bezier(.2,.8,.2,1) both; }
+[id^="mgOpt"]:not([hidden]) > :nth-child(2),
+[id^="mgOpt"]:not([hidden]) .mgpad > :nth-child(2) { animation-delay:.06s; }
+[id^="mgOpt"]:not([hidden]) > :nth-child(3),
+[id^="mgOpt"]:not([hidden]) .mgpad > :nth-child(3) { animation-delay:.12s; }
+[id^="mgOpt"]:not([hidden]) > :nth-child(n+4),
+[id^="mgOpt"]:not([hidden]) .mgpad > :nth-child(n+4) { animation-delay:.18s; }
+@keyframes mgRise {
+  from { opacity:0; transform:translateY(12px); }
+  to { opacity:1; transform:none; }
+}
+.mgic { position:relative; }
+.mgnav button.on .mgic { animation:mgPop .45s cubic-bezier(.34,1.56,.64,1); }
+.mgnav button.on .mgic::after { content:""; position:absolute; inset:-2px; border-radius:50%; border:2px solid var(--acc1); animation:mgRing .6s ease-out forwards; pointer-events:none; }
+@keyframes mgPop {
+  0% { transform:scale(.82); }
+  60% { transform:scale(1.12); }
+  100% { transform:scale(1); }
+}
+@keyframes mgRing {
+  from { opacity:.9; transform:scale(1); }
+  to { opacity:0; transform:scale(1.55); }
+}
+/* Dark mode: keep icons and dark buttons readable on dark cards */
+html.dark .mgic { color:var(--ink); }
+html.dark .panel button.primary,
+html.dark .panel .mgact button,
+html.dark dialog button.primary { background:var(--acc1); border-color:var(--acc1); color:var(--char); }
+/* Dark mode switch inside "Your profile" */
+.pfdark { display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin:2px 0 14px; padding:10px 12px; border-radius:14px; background:var(--head); }
+.pfdark small { color:var(--mute); font-size:12px; }
+dialog .dmswitch { padding:4px 6px 4px 4px; border:0; background:none; border-radius:999px; font-weight:700; }
 </style>
+    <script>
+      /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
+      (function () {
+        try {
+          var s = JSON.parse(sessionStorage.getItem("wh-session") || "null"),
+            d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
+            p = d && d.profiles && d.profiles[s.email];
+          if (p && p.dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
   </head>
   <body>
     <div class="app">
@@ -4564,6 +4671,13 @@ dialog input, dialog textarea, dialog select { border:0; border-radius:14px; }
           ></textarea>
           <small id="pfCount" class="pfcount"></small>
         </label>
+        <div class="pfdark">
+          <button type="button" class="dmswitch" id="darkSwitch" role="switch" aria-checked="false">
+            <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span
+            ><span class="dml">Dark mode</span>
+          </button>
+          <small>Saved to your profile right away.</small>
+        </div>
         <p class="mgmsg" id="pfMsg" role="alert"></p>
         <div class="actions">
           <span class="sp"></span><button type="button" id="pfCancel">Cancel</button
@@ -44664,8 +44778,32 @@ var JBIG2_Z = [
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
     cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
+    applyDark();
     updateProfileBtn();
   }
+  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark) ---------- */
+  function applyDark() {
+    var on = !!(sess && profOf(sess.email).dark);
+    document.documentElement.classList.toggle("dark", on);
+    $("darkSwitch").setAttribute("aria-checked", String(on));
+  }
+  $("darkSwitch").addEventListener("click", function () {
+    if (!sess) return;
+    var root = document.documentElement;
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
+      dark: !profOf(sess.email).dark,
+    });
+    save();
+    root.classList.add("dm-fade");
+    this.classList.add("moved");
+    applyDark();
+    setTimeout(function () {
+      root.classList.remove("dm-fade");
+    }, 450);
+  });
+  $("darkSwitch").addEventListener("animationend", function () {
+    this.classList.remove("moved");
+  });
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */
   function profOf(email) {
     return (st.profiles && st.profiles[email]) || {};
@@ -44767,11 +44905,12 @@ var JBIG2_Z = [
   $("profForm").addEventListener("submit", function () {
     if (!sess) return;
     var f = this.elements;
-    st.profiles[sess.email] = {
+    // Keep other profile settings (like dark mode) that this form doesn't edit.
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
       nick: f.nick.value.trim(),
       bio: f.bio.value.trim(),
       pic: pfPic,
-    };
+    });
     save();
     updateProfileBtn();
     renderLogin();
@@ -45134,9 +45273,14 @@ var JBIG2_Z = [
   $("mgNav").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
-    mgOpt = +b.dataset.opt;
+    var next = +b.dataset.opt;
+    if (next === mgOpt) return;
+    // Lets the CSS slide the new section in from the side you moved toward.
+    $("mgBody").dataset.dir = next > mgOpt ? "fwd" : "back";
+    mgOpt = next;
     renderManage();
   });
+
   var mgShowHid = false,
     mgRange = {};
   function hiddenList() {
