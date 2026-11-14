@@ -1,6 +1,6 @@
-# Warehouse Inventory (offline)
+# Warehouse Inventory
 
-An offline warehouse inventory app: plain HTML, CSS and JavaScript, no server, no install, no build step needed to run it.
+A warehouse inventory app: plain HTML, CSS and JavaScript, no install, no build step needed to run it. Sign-in, quantities, contacts, EWOs, logs, delivery trips, photos and PDFs are shared through Supabase; everything saves on the device first, so it keeps working without signal.
 
 ## Run it
 - **Split source:** open `index.html` in a browser.
@@ -19,7 +19,10 @@ An offline warehouse inventory app: plain HTML, CSS and JavaScript, no server, n
 | `build.py` | Rebuilds `dist/inventory.html` from the files above: `python3 build.py` |
 | `dist/inventory.html` | Single-file build |
 | `source-files/` | The original spreadsheet and the two sample inspection forms |
-| `inspections-deliveries/` | Drop PDFs here; they are listed under Manage → Inspections & Deliveries |
+| `inspections-deliveries/` | Collect inspection PDFs here, then upload them (Manage → Inspections & Deliveries → Upload a folder) |
+| `delivery-locations/` | Collect Delivery Locations photos here (one folder per button), then upload them (Delivery Locations → Upload a folder) |
+| `supabase/setup.sql` | Cloud tables, security rules and storage buckets (run once in the Supabase SQL editor) |
+| `supabase/functions/admin-users/` | Server function that lets the owner/admins add, edit and remove people |
 
 ## Working on it in VS Code
 1. Open the folder (File → Open Folder) and install the recommended extensions when prompted (Prettier, Live Server).
@@ -31,8 +34,9 @@ An offline warehouse inventory app: plain HTML, CSS and JavaScript, no server, n
 The big files in `js/data/` (one item per line) and `js/vendor/` (wrapped base64 text) are generated or third-party and are not meant to be edited by hand.
 
 ## Notes
-- Data is stored in the browser (localStorage and IndexedDB). Use **Back up** in the app to export it.
-- Passwords are stored as PBKDF2 hashes, never as plain text.
+- Sign-in is the Supabase account (email + password). Add people from Manage → Add/Edit user; roles and permissions live in the cloud. Supabase checks every read and write against the rules in `supabase/setup.sql`.
+- A device's first sign-in downloads from the cloud and never overwrites it. On the device that holds older local data, the owner selects **Upload this device's data** in Manage once.
+- Still kept per device: tab names, custom tabs, Delivery Locations buttons and hand-added location photos, templates and finished inspection sheets. Use **Back up** to export them.
 - Inspection sheets: upload PDF templates under Manage → Templates, then use **Create Inspection Sheet**. Text PDFs and scanned PDFs both work; the two forms in `source-files/` are recognised by their layout and get typed question text.
-- PDF folder: under Manage → Inspections & Deliveries, select **Choose PDF folder** once and pick `inspections-deliveries/` (or any folder). Every PDF in it, sub-folders included, is listed there and new ones appear within a few seconds. This uses the browser's folder access, so it needs Chrome or Edge; after a browser restart, select **Open folder** once to allow it again. The PDFs stay in the folder and are not copied into the browser.
+- Photos and PDFs are in Supabase Storage (private buckets `delivery-photos` and `inspection-pdfs`); signed-in staff can view, the owner and admins upload.
 - The pdf.js library files are third-party (Apache-2.0).

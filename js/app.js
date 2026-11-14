@@ -354,6 +354,7 @@
     if (!ok) st.sel = "t0";
   }
   function save() {
+    if (typeof cloudSoon === "function") cloudSoon(); // sync the change when signed in
     try {
       localStorage.setItem(KEY, JSON.stringify(st));
     } catch (e) {
@@ -471,7 +472,10 @@
     if (tp >= 2 && tp <= 4) document.documentElement.style.setProperty("--tab", "#f5b335");
     if (onInsp) renderInsp();
     if (tp === 1) renderEwo();
-    if (onDv) renderDv();
+    if (onDv) {
+      renderDv();
+      cloudSync();
+    }
     if (onSide && st.side === 2) renderMap();
     if (tp === 5) renderSummary();
     if (onEwos) renderEwosPage();
@@ -1961,7 +1965,7 @@
     viewRef = null,
     dlTarget = null,
     // Linked photo folder: one subfolder per button. Photos are read live, never stored in the browser.
-    dlf = { handle: null, state: "loading", cache: {}, missing: {}, err: "" };
+    dlf = { cache: {}, at: {}, err: "" };
   function nid(p) {
     return p + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
   }
@@ -2207,21 +2211,20 @@
       sl = old ? old.scrollLeft : 0,
       fl = dlf.cache[a.id] || [],
       all = fl.concat(a.locs),
-      fnote =
-        dlf.state !== "ok"
-          ? ""
-          : dlf.missing[a.id]
-            ? '<p class="dlfnote">No folder named “' +
-              esc(dlfFolderName(a.name)) +
-              "” in “" +
-              esc(dlf.handle.name) +
-              "”. Create one and drop photos in it to show them here.</p>"
+      fnote = !cloudOn()
+        ? ""
+        : !dlf.at[a.id]
+          ? '<p class="dlfnote">Loading cloud photos…</p>'
+          : !fl.length
+            ? '<p class="dlfnote">No cloud photos for “' +
+              esc(a.name) +
+              "” yet." +
+              (isMgr() ? " Use Upload photos above to add some." : "") +
+              "</p>"
             : '<p class="dlfnote">Showing ' +
               fl.length +
               (fl.length === 1 ? " photo location" : " photo locations") +
-              " from the “" +
-              esc(dlfFolderName(a.name)) +
-              "” folder, plus locations added here by hand.</p>";
+              " from the cloud, plus locations added here by hand.</p>";
     menu.innerHTML =
       '<div class="dlmh"><h3>' +
       esc(a.name) +
@@ -2305,7 +2308,10 @@
     { passive: false }
   );
 
-  /* ---------- Delivery Locations: linked photo folder (one subfolder per button) ---------- */
+  /* ---------- Delivery Locations: photos in cloud storage (one folder per button) ----------
+     Bucket "delivery-photos": "<Button>/<photo>" is one location named after the file;
+     "<Button>/<Sub folder>/<photos>" is one location holding all of that folder's photos.
+     Photos are shown through signed links that last an hour. Owner/admins upload. */
   var DLF_IMG = /\.(jpe?g|png|webp|gif|bmp|avif)$/i;
   function dlfKey(s) {
     return String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
@@ -2314,178 +2320,135 @@
   function dlfFolderName(s) {
     return String(s).replace(/[\\/:*?"<>|]+/g, "-").trim();
   }
-  async function dlfInit() {
-    if (typeof window.showDirectoryPicker !== "function") {
-      dlf.state = "unsupported";
-      return;
-    }
-    var row = null;
-    try {
-      row = await tpTx(
-        "readonly",
-        function (os) {
-          return os.get("photoFolder");
-        },
-        "handles"
-      );
-    } catch (x) {}
-    if (!row || !row.h) {
-      dlf.state = "none";
-    } else {
-      dlf.handle = row.h;
-      var p = "prompt";
-      try {
-        p = await dlf.handle.queryPermission({ mode: "read" });
-      } catch (x) {}
-      dlf.state = p === "granted" ? "ok" : "prompt";
-    }
-    if (!$("mapPanel").hidden) {
-      renderMap();
-      if (dlOpen) dlfScan(findArea(dlOpen));
-    }
-  }
-  async function dlfScan(a) {
-    if (!a || dlf.state !== "ok" || !dlf.handle) return;
-    var want = dlfKey(a.name),
-      dir = null,
+  async function dlfScan(a, force) {
+    if (!a || !cloudOn()) return;
+    if (!force && dlf.at[a.id] && Date.now() - dlf.at[a.id] < 45 * 60000) return;
+    var base = dlfFolderName(a.name),
       locs = [];
     try {
-      for await (var e of dlf.handle.values())
-        if (e.kind === "directory" && dlfKey(e.name) === want) {
-          dir = e;
-          break;
-        }
-      if (dir) {
-        for await (var f of dir.values()) {
-          if (f.kind === "file" && DLF_IMG.test(f.name)) {
-            locs.push({ name: f.name.replace(/\.[^.]+$/, ""), files: [await f.getFile()] });
-          } else if (f.kind === "directory") {
-            // A subfolder is one location holding all of its photos.
-            var files = [];
-            for await (var g of f.values())
-              if (g.kind === "file" && DLF_IMG.test(g.name)) files.push(await g.getFile());
-            if (files.length) locs.push({ name: f.name, files: files });
-          }
-        }
+      var items = await sbList("delivery-photos", base + "/");
+      for (var i = 0; i < items.length; i++) {
+        var it = items[i];
+        if (!it.id) {
+          var sub = await sbList("delivery-photos", base + "/" + it.name + "/"),
+            ps = sub
+              .filter(function (f) {
+                return f.id && DLF_IMG.test(f.name);
+              })
+              .map(function (f) {
+                return base + "/" + it.name + "/" + f.name;
+              });
+          if (ps.length) locs.push({ name: it.name, paths: ps });
+        } else if (DLF_IMG.test(it.name)) locs.push({ name: it.name.replace(/\.[^.]+$/, ""), paths: [base + "/" + it.name] });
       }
-    } catch (x) {
-      dlf.state = x && x.name === "NotAllowedError" ? "prompt" : "gone";
-      renderMap();
-      return;
-    }
-    (dlf.cache[a.id] || []).forEach(function (l) {
-      l.pics.forEach(function (u) {
-        URL.revokeObjectURL(u);
+      var all = [].concat.apply(
+          [],
+          locs.map(function (l) {
+            return l.paths;
+          })
+        ),
+        url = all.length ? await sbSign("delivery-photos", all) : {};
+      locs.sort(function (x, y) {
+        return x.name.localeCompare(y.name, undefined, { numeric: true });
       });
-    });
-    locs.sort(function (x, y) {
-      return x.name.localeCompare(y.name, undefined, { numeric: true });
-    });
-    dlf.missing[a.id] = !dir;
-    dlf.cache[a.id] = locs.map(function (l) {
-      return {
-        id: "f:" + l.name,
-        name: l.name,
-        notes: "From the “" + (dir ? dir.name : "") + "” folder.",
-        pics: l.files.map(function (file) {
-          return URL.createObjectURL(file);
-        }),
-        folder: true,
-      };
-    });
+      dlf.cache[a.id] = locs.map(function (l) {
+        return {
+          id: "f:" + l.name,
+          name: l.name,
+          notes: "Stored in the cloud (" + base + ").",
+          pics: l.paths
+            .map(function (p) {
+              return url[p];
+            })
+            .filter(Boolean),
+          folder: true,
+        };
+      });
+      dlf.at[a.id] = Date.now();
+      dlf.err = "";
+    } catch (x) {
+      dlf.err = x instanceof TypeError ? "offline" : x.message;
+    }
     if (!$("mapPanel").hidden) renderMap();
   }
   function dlfRender() {
-    var box = $("dlFolder"),
-      nm = dlf.handle ? esc(dlf.handle.name) : "";
-    if (dlf.state === "loading") box.innerHTML = "";
-    else if (dlf.state === "unsupported")
-      box.innerHTML =
-        '<span class="m">Folder photos need Chrome or Edge on a computer. Photos added by hand still work.</span>';
-    else if (dlf.state === "none")
-      box.innerHTML =
-        '<button data-dlf="pick">Link photo folder</button><span class="m">Pick the <b>delivery-locations</b> folder once. Each button then shows the photos in its own subfolder.</span>';
-    else if (dlf.state === "prompt")
-      box.innerHTML =
-        '<button data-dlf="reconnect">Open photo folder “' +
-        nm +
-        '”</button><span class="m">The browser needs your OK again to read it.</span>';
-    else
-      box.innerHTML =
-        '<span class="dlfname"><b>' +
-        nm +
-        '</b></span><span class="m">' +
-        (dlf.state === "gone"
-          ? "This folder can no longer be read. It may have been moved or renamed."
-          : "Photo folder linked. Each button reads only its own subfolder.") +
-        '</span><span class="sp"></span><button data-dlf="refresh">Refresh</button><button data-dlf="pick">Change folder</button><button data-dlf="unlink">Unlink</button>';
+    var box = $("dlFolder");
+    if (!cloudOn()) {
+      box.innerHTML = '<span class="m">Sign in to see the delivery photos stored in the cloud. Photos added by hand still show.</span>';
+      return;
+    }
+    box.innerHTML =
+      '<span class="dlfname"><b>Cloud photos</b></span><span class="m">' +
+      (dlf.err === "offline"
+        ? "Offline: photos show again when you're back online."
+        : dlf.err
+          ? "Couldn't load photos: " + esc(dlf.err)
+          : "Each button shows the photos in its own cloud folder.") +
+      '</span><button data-dlf="refresh">Refresh</button>' +
+      (isMgr() ? '<button data-dlf="files">Upload photos</button><button data-dlf="dir">Upload a folder</button>' : "");
   }
-  $("dlFolder").addEventListener("click", async function (e) {
+  // Which button a picked folder belongs to: the folder itself, or its parent (delivery-locations).
+  function dlfAreaFor(parts) {
+    var byKey = function (n) {
+      return dl.areas.filter(function (x) {
+        return dlfKey(x.name) === dlfKey(n);
+      })[0];
+    };
+    if (byKey(parts[0])) return { a: byKey(parts[0]), rest: parts.slice(1) };
+    if (parts.length > 2 && byKey(parts[1])) return { a: byKey(parts[1]), rest: parts.slice(2) };
+    var open = findArea(dlOpen);
+    return open ? { a: open, rest: parts.slice(1) } : null;
+  }
+  $("dlFolder").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
-    var act = b.dataset.dlf;
-    if (act === "pick") {
-      var h;
-      try {
-        h = await window.showDirectoryPicker({ id: "wh-photo-folder", mode: "read" });
-      } catch (x) {
-        if (x && x.name !== "AbortError") toast("The folder could not be opened.");
+    var act = b.dataset.dlf,
+      open = findArea(dlOpen);
+    if (act === "refresh") {
+      dlf.at = {};
+      if (open) dlfScan(open, true);
+      else renderMap();
+      return;
+    }
+    if (!isMgr()) return;
+    if (act === "files") {
+      if (!open) {
+        toast("Open a button first, then upload its photos.");
         return;
       }
-      try {
-        await tpTx(
-          "readwrite",
-          function (os) {
-            return os.put({ id: "photoFolder", h: h });
-          },
-          "handles"
-        );
-      } catch (x) {}
-      dlf.handle = h;
-      dlf.state = "ok";
-      dlf.cache = {};
-      dlf.missing = {};
-    } else if (act === "reconnect") {
-      var p = "denied";
-      try {
-        p = await dlf.handle.requestPermission({ mode: "read" });
-      } catch (x) {}
-      if (p !== "granted") {
-        toast("The browser was not allowed to read the folder.");
-        return;
-      }
-      dlf.state = "ok";
-    } else if (act === "refresh") {
-      dlf.state = "ok";
-    } else if (act === "unlink") {
-      if (!confirm("Unlink the photo folder? The photos stay in the folder; they just stop showing here."))
-        return;
-      try {
-        await tpTx(
-          "readwrite",
-          function (os) {
-            return os.delete("photoFolder");
-          },
-          "handles"
-        );
-      } catch (x) {}
-      Object.keys(dlf.cache).forEach(function (k) {
-        dlf.cache[k].forEach(function (l) {
-          l.pics.forEach(function (u) {
-            URL.revokeObjectURL(u);
+      pickFiles("image/*", false, async function (files) {
+        var jobs = files
+          .filter(function (f) {
+            return DLF_IMG.test(f.name);
+          })
+          .map(function (f) {
+            return { path: dlfFolderName(open.name) + "/" + f.name, file: f };
+          });
+        if (!jobs.length) return toast("No photos were picked.");
+        await sbUploadAll("delivery-photos", jobs, "photo");
+        dlfScan(open, true);
+      });
+    } else if (act === "dir") {
+      pickFiles("", true, async function (files) {
+        var jobs = [],
+          skipped = 0;
+        files.forEach(function (f) {
+          if (!DLF_IMG.test(f.name)) return;
+          var hit = dlfAreaFor(f.webkitRelativePath.split("/"));
+          if (!hit) return skipped++;
+          var r = hit.rest; // [photo] or [sub folder, ..., photo]: keep one sub folder level
+          jobs.push({
+            path: dlfFolderName(hit.a.name) + "/" + (r.length > 1 ? r[0].trim() + "/" : "") + f.name,
+            file: f,
           });
         });
+        if (!jobs.length)
+          return toast(skipped ? "None of those folders match a button name." : "No photos were found in that folder.");
+        await sbUploadAll("delivery-photos", jobs, "photo");
+        dlf.at = {};
+        if (findArea(dlOpen)) dlfScan(findArea(dlOpen), true);
       });
-      dlf.handle = null;
-      dlf.state = "none";
-      dlf.cache = {};
-      dlf.missing = {};
     }
-    renderMap();
-    if (dlOpen) dlfScan(findArea(dlOpen));
-  });
-  window.addEventListener("focus", function () {
-    if (!$("mapPanel").hidden && dlOpen) dlfScan(findArea(dlOpen));
   });
 
   function openArea(id) {
@@ -2841,13 +2804,6 @@
     renderContacts();
     toast("Saved “" + name + "”.");
   });
-  var OWNER = {
-    email: "wmashburn@uss.com",
-    name: "Owner",
-    role: "owner",
-    salt: "df2f9190b1df86b9333cda8f34b31f19",
-    hash: "9be727971f68b20d4f2aa9686ef3315e17ba666cd557b0e3616df599759d0b37",
-  };
   var PERMS = [
     ["qty", "Add or edit quantities"],
     ["tabs", "Add or remove master/sub tabs"],
@@ -2876,7 +2832,7 @@
       "See every delivery (EWO) created on a chosen day, grouped by the person who made it.",
       "Upload PDF forms to keep as guides and use as inspection sheet templates.",
       "See who added, removed or moved stock on a chosen day, with a 7-day view per person.",
-      "Finished inspection sheets, plus every PDF in your linked inspections folder.",
+      "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
       "Charts and trends for your inventory. Coming soon.",
     ],
     MGICONS = [
@@ -2887,23 +2843,24 @@
       '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>',
       '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
     ];
+  // Signed-in person (cloud account). Kept on the device so people stay signed in.
   try {
-    sess = JSON.parse(sessionStorage.getItem("wh-session") || "null");
+    sess = JSON.parse(localStorage.getItem("wh-session") || "null");
   } catch (e) {}
   function setSess(s) {
     sess = s;
     try {
-      if (s) sessionStorage.setItem("wh-session", JSON.stringify(s));
-      else sessionStorage.removeItem("wh-session");
+      if (s) localStorage.setItem("wh-session", JSON.stringify(s));
+      else localStorage.removeItem("wh-session");
     } catch (e) {}
   }
+  // The person's cloud profile; falls back to the session copy until profiles have loaded.
   function curRec() {
     if (!sess) return null;
-    if (sess.email === OWNER.email) return OWNER;
     return (
       st.users.find(function (u) {
         return u.email === sess.email;
-      }) || null
+      }) || { id: sess.uid, email: sess.email, name: sess.name, role: sess.role, perms: sess.perms }
     );
   }
   function myRole() {
@@ -2941,9 +2898,9 @@
   }
   function renderAuth() {
     var r = curRec();
-    if (sess && !r) setSess(null);
-    else if (r && sess.role !== r.role) {
+    if (r && (sess.role !== r.role || JSON.stringify(sess.perms) !== JSON.stringify(r.perms))) {
       sess.role = r.role;
+      sess.perms = r.perms;
       setSess(sess);
     }
     $("whoami").textContent = "";
@@ -2969,6 +2926,7 @@
       dark: !profOf(sess.email).dark,
     });
     save();
+    cloudSavePrefs();
     root.classList.add("dm-fade");
     this.classList.add("moved");
     applyDark();
@@ -3087,57 +3045,12 @@
       pic: pfPic,
     });
     save();
+    cloudSavePrefs();
     updateProfileBtn();
     renderLogin();
     toast("Profile saved.");
   });
 
-  function fromHex(h) {
-    var a = new Uint8Array(h.length / 2),
-      i;
-    for (i = 0; i < a.length; i++) a[i] = parseInt(h.substr(i * 2, 2), 16);
-    return a;
-  }
-  function hexOf(buf) {
-    return [].map
-      .call(new Uint8Array(buf), function (b) {
-        return ("0" + b.toString(16)).slice(-2);
-      })
-      .join("");
-  }
-  function randHex(n) {
-    var a = new Uint8Array(n);
-    crypto.getRandomValues(a);
-    return hexOf(a);
-  }
-  async function hashPw(pw, saltHex) {
-    var key = await crypto.subtle.importKey("raw", new TextEncoder().encode(pw), "PBKDF2", false, [
-      "deriveBits",
-    ]);
-    var bits = await crypto.subtle.deriveBits(
-      { name: "PBKDF2", salt: fromHex(saltHex), iterations: 150000, hash: "SHA-256" },
-      key,
-      256
-    );
-    return hexOf(bits);
-  }
-  function canHash() {
-    return !!(window.crypto && crypto.subtle && crypto.getRandomValues);
-  }
-  async function checkLogin(email, pw) {
-    var em = email.trim().toLowerCase();
-    var rec =
-      em === OWNER.email
-        ? OWNER
-        : st.users.find(function (u) {
-            return u.email === em;
-          });
-    if (!rec) return null;
-    var h = await hashPw(pw, rec.salt);
-    return h === rec.hash
-      ? { email: rec.email, name: rec.name || rec.email, role: rec.role || "user" }
-      : null;
-  }
   function renderLogin() {
     document.documentElement.style.setProperty("--tab", "#f5b335");
     var b = $("lgBody"),
@@ -3183,31 +3096,32 @@
   $("lgBody").addEventListener("submit", async function (e) {
     e.preventDefault();
     var f = e.target.elements,
-      err = $("lgErr");
-    if (!canHash()) {
-      err.textContent = "This browser cannot run the sign-in check from a file.";
-      return;
-    }
-    err.textContent = "Checking…";
-    var u = null;
+      err = $("lgErr"),
+      btn = e.target.querySelector("button");
+    err.textContent = "Signing in…";
+    btn.disabled = true;
     try {
-      u = await checkLogin(f.em.value, f.pw.value);
-    } catch (x) {}
-    if (!u) {
-      err.textContent = "Incorrect email or password.";
+      await cloudSignIn(f.em.value.trim().toLowerCase(), f.pw.value);
+    } catch (x) {
+      btn.disabled = false;
+      err.textContent =
+        x.code === "invalid_credentials"
+          ? "Incorrect email or password."
+          : navigator.onLine === false || x instanceof TypeError
+            ? "No internet connection. Signing in needs a connection the first time."
+            : "Couldn't sign in: " + x.message;
       f.pw.value = "";
       f.pw.focus();
       return;
     }
-    setSess(u);
     render();
-    toast("Signed in as " + u.email + ".");
+    toast("Signed in as " + sess.email + ".");
   });
   $("lgBody").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
     if (b.id === "lgOut") {
-      setSess(null);
+      cloudSignOut();
       render();
       toast("Signed out.");
     } else if (b.id === "lgProfile") openProfile();
@@ -3247,7 +3161,7 @@
     var ok = isMgr();
     $("mgGate").hidden = ok;
     $("mgBody").hidden = !ok;
-    $("mgN").textContent = ok ? st.users.length + 1 : "–";
+    $("mgN").textContent = ok ? st.users.length : "–";
     if (!ok) return;
     var nav = $("mgNav");
     if (nav.children.length !== MGOPTS.length)
@@ -3274,7 +3188,10 @@
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
     if (!$("mgDay").value) $("mgDay").value = dayOf(Date.now());
-    if (mgOpt === 1) renderManifests();
+    if (mgOpt === 1) {
+      renderManifests();
+      cloudSync();
+    }
     if (mgOpt === 2) renderTemplates();
     if (mgOpt === 3) renderMaterial();
     if (mgOpt === 4) {
@@ -3283,6 +3200,7 @@
       if (fdState === "ok") fdScan();
     }
     if (mgOpt !== 0) return;
+    renderCloudCard();
     [].forEach.call($("mgTabs").children, function (b) {
       b.classList.toggle("on", b.dataset.mg === mgTab);
     });
@@ -3310,17 +3228,6 @@
       return visibleP(u.email);
     });
     $("mgRows").innerHTML =
-      (visibleP(OWNER.email)
-        ? '<tr class="' +
-          (isHid(OWNER.email) ? "hid" : "") +
-          '"><td class="cname">' +
-          esc(OWNER.name) +
-          "</td><td>" +
-          esc(OWNER.email) +
-          '</td><td><span class="pill role-owner">Owner</span></td><td>Built in</td><td class="act">' +
-          hideBtn(OWNER.email) +
-          "</td></tr>"
-        : "") +
       list
         .map(function (u) {
           var acts =
@@ -3360,21 +3267,6 @@
         return '<th class="pc">' + esc(k[1]) + "</th>";
       }).join("") +
       "</tr></thead><tbody>" +
-      (visibleP(OWNER.email)
-        ? '<tr class="' +
-          (isHid(OWNER.email) ? "hid" : "") +
-          '"><td class="cname">' +
-          esc(OWNER.name) +
-          "<small>" +
-          esc(OWNER.email) +
-          " · Owner</small>" +
-          hideBtn(OWNER.email) +
-          "</td>" +
-          PERMS.map(function () {
-            return '<td class="pc"><input type="checkbox" checked disabled aria-label="Owner has this permission"></td>';
-          }).join("") +
-          "</tr>"
-        : "") +
       list
         .map(function (u) {
           var p = permsOf(u),
@@ -3500,7 +3392,7 @@
     });
   }
   function allPeopleOld() {
-    return [{ email: OWNER.email, name: OWNER.name, role: "owner" }].concat(
+    return [].concat(
       sortedUsers().map(function (u) {
         return { email: u.email, name: u.name || u.email, role: u.role };
       })
@@ -3743,6 +3635,10 @@
     var p = permsOf(u);
     p[c.dataset.p] = c.checked;
     u.perms = p;
+    cloudPatchProfile(u.id, { perms: p }).catch(function () {
+      toast("That change didn't reach the cloud. Check the connection and try again.");
+      cloudPullProfiles();
+    });
     audit(
       "User management",
       (c.checked ? "Gave “" : "Removed “") +
@@ -3784,13 +3680,19 @@
     if (b.dataset.rm) {
       if (!confirm("Remove " + (u.name || u.email) + "? They will no longer be able to sign in."))
         return;
-      audit("User management", "Removed user " + (u.name || u.email));
-      st.users = st.users.filter(function (x) {
-        return x.id !== u.id;
-      });
-      save();
-      renderManage();
-      toast("User removed.");
+      cloudAdmin({ action: "delete", id: u.id })
+        .then(function () {
+          audit("User management", "Removed user " + (u.name || u.email));
+          st.users = st.users.filter(function (x) {
+            return x.id !== u.id;
+          });
+          save();
+          renderManage();
+          toast("User removed.");
+        })
+        .catch(function (x) {
+          toast(x.message);
+        });
     } else openUser(u);
   });
   function openUser(u) {
@@ -3831,34 +3733,21 @@
       msg.textContent = "Enter a valid email address.";
       return;
     }
-    if (
-      em === OWNER.email ||
-      st.users.some(function (x) {
-        return x.id !== u.id && x.email === em;
-      })
-    ) {
-      msg.textContent = "A user with that email already exists.";
-      return;
-    }
     if (pw && pw.length < 8) {
       msg.textContent = "The new password must be at least 8 characters.";
       return;
     }
-    if (pw && !canHash()) {
-      msg.textContent = "This browser cannot create passwords from a file.";
-      return;
-    }
     var role = isOwner() ? (f.role.value === "admin" ? "admin" : "user") : u.role;
-    if (pw) {
-      u.salt = randHex(16);
-      u.hash = await hashPw(pw, u.salt);
-    }
-    if (role !== u.role) {
-      u.perms = permsOf(u);
-      u.role = role;
+    msg.textContent = "Saving…";
+    try {
+      await cloudAdmin({ action: "update", id: u.id, name: f.nm.value.trim(), email: em, password: pw || undefined, role: role });
+    } catch (x) {
+      msg.textContent = x.message;
+      return;
     }
     u.name = f.nm.value.trim();
     u.email = em;
+    u.role = role;
     audit("User management", "Edited user " + (u.name || u.email));
     save();
     $("userDlg").close();
@@ -3874,21 +3763,8 @@
       pw = f.pw.value;
     msg.className = "mgmsg";
     var role = f.role.value === "admin" && isOwner() ? "admin" : "user";
-    if (!canHash()) {
-      msg.textContent = "This browser cannot create passwords from a file.";
-      return;
-    }
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(em)) {
       msg.textContent = "Enter a valid email address.";
-      return;
-    }
-    if (
-      em === OWNER.email ||
-      st.users.some(function (u) {
-        return u.email === em;
-      })
-    ) {
-      msg.textContent = "A user with that email already exists.";
       return;
     }
     if (pw.length < 8) {
@@ -3906,18 +3782,14 @@
     [].forEach.call(this.querySelectorAll("input[name=np]"), function (c) {
       if (c.checked) perms[c.value] = true;
     });
-    var salt = randHex(16),
-      hash = await hashPw(pw, salt);
-    st.users.push({
-      id: "u" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5),
-      name: f.nm.value.trim(),
-      email: em,
-      role: role,
-      perms: perms,
-      salt: salt,
-      hash: hash,
-      created: Date.now(),
-    });
+    msg.textContent = "Adding…";
+    try {
+      await cloudAdmin({ action: "create", email: em, password: pw, name: f.nm.value.trim(), role: role, perms: perms });
+    } catch (x) {
+      msg.textContent = x.message;
+      return;
+    }
+    await cloudPullProfiles().catch(function () {});
     audit("User management", "Added " + ROLE_LABEL[role] + " " + em);
     save();
     this.reset();
@@ -3974,7 +3846,6 @@
     return r && r.blob;
   }
   function whoName(em) {
-    if (em === OWNER.email) return OWNER.name;
     var u = st.users.find(function (x) {
       return x.email === em;
     });
@@ -5966,149 +5837,63 @@
   }
 
   /* =====================================================================
-     Manage: PDF folder (Inspections & Deliveries)
-     A folder on this computer is linked once with the browser's folder picker (Chrome / Edge).
-     Every PDF inside it, sub-folders included, is listed here and the list refreshes on its own
-     while this page is open. The folder link is kept in IndexedDB ("handles" store); the PDFs
-     themselves are never copied into the browser.
+     Manage: inspection PDFs in cloud storage (Inspections & Deliveries)
+     Bucket "inspection-pdfs": PDFs at the top level or one sub folder deep. Everyone signed in
+     sees them; owner/admins upload single PDFs or a whole folder.
      ===================================================================== */
-  var fdHandle = null,
-    fdState = "loading", // loading | unsupported | none | prompt | ok | gone
+  var fdState = "ok",
     fdFiles = [],
-    fdSig = "",
-    fdBusy = false,
     fdErr = "";
-  function fdSupported() {
-    return typeof window.showDirectoryPicker === "function";
-  }
   function fdShowing() {
-    return (
-      !$("managePanel").hidden &&
-      !$("mgBody").hidden &&
-      !$("mgOpt4").hidden &&
-      document.visibilityState === "visible"
-    );
-  }
-  async function fdInit() {
-    if (!fdSupported()) {
-      fdState = "unsupported";
-      return fdRender();
-    }
-    var row = null;
-    try {
-      row = await tpTx(
-        "readonly",
-        function (os) {
-          return os.get("pdfFolder");
-        },
-        "handles"
-      );
-    } catch (x) {}
-    if (!row || !row.h) {
-      fdState = "none";
-      return fdRender();
-    }
-    fdHandle = row.h;
-    var p = "prompt";
-    try {
-      p = await fdHandle.queryPermission({ mode: "read" });
-    } catch (x) {}
-    fdState = p === "granted" ? "ok" : "prompt";
-    fdRender();
-    if (fdState === "ok") fdScan();
-  }
-  async function fdWalk(dir, prefix, depth, out) {
-    for await (var entry of dir.values()) {
-      if (entry.kind === "file" && /\.pdf$/i.test(entry.name)) {
-        var f = await entry.getFile();
-        out.push({
-          name: entry.name,
-          folder: prefix,
-          size: f.size,
-          mod: f.lastModified,
-          h: entry,
-        });
-      } else if (entry.kind === "directory" && depth < 6) {
-        await fdWalk(entry, prefix ? prefix + " / " + entry.name : entry.name, depth + 1, out);
-      }
-    }
+    return !$("managePanel").hidden && !$("mgBody").hidden && !$("mgOpt4").hidden && document.visibilityState === "visible";
   }
   async function fdScan() {
-    if (fdBusy || !fdHandle) return;
-    fdBusy = true;
-    var list = [],
-      state = "ok";
+    if (!cloudOn()) return fdRender();
     try {
-      await fdWalk(fdHandle, "", 0, list);
-    } catch (e) {
-      state = e && e.name === "NotAllowedError" ? "prompt" : "gone";
-      fdErr = (e && e.message) || "";
-    }
-    fdBusy = false;
-    list.sort(function (a, b) {
-      return b.mod - a.mod || a.name.localeCompare(b.name);
-    });
-    var sig =
-      state +
-      "|" +
-      list
-        .map(function (f) {
-          return f.folder + "/" + f.name + ":" + f.size + ":" + f.mod;
+      var list = [],
+        top = await sbList("inspection-pdfs", "");
+      for (var i = 0; i < top.length; i++) {
+        var t = top[i];
+        if (!t.id) {
+          (await sbList("inspection-pdfs", t.name + "/")).forEach(function (f) {
+            if (f.id && /\.pdf$/i.test(f.name)) list.push({ name: f.name, folder: t.name, path: t.name + "/" + f.name, f: f });
+          });
+        } else if (/\.pdf$/i.test(t.name)) list.push({ name: t.name, folder: "", path: t.name, f: t });
+      }
+      fdFiles = list
+        .map(function (x) {
+          var md = x.f.metadata || {};
+          return { name: x.name, folder: x.folder, path: x.path, size: md.size || 0, mod: Date.parse(md.lastModified || x.f.updated_at || x.f.created_at) || 0 };
         })
-        .join("|");
-    fdFiles = state === "ok" ? list : [];
-    if (sig !== fdSig || state !== fdState) {
-      fdSig = sig;
-      fdState = state;
-      fdRender();
+        .sort(function (a, b) {
+          return b.mod - a.mod || a.name.localeCompare(b.name);
+        });
+      fdErr = "";
+    } catch (x) {
+      fdErr = x instanceof TypeError ? "offline" : x.message;
     }
+    fdRender();
   }
   function fdRender() {
     var box = $("mgFolder");
     if (!box) return;
-    var nm = fdHandle ? esc(fdHandle.name) : "",
-      h = '<h3 class="fdsec">PDF folder</h3>';
-    if (fdState === "loading") {
-      box.innerHTML = h + '<p class="fdnote">Checking the PDF folder…</p>';
-      return;
-    }
-    if (fdState === "unsupported") {
-      box.innerHTML =
-        h +
-        '<p class="fdnote">Linking a folder needs Google Chrome or Microsoft Edge. Open this app in one of those browsers to see the PDFs in the folder here.</p>';
-      return;
-    }
-    if (fdState === "none") {
-      box.innerHTML =
-        h +
-        '<div class="tpbar"><button class="primary" data-fd="pick">Choose PDF folder</button><span class="m">Pick a folder once (for example the <b>inspections-deliveries</b> folder next to this app). Any PDF dropped into it will show up here.</span></div>';
-      return;
-    }
-    if (fdState === "prompt") {
-      box.innerHTML =
-        h +
-        '<div class="tpbar"><button class="primary" data-fd="reconnect">Open folder “' +
-        nm +
-        '”</button><button data-fd="pick">Choose a different folder</button><span class="m">The browser needs your OK again to read this folder.</span></div>';
+    var h = '<h3 class="fdsec">Cloud PDFs</h3>';
+    if (!cloudOn()) {
+      box.innerHTML = h + '<p class="fdnote">Sign in to see the inspection PDFs stored in the cloud.</p>';
       return;
     }
     var bar =
-      '<div class="tpbar"><span class="fdname"><b>' +
-      nm +
-      '</b></span><span class="m">' +
-      (fdState === "gone"
-        ? "This folder can no longer be read. It may have been moved, renamed or deleted."
-        : fdFiles.length +
-          (fdFiles.length === 1 ? " PDF" : " PDFs") +
-          ". New PDFs dropped into the folder appear automatically.") +
-      '</span><span class="sp"></span><button data-fd="refresh">Refresh</button><button data-fd="pick">Change folder</button><button data-fd="unlink">Unlink</button></div>';
-    if (fdState === "gone" || !fdFiles.length) {
-      box.innerHTML =
-        h +
-        bar +
-        (fdState === "gone"
-          ? ""
-          : '<div class="empty" style="padding:22px 0">No PDFs in this folder yet. Drop a PDF into it and it will appear here.</div>');
+      '<div class="tpbar"><span class="m">' +
+      (fdErr === "offline"
+        ? "Offline: the list shows again when you're back online."
+        : fdErr
+          ? "Couldn't load the PDFs: " + esc(fdErr)
+          : fdFiles.length + (fdFiles.length === 1 ? " PDF" : " PDFs") + " in the cloud.") +
+      '</span><span class="sp"></span><button data-fd="refresh">Refresh</button>' +
+      (isMgr() ? '<button data-fd="files">Upload PDFs</button><button data-fd="dir">Upload a folder</button>' : "") +
+      "</div>";
+    if (!fdFiles.length) {
+      box.innerHTML = h + bar + (fdErr ? "" : '<div class="empty" style="padding:22px 0">No PDFs yet.' + (isMgr() ? " Upload some above." : "") + "</div>");
       return;
     }
     var anySub = fdFiles.some(function (f) {
@@ -6130,13 +5915,9 @@
             '<td class="ph">' +
             fmtSize(f.size) +
             "</td><td>" +
-            new Date(f.mod).toLocaleString([], {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
-              hour: "numeric",
-              minute: "2-digit",
-            }) +
+            (f.mod
+              ? new Date(f.mod).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" })
+              : "–") +
             '</td><td class="act"><button data-fv="' +
             i +
             '">View</button><button data-fdl="' +
@@ -6147,123 +5928,59 @@
         .join("") +
       "</tbody></table></div>";
   }
-  async function fdPick() {
-    var h;
-    try {
-      h = await window.showDirectoryPicker({ id: "wh-pdf-folder", mode: "read" });
-    } catch (e) {
-      if (e && e.name !== "AbortError") toast("The folder could not be opened.");
-      return;
-    }
-    try {
-      await tpTx(
-        "readwrite",
-        function (os) {
-          return os.put({ id: "pdfFolder", h: h });
-        },
-        "handles"
-      );
-    } catch (x) {
-      toast("The folder is linked for now, but the browser could not remember it.");
-    }
-    fdHandle = h;
-    fdState = "ok";
-    fdSig = "";
-    audit("Inspections", "Linked the PDF folder “" + h.name + "”");
-    save();
-    fdRender();
-    fdScan();
-  }
-  /* If index.html is an older copy without the folder markup, skip this feature instead of
-     stopping the whole app. */
-  if ($("mgFolder")) $("mgFolder").addEventListener("click", async function (e) {
-    var b = e.target.closest("button");
-    if (!b) return;
-    var act = b.dataset.fd;
-    if (act === "pick") return fdPick();
-    if (act === "refresh") {
-      fdSig = "";
-      if (fdState === "gone") fdState = "ok";
-      return fdScan();
-    }
-    if (act === "reconnect") {
-      var p = "denied";
+  if ($("mgFolder"))
+    $("mgFolder").addEventListener("click", async function (e) {
+      var b = e.target.closest("button");
+      if (!b) return;
+      var act = b.dataset.fd;
+      if (act === "refresh") return fdScan();
+      if (act === "files" || act === "dir") {
+        if (!isMgr()) return;
+        return pickFiles(act === "files" ? "application/pdf,.pdf" : "", act === "dir", async function (files) {
+          var jobs = files
+            .filter(function (f) {
+              return /\.pdf$/i.test(f.name);
+            })
+            .map(function (f) {
+              var parts = (f.webkitRelativePath || f.name).split("/"),
+                sub = parts.length > 2 ? parts[parts.length - 2].trim() + "/" : ""; // keep the nearest sub folder
+              return { path: sub + f.name, file: f };
+            });
+          if (!jobs.length) return toast("No PDFs were found.");
+          await sbUploadAll("inspection-pdfs", jobs, "PDF");
+          fdScan();
+        });
+      }
+      var f = fdFiles[+(b.dataset.fv || b.dataset.fdl)];
+      if (!f) return;
+      var blob;
       try {
-        p = await fdHandle.requestPermission({ mode: "read" });
-      } catch (x) {}
-      if (p !== "granted") {
-        toast("The browser was not allowed to read the folder.");
+        blob = await sbDownload("inspection-pdfs", f.path);
+      } catch (x) {
+        toast("“" + f.name + "” could not be opened: " + x.message);
         return;
       }
-      fdState = "ok";
-      fdSig = "";
-      fdRender();
-      return fdScan();
-    }
-    if (act === "unlink") {
-      if (
-        !confirm(
-          "Unlink the folder “" +
-            fdHandle.name +
-            "”? Its PDFs stay in the folder, they just stop showing here."
-        )
-      )
+      var url = URL.createObjectURL(new Blob([blob], { type: "application/pdf" })),
+        base = f.name.replace(/\.pdf$/i, "");
+      if (b.dataset.fdl) {
+        var a = document.createElement("a");
+        a.href = url;
+        a.download = f.name;
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(function () {
+          URL.revokeObjectURL(url);
+        }, 4000);
         return;
-      try {
-        await tpTx(
-          "readwrite",
-          function (os) {
-            return os.delete("pdfFolder");
-          },
-          "handles"
-        );
-      } catch (x) {}
-      audit("Inspections", "Unlinked the PDF folder “" + fdHandle.name + "”");
-      save();
-      fdHandle = null;
-      fdFiles = [];
-      fdSig = "";
-      fdState = "none";
-      return fdRender();
-    }
-    var f = fdFiles[+(b.dataset.fv || b.dataset.fdl)];
-    if (!f) return;
-    var file;
-    try {
-      file = await f.h.getFile();
-    } catch (x) {
-      toast("“" + f.name + "” could not be read. It may have been moved or deleted.");
-      fdScan();
-      return;
-    }
-    var url = URL.createObjectURL(new Blob([file], { type: "application/pdf" })),
-      base = f.name.replace(/\.pdf$/i, "");
-    if (b.dataset.fdl) {
-      var a = document.createElement("a");
-      a.href = url;
-      a.download = f.name;
-      document.body.appendChild(a);
-      a.click();
-      a.remove();
-      setTimeout(function () {
-        URL.revokeObjectURL(url);
-      }, 4000);
-      return;
-    }
-    pdfClean();
-    pdfUrl = url;
-    pdfName = base;
-    $("pdfTitle").textContent = base;
-    $("pdfFrame").src = url;
-    $("pdfDlg").showModal();
-  });
-  setInterval(function () {
-    if (fdState === "ok" && fdShowing()) fdScan();
-  }, 4000);
-  window.addEventListener("focus", function () {
-    if (fdState === "ok" && fdShowing()) fdScan();
-  });
-  fdInit();
+      }
+      pdfClean();
+      pdfUrl = url;
+      pdfName = base;
+      $("pdfTitle").textContent = base;
+      $("pdfFrame").src = url;
+      $("pdfDlg").showModal();
+    });
 
   function shClean() {
     shUrls.forEach(function (u) {
@@ -6492,6 +6209,7 @@
     var e = { ts: Date.now(), id: it.id, n: it.n, d: it.d, u: it.u || "", l: it.l, a: a, q: q };
     if (x) for (var k in x) e[k] = x[k];
     e.by = curEmail();
+    e.k = nid("q"); // stable id so the log can sync between devices
     st.log.push(e);
     if (!(e.note && e.note.indexOf("EWO") === 0)) {
       var what = e.n + " " + String(e.d).slice(0, 60);
@@ -6524,7 +6242,7 @@
      ===================================================================== */
   function audit(cat, text) {
     if (!st.audit) st.audit = [];
-    st.audit.push({ ts: Date.now(), by: curEmail(), cat: cat, text: text });
+    st.audit.push({ ts: Date.now(), by: curEmail(), cat: cat, text: text, k: nid("a") });
     if (st.audit.length > 2000) st.audit = st.audit.slice(-2000);
   }
   function summaryData(day) {
@@ -6747,6 +6465,661 @@
   $("sumDate").value = dayOf(Date.now());
 
   /* =====================================================================
+     Cloud (Supabase): sign-in, people, shared data, delivery trips, files
+     - One cloud login (email + password) for the whole app, kept on the device.
+     - Everything saves on the device first, then syncs, so it works with no signal.
+     - A device's first sign-in downloads from the cloud and never overwrites it;
+       the owner moves existing data up once with "Upload this device's data" (Manage).
+     - Who may read or change what is enforced by Supabase (see supabase/setup.sql).
+     - Talks to Supabase's web API with fetch (no extra library).
+     ===================================================================== */
+  // Publishable key: designed to be public in website code; the database rules protect the data.
+  var SB_URL = "https://mkovvhsceckubkdxuemi.supabase.co",
+    SB_KEY = "sb_publishable_5MhVb61wtbO1Dcq-SZ-9dA_2WWpGd27",
+    cloudT = null,
+    cloudBusy = false,
+    cloudAgain = false,
+    cloudLastPull = 0,
+    cloudErr = "",
+    cloudLastOk = 0;
+  function authGet() {
+    try {
+      return JSON.parse(localStorage.getItem("wh-auth") || "null");
+    } catch (x) {
+      return null;
+    }
+  }
+  function authKeep(a) {
+    try {
+      if (a) localStorage.setItem("wh-auth", JSON.stringify(a));
+      else localStorage.removeItem("wh-auth");
+    } catch (x) {}
+  }
+  // The previous version kept a separate cloud sign-in per app user; adopt it so nobody signs in twice.
+  (function () {
+    try {
+      var k = Object.keys(localStorage).filter(function (x) {
+        return x.indexOf("wh-cloud:") === 0;
+      })[0];
+      if (k && !authGet()) authKeep(JSON.parse(localStorage.getItem(k)));
+      if (k) localStorage.removeItem(k);
+    } catch (x) {}
+  })();
+  function cloudOn() {
+    return !!authGet();
+  }
+  async function sbAuth(grant, body) {
+    var r = await fetch(SB_URL + "/auth/v1/token?grant_type=" + grant, {
+        method: "POST",
+        headers: { apikey: SB_KEY, "Content-Type": "application/json" },
+        body: JSON.stringify(body),
+      }),
+      j = await r.json().catch(function () {
+        return {};
+      });
+    if (!r.ok) {
+      var e = new Error(j.error_description || j.msg || j.message || "Sign-in failed");
+      e.code = j.error_code || j.error || r.status;
+      throw e;
+    }
+    return {
+      access_token: j.access_token,
+      refresh_token: j.refresh_token,
+      expires_at: Date.now() + (j.expires_in || 3600) * 1000,
+      email: (j.user && j.user.email) || body.email || "",
+      uid: j.user && j.user.id,
+    };
+  }
+  // A valid access token, renewed shortly before it expires. A sign-in that can no longer be
+  // renewed (account removed or signed out elsewhere) signs this device out.
+  async function sbToken() {
+    var a = authGet();
+    if (!a) return null;
+    if (Date.now() < a.expires_at - 60000) return a.access_token;
+    try {
+      var n = await sbAuth("refresh_token", { refresh_token: a.refresh_token });
+      authKeep(n);
+      return n.access_token;
+    } catch (e) {
+      if (!(e instanceof TypeError) && e.code !== 500 && navigator.onLine !== false) {
+        cloudSignOut();
+        toast("Please sign in again.");
+        render();
+      }
+      throw e;
+    }
+  }
+  async function sbFetch(path, opt) {
+    var tok = await sbToken();
+    if (!tok) throw new Error("Not signed in");
+    opt = opt || {};
+    var h = Object.assign({ apikey: SB_KEY, Authorization: "Bearer " + tok }, opt.headers || {}),
+      body = opt.body;
+    if (body !== undefined && !(body instanceof Blob)) {
+      body = JSON.stringify(body);
+      h["Content-Type"] = "application/json";
+    }
+    var r = await fetch(SB_URL + path, { method: opt.method || "GET", headers: h, body: body });
+    if (!r.ok) {
+      var t = await r.text().catch(function () {
+          return "";
+        }),
+        msg = "";
+      try {
+        var j = JSON.parse(t);
+        msg = j.error || j.message || j.msg || "";
+      } catch (x) {}
+      var e = new Error(msg || "Cloud error " + r.status);
+      e.status = r.status;
+      throw e;
+    }
+    if (opt.blob) return r.blob();
+    return r.status === 204
+      ? null
+      : r.json().catch(function () {
+          return null;
+        });
+  }
+  function sbRest(path, opt) {
+    return sbFetch("/rest/v1/" + path, opt);
+  }
+  // Add / edit / remove people (server function; checks the caller's role itself).
+  function cloudAdmin(body) {
+    return sbFetch("/functions/v1/admin-users", { method: "POST", body: body });
+  }
+  function cloudPatchProfile(id, change) {
+    return sbRest("profiles?id=eq." + id, { method: "PATCH", headers: { Prefer: "return=minimal" }, body: change });
+  }
+
+  /* ---------- Sign in / out ---------- */
+  async function cloudSignIn(email, pw) {
+    var a = await sbAuth("password", { email: email, password: pw });
+    authKeep(a);
+    var me = (await sbRest("profiles?select=*&id=eq." + a.uid))[0];
+    if (!me) {
+      authKeep(null);
+      var e = new Error("This account isn't set up for the app yet. Ask the owner.");
+      throw e;
+    }
+    setSess({ uid: a.uid, email: me.email, name: me.name || me.email, role: me.role, perms: me.perms });
+    if (!snapGet()) snapAdopt(); // first sign-in here: download, don't overwrite the cloud
+    await cloudSync(true);
+  }
+  function cloudSignOut() {
+    var a = authGet();
+    if (a && Date.now() < a.expires_at)
+      fetch(SB_URL + "/auth/v1/logout", { method: "POST", headers: { apikey: SB_KEY, Authorization: "Bearer " + a.access_token } }).catch(function () {});
+    authKeep(null);
+    setSess(null);
+    st.manage = false;
+  }
+
+  /* ---------- People ---------- */
+  async function cloudPullProfiles() {
+    var rows = await sbRest("profiles?select=id,email,name,role,perms,prefs,created_at&order=name");
+    var mine = sess && localStorage.getItem("wh-prefs-dirty") ? profOf(sess.email) : null;
+    st.users = rows.map(function (r) {
+      return { id: r.id, email: r.email, name: r.name, role: r.role, perms: r.perms, created: Date.parse(r.created_at) };
+    });
+    st.profiles = {};
+    rows.forEach(function (r) {
+      st.profiles[r.email] = r.prefs || {};
+    });
+    if (mine) st.profiles[sess.email] = mine; // unsent changes on this device win
+    if (sess) {
+      var me = rows.filter(function (r) {
+        return r.id === sess.uid;
+      })[0];
+      if (!me) {
+        cloudSignOut();
+        toast("Your account was removed. Ask the owner if this is a mistake.");
+        return;
+      }
+      setSess(Object.assign(sess, { email: me.email, name: me.name || me.email, role: me.role, perms: me.perms }));
+    }
+  }
+  // Nickname, bio, photo and dark mode are saved on the person's profile.
+  function cloudSavePrefs() {
+    try {
+      localStorage.setItem("wh-prefs-dirty", "1");
+    } catch (x) {}
+    cloudSoon();
+  }
+
+  /* ---------- Shared data: quantities, contacts, EWOs, quantity log, activity ----------
+     Each record is a row in app_data (coll, key, val). The device remembers the last value it
+     synced per record ("snapshot"); records that differ are sent, everything newer is fetched. */
+  var COLLS = ["inventory", "contacts", "ewos", "qlog", "activity"],
+    APPEND = { qlog: 1, activity: 1 };
+  function logKey(e) {
+    return e.k || (e.k = "k" + e.ts + "-" + (e.id || e.by || "") + "-" + (e.a || e.cat || "") + "-" + (e.q || ""));
+  }
+  function localData(c) {
+    var o = {};
+    if (c === "inventory") {
+      Object.keys(st.edits).forEach(function (id) {
+        o[id] = { edit: st.edits[id] };
+      });
+      Object.keys(st.deleted).forEach(function (id) {
+        if (st.deleted[id]) o[id] = { del: 1 };
+      });
+      st.added.forEach(function (a) {
+        o[a.id] = { add: a };
+      });
+    } else if (c === "contacts")
+      st.contacts.forEach(function (x) {
+        o[x.id] = x;
+      });
+    else if (c === "ewos")
+      st.ewos.forEach(function (x) {
+        o[x.eid] = x;
+      });
+    else
+      (c === "qlog" ? st.log : st.audit).forEach(function (x) {
+        o[logKey(x)] = x;
+      });
+    return o;
+  }
+  function applyData(c, key, val) {
+    if (c === "inventory") {
+      if (key.charAt(0) === "a") {
+        st.added = st.added.filter(function (a) {
+          return a.id !== key;
+        });
+        if (val && val.add) st.added.push(val.add);
+      } else {
+        delete st.edits[key];
+        delete st.deleted[key];
+        if (val && val.del) st.deleted[key] = 1;
+        else if (val && val.edit) st.edits[key] = val.edit;
+      }
+    } else if (c === "contacts" || c === "ewos") {
+      var idk = c === "contacts" ? "id" : "eid",
+        arr = (c === "contacts" ? st.contacts : st.ewos).filter(function (x) {
+          return x[idk] !== key;
+        });
+      if (val) arr.push(val);
+      if (c === "ewos")
+        st.ewos = arr.sort(function (x, y) {
+          return x.ts - y.ts;
+        });
+      else st.contacts = arr;
+    } else {
+      var list = c === "qlog" ? st.log : st.audit;
+      if (
+        val &&
+        !list.some(function (x) {
+          return logKey(x) === key;
+        })
+      ) {
+        list.push(val);
+        list.sort(function (x, y) {
+          return x.ts - y.ts;
+        });
+      }
+    }
+  }
+  function snapKey() {
+    return "wh-sync:" + ((authGet() || {}).uid || "");
+  }
+  function snapGet() {
+    try {
+      return JSON.parse(localStorage.getItem(snapKey()) || "null");
+    } catch (x) {
+      return null;
+    }
+  }
+  function snapPut(s) {
+    try {
+      localStorage.setItem(snapKey(), JSON.stringify(s));
+    } catch (x) {} // storage full: records are simply re-sent next time
+  }
+  // Treat what is on this device as already synced, so it is never sent over newer cloud data.
+  function snapAdopt() {
+    var s = { _at: "" };
+    COLLS.forEach(function (c) {
+      var d = localData(c);
+      Object.keys(d).forEach(function (k) {
+        s[c + "|" + k] = JSON.stringify(d[k]);
+      });
+    });
+    snapPut(s);
+    return s;
+  }
+  async function cloudPushData(snap) {
+    for (var ci = 0; ci < COLLS.length; ci++) {
+      var c = COLLS[ci],
+        d = localData(c),
+        rows = [];
+      Object.keys(d).forEach(function (k) {
+        var j = JSON.stringify(d[k]);
+        if (snap[c + "|" + k] !== j) rows.push({ k: k, val: d[k], j: j });
+      });
+      if (!APPEND[c])
+        Object.keys(snap).forEach(function (sk) {
+          var k = sk.slice(c.length + 1);
+          if (sk.indexOf(c + "|") === 0 && snap[sk] !== "null" && !(k in d)) rows.push({ k: k, val: null, j: "null" });
+        });
+      for (var i = 0; i < rows.length; i += 200) {
+        var chunk = rows.slice(i, i + 200);
+        try {
+          await sbRest("app_data?on_conflict=coll,key", {
+            method: "POST",
+            headers: { Prefer: "resolution=" + (APPEND[c] ? "ignore" : "merge") + "-duplicates,return=minimal" },
+            body: chunk.map(function (r) {
+              return { coll: c, key: r.k, val: r.val };
+            }),
+          });
+        } catch (e) {
+          if (e.status !== 401 && e.status !== 403) throw e;
+          // Not allowed for this account: undo those changes here so the device matches the cloud.
+          chunk.forEach(function (r) {
+            var prev = snap[c + "|" + r.k];
+            applyData(c, r.k, prev ? JSON.parse(prev) : null);
+            r.j = prev || "null";
+          });
+          cloudErr = "Some changes weren't allowed for your account and were undone.";
+          rebuild();
+        }
+        chunk.forEach(function (r) {
+          snap[c + "|" + r.k] = r.j;
+        });
+        snapPut(snap);
+      }
+    }
+  }
+  async function cloudPullData(snap) {
+    var changed = false,
+      at = snap._at || "1970-01-01T00:00:00Z",
+      maxAt = at,
+      loc = {};
+    COLLS.forEach(function (c) {
+      loc[c] = localData(c);
+    });
+    for (var off = 0; ; off += 1000) {
+      // gte + offset: rows written in one batch share a timestamp, so none are skipped between pages.
+      var rows = await sbRest(
+        "app_data?select=coll,key,val,updated_at&updated_at=gte." + encodeURIComponent(at) + "&order=updated_at.asc,coll.asc,key.asc&limit=1000&offset=" + off
+      );
+      rows.forEach(function (r) {
+        var sk = r.coll + "|" + r.key,
+          cur = loc[r.coll] && loc[r.coll][r.key],
+          curJ = cur === undefined ? "null" : JSON.stringify(cur),
+          newJ = JSON.stringify(r.val);
+        if (r.updated_at > maxAt) maxAt = r.updated_at;
+        if (!APPEND[r.coll] && (snap[sk] || "null") !== curJ) return; // unsent local change wins
+        if (curJ !== newJ) {
+          applyData(r.coll, r.key, r.val);
+          loc[r.coll][r.key] = r.val;
+          changed = true;
+        }
+        snap[sk] = newJ;
+      });
+      if (rows.length < 1000) break;
+    }
+    snap._at = maxAt;
+    snapPut(snap);
+    return changed;
+  }
+
+  /* ---------- Delivery trips (public.manifests) ---------- */
+  function cloudData(m) {
+    var o = Object.assign({}, m);
+    delete o.syncedUpd;
+    return o;
+  }
+  function cloudDirty(m) {
+    return m.by === curEmail() && (!m.syncedUpd || m.syncedUpd < m.upd);
+  }
+  function cloudDels() {
+    try {
+      return JSON.parse(localStorage.getItem("wh-cloud-del:" + curEmail()) || "[]");
+    } catch (x) {
+      return [];
+    }
+  }
+  function cloudSetDels(a) {
+    try {
+      localStorage.setItem("wh-cloud-del:" + curEmail(), JSON.stringify(a));
+    } catch (x) {}
+  }
+  function cloudForget(id) {
+    cloudSetDels(cloudDels().concat([id]));
+    cloudSoon();
+  }
+  function cloudPending() {
+    var snap = snapGet() || {},
+      n = st.manifests.filter(cloudDirty).length + cloudDels().length;
+    COLLS.forEach(function (c) {
+      var d = localData(c);
+      Object.keys(d).forEach(function (k) {
+        if (snap[c + "|" + k] !== JSON.stringify(d[k])) n++;
+      });
+    });
+    return n;
+  }
+  async function cloudPushTrips() {
+    var dels = cloudDels();
+    for (var i = 0; i < dels.length; i++) await sbRest("manifests?id=eq." + encodeURIComponent(dels[i]), { method: "DELETE" });
+    if (dels.length) cloudSetDels([]);
+    var mine = st.manifests.filter(cloudDirty);
+    for (var k = 0; k < mine.length; k++) {
+      var m = mine[k],
+        upd = m.upd;
+      try {
+        await sbRest("manifests?on_conflict=id", {
+          method: "POST",
+          headers: { Prefer: "resolution=merge-duplicates,return=minimal" },
+          body: { id: m.id, data: cloudData(m), status: m.status, by_email: m.by },
+        });
+      } catch (e) {
+        // 403: the cloud copy is someone else's or already submitted, so it can't change; stop retrying.
+        if (e.status !== 403 && e.status !== 401) throw e;
+      }
+      m.syncedUpd = upd;
+    }
+  }
+  async function cloudPullTrips() {
+    var changed = false,
+      since = new Date(Date.now() - 45 * 864e5).toISOString(),
+      rows = await sbRest("manifests?select=id,data&updated_at=gte." + encodeURIComponent(since) + "&order=updated_at.asc"),
+      seen = {};
+    (rows || []).forEach(function (r) {
+      var d = r.data;
+      if (!d || !d.id) return;
+      seen[d.id] = 1;
+      var loc = dvFind(d.id);
+      if (!loc) {
+        d.syncedUpd = d.upd;
+        st.manifests.push(d);
+        changed = true;
+      } else if (!cloudDirty(loc) && (d.upd || 0) > (loc.upd || 0)) {
+        Object.keys(loc).forEach(function (k2) {
+          delete loc[k2];
+        });
+        Object.assign(loc, d, { syncedUpd: d.upd });
+        changed = true;
+      }
+    });
+    // Someone else's open trip that disappeared from the cloud was deleted on their device.
+    var before = st.manifests.length;
+    st.manifests = st.manifests.filter(function (m2) {
+      return m2.by === curEmail() || m2.status === "submitted" || !m2.syncedUpd || seen[m2.id] || Date.now() - m2.upd > 45 * 864e5;
+    });
+    return changed || st.manifests.length !== before;
+  }
+
+  /* ---------- Sync loop ---------- */
+  function cloudSoon() {
+    clearTimeout(cloudT);
+    cloudT = setTimeout(cloudSync, 700);
+  }
+  async function cloudSync(force) {
+    if (!sess || !cloudOn() || navigator.onLine === false) return;
+    if (cloudBusy) {
+      cloudAgain = true;
+      return;
+    }
+    cloudBusy = true;
+    var changed = false;
+    try {
+      if (localStorage.getItem("wh-prefs-dirty") && sess.uid) {
+        await cloudPatchProfile(sess.uid, { prefs: profOf(sess.email) });
+        localStorage.removeItem("wh-prefs-dirty");
+      }
+      var snap = snapGet() || snapAdopt();
+      cloudErr = "";
+      await cloudPushData(snap);
+      await cloudPushTrips();
+      if (force || Date.now() - cloudLastPull > 15000) {
+        await cloudPullProfiles();
+        if (await cloudPullData(snap)) changed = true;
+        if (await cloudPullTrips()) changed = true;
+        cloudLastPull = Date.now();
+      }
+      cloudLastOk = Date.now();
+    } catch (e) {
+      // A network failure (no signal) shows as "offline"; anything else as a sync problem.
+      cloudErr = navigator.onLine === false || e instanceof TypeError ? "offline" : String((e && e.message) || e);
+    } finally {
+      cloudBusy = false;
+    }
+    try {
+      localStorage.setItem(KEY, JSON.stringify(st)); // keep what was fetched (save() would queue another sync)
+    } catch (x) {}
+    if (changed) {
+      rebuild();
+      render();
+    } else {
+      if (!$("dvPanel").hidden) cloudStatusPaint();
+      if (!$("managePanel").hidden && mgOpt === 0) renderManage();
+    }
+    if (cloudAgain) {
+      cloudAgain = false;
+      cloudSoon();
+    }
+  }
+  function cloudStatusHtml() {
+    if (!sess) return "";
+    if (!cloudOn()) return '<div class="dvcloud off" id="dvCloud"><b>Not synced</b> · sign in again to share trips.</div>';
+    var p = cloudPending(),
+      t =
+        cloudErr === "offline"
+          ? "<b>Offline</b> · " + p + " change" + (p === 1 ? "" : "s") + " will sync when you're back online"
+          : cloudErr
+            ? "<b>Sync problem</b> · " + esc(cloudErr.slice(0, 90)) + (p ? " · " + p + " waiting" : "")
+            : p
+              ? "<b>Syncing…</b> " + p + " waiting"
+              : "<b>Synced</b>" + (cloudLastOk ? " · " + dvTime(cloudLastOk) : "");
+    return '<div class="dvcloud ' + (cloudErr ? "warn" : p ? "busy" : "ok") + '" id="dvCloud">' + t + "</div>";
+  }
+  function cloudStatusPaint() {
+    var el = $("dvCloud");
+    if (el) el.outerHTML = cloudStatusHtml();
+  }
+  window.addEventListener("online", function () {
+    cloudErr = "";
+    cloudSync(true);
+  });
+  window.addEventListener("focus", function () {
+    cloudSync();
+  });
+  // While the app is open, check for other devices' changes every 30 seconds.
+  setInterval(function () {
+    if (document.visibilityState === "visible") cloudSync(true);
+  }, 30000);
+
+  /* ---------- Owner: move this device's existing data up to the cloud (once) ---------- */
+  function cloudUploadCounts() {
+    return {
+      items: Object.keys(st.edits).length + Object.keys(st.deleted).length + st.added.length,
+      contacts: st.contacts.length,
+      ewos: st.ewos.length,
+      logs: st.log.length + st.audit.length,
+      trips: st.manifests.filter(function (m) {
+        return m.by === curEmail();
+      }).length,
+    };
+  }
+  function renderCloudCard() {
+    var box = $("mgCloud");
+    if (!box) return;
+    if (!isOwner() || !cloudOn() || localStorage.getItem("wh-uploaded:" + sess.uid)) {
+      box.innerHTML = "";
+      return;
+    }
+    var n = cloudUploadCounts();
+    box.innerHTML =
+      '<div class="mgcloud"><div><b>Move this device\'s data to the cloud</b><p>This device has ' +
+      n.items +
+      " item changes, " +
+      n.contacts +
+      " contacts, " +
+      n.ewos +
+      " EWOs, " +
+      n.logs +
+      " log entries and " +
+      n.trips +
+      " of your trips. Upload them once from the device that has your real data; other devices then download them. For photos and PDFs, use <b>Upload a folder</b> in Delivery Locations and in Inspections &amp; Deliveries.</p></div>" +
+      '<div class="mgcact"><button class="primary" data-cloudup="go">Upload this device\'s data</button><button data-cloudup="hide">Not this device</button></div></div>';
+  }
+  $("mgBody").addEventListener("click", async function (e) {
+    var b = e.target.closest("button[data-cloudup]");
+    if (!b) return;
+    if (b.dataset.cloudup === "hide") {
+      localStorage.setItem("wh-uploaded:" + sess.uid, "skipped");
+      renderCloudCard();
+      return;
+    }
+    var n = cloudUploadCounts();
+    if (
+      !confirm(
+        "Upload " + n.items + " item changes, " + n.contacts + " contacts, " + n.ewos + " EWOs, " + n.logs + " log entries and " + n.trips + " trips from this device to the cloud?\n\nWhere the cloud already has the same record, this device's version replaces it."
+      )
+    )
+      return;
+    b.disabled = true;
+    b.textContent = "Uploading…";
+    snapPut({ _at: (snapGet() || {})._at || "" }); // forget what was synced, so everything here is sent
+    st.manifests.forEach(function (m) {
+      if (m.by === curEmail()) delete m.syncedUpd;
+    });
+    await cloudSync(true);
+    if (cloudErr && cloudErr !== "offline") {
+      b.disabled = false;
+      b.textContent = "Upload this device's data";
+      toast("Upload didn't finish: " + cloudErr);
+      return;
+    }
+    localStorage.setItem("wh-uploaded:" + sess.uid, String(Date.now()));
+    renderCloudCard();
+    toast(cloudErr === "offline" ? "Saved; it will upload when you're back online." : "This device's data is now in the cloud.");
+  });
+
+  /* ---------- File storage (delivery photos, inspection PDFs) ---------- */
+  function sbPath(p) {
+    return p.split("/").map(encodeURIComponent).join("/");
+  }
+  async function sbList(bucket, prefix) {
+    return (
+      (await sbFetch("/storage/v1/object/list/" + bucket, {
+        method: "POST",
+        body: { prefix: prefix, limit: 1000, offset: 0, sortBy: { column: "name", order: "asc" } },
+      })) || []
+    ).filter(function (f) {
+      return f.name !== ".emptyFolderPlaceholder";
+    });
+  }
+  async function sbSign(bucket, paths) {
+    var out = {},
+      res = await sbFetch("/storage/v1/object/sign/" + bucket, { method: "POST", body: { expiresIn: 3600, paths: paths } });
+    (res || []).forEach(function (s) {
+      if (s.signedURL) out[s.path] = SB_URL + "/storage/v1" + s.signedURL;
+    });
+    return out;
+  }
+  function sbUpload(bucket, path, file) {
+    return sbFetch("/storage/v1/object/" + bucket + "/" + sbPath(path), {
+      method: "POST",
+      headers: { "x-upsert": "true", "Content-Type": file.type || "application/octet-stream" },
+      body: file,
+    });
+  }
+  function sbDownload(bucket, path) {
+    return sbFetch("/storage/v1/object/authenticated/" + bucket + "/" + sbPath(path), { blob: true });
+  }
+  // Uploads a list of {path, file}, showing progress; returns how many made it.
+  async function sbUploadAll(bucket, jobs, what) {
+    var ok = 0;
+    for (var i = 0; i < jobs.length; i++) {
+      toast("Uploading " + what + " " + (i + 1) + " of " + jobs.length + "…");
+      try {
+        await sbUpload(bucket, jobs[i].path, jobs[i].file);
+        ok++;
+      } catch (x) {
+        toast("“" + jobs[i].file.name + "” didn't upload: " + x.message);
+        await new Promise(function (r) {
+          setTimeout(r, 1200);
+        });
+      }
+    }
+    toast(ok + " of " + jobs.length + " " + what + (jobs.length === 1 ? "" : "s") + " uploaded.");
+    return ok;
+  }
+  // A hidden file picker; dir = pick a whole folder (with its subfolders).
+  function pickFiles(accept, dir, cb) {
+    var inp = document.createElement("input");
+    inp.type = "file";
+    inp.accept = accept;
+    inp.multiple = true;
+    if (dir) inp.webkitdirectory = true;
+    inp.onchange = function () {
+      cb([].slice.call(inp.files));
+    };
+    inp.click();
+  }
+
+  /* =====================================================================
      Delivery tab: delivery trips (manifests)
      A trip moves through three modes:
        loading    – scan receipts onto the trip (same receipt again = one more box)
@@ -6780,8 +7153,9 @@
       return m.id === id;
     });
   }
+  // Only your own trips can be changed (the cloud's security rules enforce the same).
   function dvMine(m) {
-    return !!sess && (m.by === curEmail() || isMgr());
+    return !!sess && m.by === curEmail();
   }
   function dvOpenTrips() {
     return st.manifests.filter(function (m) {
@@ -6931,6 +7305,7 @@
     var back = '<button class="dvback" data-dv="home">‹ All options</button>';
     if (dvView === "home") {
       box.innerHTML =
+        cloudStatusHtml() +
         '<div class="dvopts">' +
         DV_OPTS.map(function (o) {
           return (
@@ -6985,9 +7360,9 @@
       return renderDv();
     }
     var ro = !dvMine(m) || m.status === "submitted";
-    if (m.status === "loading" && !ro) box.innerHTML = back + dvLoadHtml(m);
-    else if (m.status === "delivering" && !ro) box.innerHTML = back + dvDeliverHtml(m);
-    else box.innerHTML = back + dvDoneHtml(m);
+    if (m.status === "loading" && !ro) box.innerHTML = back + cloudStatusHtml() + dvLoadHtml(m);
+    else if (m.status === "delivering" && !ro) box.innerHTML = back + cloudStatusHtml() + dvDeliverHtml(m);
+    else box.innerHTML = back + cloudStatusHtml() + dvDoneHtml(m);
     var sc = $("dvScan");
     if (sc && !("ontouchstart" in window)) sc.focus();
   }
@@ -7187,6 +7562,7 @@
   function dvSave(m) {
     m.upd = Date.now();
     save();
+    cloudSoon();
   }
   function dvBeep() {
     try {
@@ -7406,6 +7782,10 @@
       render();
       return;
     }
+    if (act === "cloud") {
+      openProfile();
+      return;
+    }
     if (act === "home") {
       dvView = "home";
       dvFlash = "";
@@ -7495,6 +7875,7 @@
       });
       audit("Delivery", "Deleted " + dvTripName(m) + " (" + m.no + ") while loading");
       save();
+      if (m.syncedUpd) cloudForget(m.id);
       dvView = "home";
       toast("Trip deleted.");
     } else if ((b.dataset.dvq || b.hasAttribute("data-dvrm")) && m && dvMine(m) && m.status === "loading") {
@@ -7698,6 +8079,19 @@
   loadDl();
   load();
   rebuild();
+  // A session from before the cloud login has no cloud sign-in: ask to sign in again.
+  if (sess && !cloudOn()) setSess(null);
   render();
-  dlfInit();
+  if (!sess && cloudOn()) {
+    // Cloud sign-in kept from the earlier "Cloud sync" box: use it as the app login.
+    sbRest("profiles?select=*&id=eq." + authGet().uid)
+      .then(function (rows) {
+        var me = rows && rows[0];
+        if (!me) return authKeep(null);
+        setSess({ uid: me.id, email: me.email, name: me.name || me.email, role: me.role, perms: me.perms });
+        render();
+        cloudSync(true);
+      })
+      .catch(function () {});
+  } else cloudSync(true);
 })();

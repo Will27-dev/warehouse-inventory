@@ -4229,3 +4229,34 @@ body:has(#dvPanel:not([hidden]) .dvsticky) .toast { bottom:96px; }
 }
 /* QR scanning: square frame in the middle of the picture (matches the area that is read) */
 .camframe { inset:auto; left:50%; top:50%; width:min(62%, 62vw); max-height:84%; aspect-ratio:1; transform:translate(-50%, -50%); }
+
+/* Cloud sync status (Delivery) and connect box (Your profile) */
+.dvcloud { display:flex; align-items:center; flex-wrap:wrap; gap:4px 6px; margin:0 0 14px; padding:9px 14px; border-radius:14px; font-size:13px; background:var(--head); color:var(--mute); }
+.dvcloud b { color:var(--ink); }
+.dvcloud::before { content:""; width:9px; height:9px; border-radius:50%; background:var(--mute); margin-right:4px; }
+.dvcloud.ok::before { background:#2fbf71; }
+.dvcloud.busy::before { background:#ffd166; animation:camPulse 1.2s ease-in-out infinite; }
+.dvcloud.warn::before { background:var(--warn); }
+.dvcloud button { padding:2px 10px; border:0; border-radius:999px; background:var(--char); color:#fff; font-weight:700; font-size:12.5px; }
+html.dark .dvcloud button { background:var(--acc1); color:var(--char); }
+.pfcloud { margin:0 0 14px; padding:12px 14px; border-radius:14px; background:var(--head); }
+.pfch { display:flex; align-items:center; gap:10px; }
+.pfcloud p { margin:6px 0 0; color:var(--mute); font-size:12.5px; line-height:1.45; }
+.pfcloud p b { color:var(--ink); }
+.pfcf { display:grid; grid-template-columns:1fr 1fr auto; gap:8px; margin-top:10px; }
+.pfcf input { margin:0 !important; }
+.pfcact { display:flex; gap:8px; margin-top:10px; }
+.pfcloud button { border-radius:999px !important; font-weight:700; }
+.pferr { color:var(--warn) !important; }
+@media (max-width: 520px) {
+  .pfcf { grid-template-columns:1fr; }
+}
+
+/* Owner card: move this device's data to the cloud (Manage) */
+.mgcloud { display:flex; align-items:center; gap:14px 18px; flex-wrap:wrap; margin:0 0 16px; padding:16px 18px; border-radius:18px; background:var(--char); color:#fff; }
+.mgcloud > div:first-child { flex:1 1 320px; }
+.mgcloud p { margin:4px 0 0; color:var(--on-dark-mute); font-size:13px; line-height:1.45; }
+.mgcloud p b { color:#fff; }
+.mgcact { display:flex; gap:8px; flex-wrap:wrap; }
+.mgcact button { padding:10px 16px; border:0; border-radius:999px; font-weight:800; background:var(--tile); color:var(--on-dark); }
+.mgcact button.primary { background:var(--acc1); color:var(--char); }

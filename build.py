@@ -3,7 +3,8 @@
 css/styles.css and every script the page loads. Run:  python3 build.py"""
 import re, os
 root = os.path.dirname(os.path.abspath(__file__))
-def read(p): return open(os.path.join(root, p), encoding="utf8").read()
+# "?v=..." on links in index.html only busts browser caches; the file itself has no query.
+def read(p): return open(os.path.join(root, p.split("?")[0]), encoding="utf8").read()
 html = read("index.html")
 html = re.sub(r'<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>',
               lambda m: "<style>\n" + read(m.group(1)) + "</style>", html)

@@ -1,7 +1,9 @@
-Drop PDF files into this folder (sub-folders are fine too).
+Inspection and delivery PDFs.
 
-They appear in the app under Manage -> Inspections & Deliveries.
+PDFs now live in the cloud (Supabase Storage), so every device sees them under
+Manage -> Inspections & Deliveries. This folder is a convenient place to collect
+them before uploading.
 
-First time only: open that page in Google Chrome or Microsoft Edge, click "Choose PDF folder"
-and pick this folder. The app remembers it. After restarting the browser you may be asked to
-click "Open folder" once to let it read the folder again.
+To upload (owner or admin): Manage -> Inspections & Deliveries -> "Upload a folder"
+and pick this folder (one level of sub-folders is kept), or "Upload PDFs" for
+single files. PDFs up to 30 MB each.
