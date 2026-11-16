@@ -2891,7 +2891,7 @@
   var sess = null,
     mgTab = "users",
     userEd = null,
-    mgOpt = 0,
+    mgOpt = -1, // -1: no option open, every Manage button showing
     MGOPTS = [
       "Add/Edit user",
       "View Delivery Manifests",
@@ -3337,8 +3337,11 @@
     $("mgN").textContent = ok ? st.users.length : "–";
     if (!ok) return;
     var nav = $("mgNav");
-    if (nav.children.length !== MGOPTS.length)
-      nav.innerHTML = MGORDER.map(function (i) {
+    if (!nav.querySelector("[data-opt]"))
+      nav.innerHTML =
+        '<button class="mgback" data-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>' +
+        MGORDER.map(function (i) {
         return (
           '<button data-opt="' +
           i +
@@ -3357,6 +3360,8 @@
       b.classList.toggle("on", i === mgOpt);
       $("mgOpt" + i).hidden = i !== mgOpt;
     });
+    nav.classList.toggle("picked", mgOpt >= 0);
+    $("mgBody").querySelector(".mgbar").hidden = mgOpt < 0;
     $("mgHidCount").textContent = "(" + hiddenList().length + ")";
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
@@ -3512,15 +3517,54 @@
       rg.closest(".mgdbody").innerHTML = matBodyHtml(em);
     }
   });
+  // Picking an option: the other buttons fade out, the picked one glides to the left and its page opens.
+  // Back reverses it. The glide keeps the button where it was on screen while the layout changes,
+  // then lets it move to its new spot (transform only).
+  var mgBusy = false;
+  function mgGlide(b, change) {
+    var r0 = b.getBoundingClientRect();
+    change();
+    var r1 = b.getBoundingClientRect();
+    b.style.transition = "none";
+    b.style.transform = "translate(" + (r0.left - r1.left) + "px," + (r0.top - r1.top) + "px)";
+    b.offsetWidth; // apply the start position before animating
+    b.style.transition = b.style.transform = "";
+  }
   $("mgNav").addEventListener("click", function (e) {
-    var b = e.target.closest("button");
-    if (!b) return;
+    var b = e.target.closest("button"),
+      nav = $("mgNav"),
+      calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!b || mgBusy) return;
+    if (b.hasAttribute("data-back")) {
+      var cur = nav.querySelector("button.on");
+      mgBusy = true;
+      nav.classList.add("returning");
+      mgGlide(cur, function () {
+        mgOpt = -1;
+        renderManage();
+      });
+      setTimeout(function () {
+        nav.classList.remove("returning");
+        mgBusy = false;
+        cur.focus();
+      }, calm ? 0 : 300);
+      return;
+    }
     var next = +b.dataset.opt;
     if (next === mgOpt) return;
-    // Lets the CSS slide the new section in from the side you moved toward.
-    $("mgBody").dataset.dir = MGORDER.indexOf(next) > MGORDER.indexOf(mgOpt) ? "fwd" : "back";
-    mgOpt = next;
-    renderManage();
+    mgBusy = true;
+    b.classList.add("going");
+    nav.classList.add("leaving");
+    setTimeout(function () {
+      nav.classList.remove("leaving");
+      b.classList.remove("going");
+      $("mgBody").dataset.dir = "fwd";
+      mgGlide(b, function () {
+        mgOpt = next;
+        renderManage();
+      });
+      mgBusy = false;
+    }, calm ? 0 : 150);
   });
 
   var mgShowHid = false,

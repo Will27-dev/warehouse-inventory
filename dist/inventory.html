@@ -3999,8 +3999,8 @@ html.dm-fade * {
    - Its parts rise in one after another
    - The chosen circle pops with a ripple ring
    ===================================================================== */
-#mgBody[data-dir="fwd"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromRight .45s cubic-bezier(.2,.8,.2,1) both; }
-#mgBody[data-dir="back"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromLeft .45s cubic-bezier(.2,.8,.2,1) both; }
+#mgBody[data-dir="fwd"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromRight .3s cubic-bezier(.16,1,.3,1) both; }
+#mgBody[data-dir="back"] > [id^="mgOpt"]:not([hidden]) { animation:mgFromLeft .3s cubic-bezier(.16,1,.3,1) both; }
 @keyframes mgFromRight {
   from { opacity:0; transform:translateX(48px); filter:blur(3px); }
   to { opacity:1; transform:none; filter:none; }
@@ -4010,7 +4010,7 @@ html.dm-fade * {
   to { opacity:1; transform:none; filter:none; }
 }
 [id^="mgOpt"]:not([hidden]) > *,
-[id^="mgOpt"]:not([hidden]) .mgpad > * { animation:mgRise .42s cubic-bezier(.2,.8,.2,1) both; }
+[id^="mgOpt"]:not([hidden]) .mgpad > * { animation:mgRise .3s cubic-bezier(.16,1,.3,1) both; }
 [id^="mgOpt"]:not([hidden]) > :nth-child(2),
 [id^="mgOpt"]:not([hidden]) .mgpad > :nth-child(2) { animation-delay:.06s; }
 [id^="mgOpt"]:not([hidden]) > :nth-child(3),
@@ -4022,7 +4022,6 @@ html.dm-fade * {
   to { opacity:1; transform:none; }
 }
 .mgic { position:relative; }
-.mgnav button.on .mgic { animation:mgPop .45s cubic-bezier(.34,1.56,.64,1); }
 .mgnav button.on .mgic::after { content:""; position:absolute; inset:-2px; border-radius:50%; border:2px solid var(--acc1); animation:mgRing .6s ease-out forwards; pointer-events:none; }
 @keyframes mgPop {
   0% { transform:scale(.82); }
@@ -4393,6 +4392,23 @@ html body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.loc {
 
 /* One scrollbar: in card view the page scrolls, not the list inside it */
 body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
+
+/* Manage: picking an option fades the other buttons out and glides the picked one left
+   (the glide itself is set up in app.js); Back reverses it. Transform and opacity only. */
+.mgnav button { transition: transform .3s cubic-bezier(.16,1,.3,1), opacity .15s cubic-bezier(.7,0,.84,0); }
+.mgnav.leaving button:not(.going) { opacity: 0; pointer-events: none; }
+.mgnav.picked { display: flex; justify-content: flex-start; align-items: center; }
+.mgnav.picked button[data-opt]:not(.on) { display: none; }
+.mgnav .mgback { display: none; }
+.mgnav.picked .mgback {
+  display: inline-flex; flex-direction: row; align-items: center; gap: 4px; width: auto;
+  min-height: 44px; padding: 0 16px 0 10px; border-radius: 999px;
+  background: var(--head); border: 1px solid var(--line); color: var(--ink); font-size: 14px; font-weight: 590;
+}
+.mgnav.picked .mgback:hover { border-color: var(--acc1); }
+.mgnav.returning button[data-opt]:not(.on) { animation: mgBackIn .2s cubic-bezier(.16,1,.3,1) .1s both; }
+@keyframes mgBackIn { from { opacity: 0; } to { opacity: 1; } }
+#mgBody .mgbar[hidden] { display: none; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -46770,7 +46786,7 @@ var ZXING_Z = [
   var sess = null,
     mgTab = "users",
     userEd = null,
-    mgOpt = 0,
+    mgOpt = -1, // -1: no option open, every Manage button showing
     MGOPTS = [
       "Add/Edit user",
       "View Delivery Manifests",
@@ -47216,8 +47232,11 @@ var ZXING_Z = [
     $("mgN").textContent = ok ? st.users.length : "–";
     if (!ok) return;
     var nav = $("mgNav");
-    if (nav.children.length !== MGOPTS.length)
-      nav.innerHTML = MGORDER.map(function (i) {
+    if (!nav.querySelector("[data-opt]"))
+      nav.innerHTML =
+        '<button class="mgback" data-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
+        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>' +
+        MGORDER.map(function (i) {
         return (
           '<button data-opt="' +
           i +
@@ -47236,6 +47255,8 @@ var ZXING_Z = [
       b.classList.toggle("on", i === mgOpt);
       $("mgOpt" + i).hidden = i !== mgOpt;
     });
+    nav.classList.toggle("picked", mgOpt >= 0);
+    $("mgBody").querySelector(".mgbar").hidden = mgOpt < 0;
     $("mgHidCount").textContent = "(" + hiddenList().length + ")";
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
@@ -47391,15 +47412,54 @@ var ZXING_Z = [
       rg.closest(".mgdbody").innerHTML = matBodyHtml(em);
     }
   });
+  // Picking an option: the other buttons fade out, the picked one glides to the left and its page opens.
+  // Back reverses it. The glide keeps the button where it was on screen while the layout changes,
+  // then lets it move to its new spot (transform only).
+  var mgBusy = false;
+  function mgGlide(b, change) {
+    var r0 = b.getBoundingClientRect();
+    change();
+    var r1 = b.getBoundingClientRect();
+    b.style.transition = "none";
+    b.style.transform = "translate(" + (r0.left - r1.left) + "px," + (r0.top - r1.top) + "px)";
+    b.offsetWidth; // apply the start position before animating
+    b.style.transition = b.style.transform = "";
+  }
   $("mgNav").addEventListener("click", function (e) {
-    var b = e.target.closest("button");
-    if (!b) return;
+    var b = e.target.closest("button"),
+      nav = $("mgNav"),
+      calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
+    if (!b || mgBusy) return;
+    if (b.hasAttribute("data-back")) {
+      var cur = nav.querySelector("button.on");
+      mgBusy = true;
+      nav.classList.add("returning");
+      mgGlide(cur, function () {
+        mgOpt = -1;
+        renderManage();
+      });
+      setTimeout(function () {
+        nav.classList.remove("returning");
+        mgBusy = false;
+        cur.focus();
+      }, calm ? 0 : 300);
+      return;
+    }
     var next = +b.dataset.opt;
     if (next === mgOpt) return;
-    // Lets the CSS slide the new section in from the side you moved toward.
-    $("mgBody").dataset.dir = MGORDER.indexOf(next) > MGORDER.indexOf(mgOpt) ? "fwd" : "back";
-    mgOpt = next;
-    renderManage();
+    mgBusy = true;
+    b.classList.add("going");
+    nav.classList.add("leaving");
+    setTimeout(function () {
+      nav.classList.remove("leaving");
+      b.classList.remove("going");
+      $("mgBody").dataset.dir = "fwd";
+      mgGlide(b, function () {
+        mgOpt = next;
+        renderManage();
+      });
+      mgBusy = false;
+    }, calm ? 0 : 150);
   });
 
   var mgShowHid = false,
