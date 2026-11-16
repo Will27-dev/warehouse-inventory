@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261116m" />
+    <link rel="stylesheet" href="css/styles.css?v=20261116o" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -124,7 +124,14 @@
                 <p>Content for this section has not been set up yet.</p>
               </div>
             </div>
-            <div class="empty">Nothing here yet.</div>
+            <div class="empty" id="topEmpty">Nothing here yet.</div>
+            <div class="mgpad" id="pkPdf" hidden>
+              <div class="tpbar">
+                <button class="primary" id="pkAdd">+ Add PDF</button
+                ><span class="m">PDFs added here stay until you close or reload the page, for now.</span>
+              </div>
+              <ul class="pklist" id="pkList"></ul>
+            </div>
           </section>
           <section class="panel" id="dvPanel" hidden>
             <div class="head">
@@ -799,10 +806,10 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261116m"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261116m"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261116m"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261116m"></script>
-    <script src="js/app.js?v=20261116m"></script>
+    <script src="js/data/items-data.js?v=20261116o"></script>
+    <script src="js/vendor/pdfjs-embedded.js?v=20261116o"></script>
+    <script src="js/vendor/jbig2-wasm.js?v=20261116o"></script>
+    <script src="js/vendor/zxing-embedded.js?v=20261116o"></script>
+    <script src="js/app.js?v=20261116o"></script>
   </body>
 </html>

@@ -4402,3 +4402,13 @@ body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
 .mgnav.returning button[data-opt]:not(.on) { animation: mgBackIn .2s cubic-bezier(.16,1,.3,1) .1s both; }
 @keyframes mgBackIn { from { opacity: 0; } to { opacity: 1; } }
 #mgBody .mgbar[hidden] { display: none; }
+
+/* Pick List: PDFs added for this visit */
+.pklist { list-style: none; margin: 14px 0 0; padding: 0; }
+.pklist li { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.pklist li b { flex: 1; font-weight: 590; }
+.pklist li.m { color: var(--mute); border-bottom: 0; }
+.pklist a, .pklist button { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; }
+.pklist a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.pklist button { background: var(--head); color: var(--ink); border: 1px solid var(--line); font: inherit; font-weight: 590; cursor: pointer; }
+.pklist button:hover { border-color: var(--acc1); }

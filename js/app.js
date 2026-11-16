@@ -450,6 +450,8 @@
       onInsp = !!ck && ck === inspKey() && (!onSide || st.side > 2);
     var onDv = tp === 4 && !onInsp;
     $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
+    $("pkPdf").hidden = !(tp === 2 && !onSide);
+    $("topEmpty").hidden = !$("pkPdf").hidden;
     $("inspPanel").hidden = !onInsp;
     $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
@@ -1398,6 +1400,48 @@
       render();
     }
   });
+  // Pick List: PDFs picked here last for this visit only. Saving and using them comes later.
+  var pkPdfs = [];
+  function renderPk() {
+    $("pkList").innerHTML = pkPdfs.length
+      ? pkPdfs
+          .map(function (p, i) {
+            return (
+              "<li><b>" +
+              esc(p.name) +
+              '</b><span class="m">' +
+              Math.max(1, Math.round(p.size / 1024)) +
+              ' KB</span><a href="' +
+              p.url +
+              '" target="_blank" rel="noopener">View</a><button data-rm="' +
+              i +
+              '">Remove</button></li>'
+            );
+          })
+          .join("")
+      : '<li class="m">No pick list PDFs yet. Add one to keep it handy.</li>';
+  }
+  $("pkAdd").onclick = function () {
+    pickFiles("application/pdf,.pdf", false, function (files) {
+      var pdfs = files.filter(function (f) {
+        return f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      });
+      if (!pdfs.length) return toast("Pick a PDF file.");
+      pdfs.forEach(function (f) {
+        pkPdfs.push({ name: f.name, size: f.size, url: URL.createObjectURL(f) });
+      });
+      renderPk();
+      toast(pdfs.length === 1 ? "PDF added." : pdfs.length + " PDFs added.");
+    });
+  };
+  $("pkList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-rm]");
+    if (!b) return;
+    URL.revokeObjectURL(pkPdfs[+b.dataset.rm].url);
+    pkPdfs.splice(+b.dataset.rm, 1);
+    renderPk();
+  });
+  renderPk();
   var ewoScope = "all",
     ewoOpen = {},
     ewoMenuOn = false;

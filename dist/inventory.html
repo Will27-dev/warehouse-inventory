@@ -4409,6 +4409,16 @@ body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
 .mgnav.returning button[data-opt]:not(.on) { animation: mgBackIn .2s cubic-bezier(.16,1,.3,1) .1s both; }
 @keyframes mgBackIn { from { opacity: 0; } to { opacity: 1; } }
 #mgBody .mgbar[hidden] { display: none; }
+
+/* Pick List: PDFs added for this visit */
+.pklist { list-style: none; margin: 14px 0 0; padding: 0; }
+.pklist li { display: flex; align-items: center; gap: 12px; min-height: 52px; padding: 6px 4px; border-bottom: 1px solid var(--line); overflow-wrap: anywhere; }
+.pklist li b { flex: 1; font-weight: 590; }
+.pklist li.m { color: var(--mute); border-bottom: 0; }
+.pklist a, .pklist button { min-height: 44px; display: inline-flex; align-items: center; padding: 0 14px; border-radius: 999px; }
+.pklist a { color: var(--ink); text-decoration: underline; text-underline-offset: 3px; }
+.pklist button { background: var(--head); color: var(--ink); border: 1px solid var(--line); font: inherit; font-weight: 590; cursor: pointer; }
+.pklist button:hover { border-color: var(--acc1); }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4529,7 +4539,14 @@ body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
                 <p>Content for this section has not been set up yet.</p>
               </div>
             </div>
-            <div class="empty">Nothing here yet.</div>
+            <div class="empty" id="topEmpty">Nothing here yet.</div>
+            <div class="mgpad" id="pkPdf" hidden>
+              <div class="tpbar">
+                <button class="primary" id="pkAdd">+ Add PDF</button
+                ><span class="m">PDFs added here stay until you close or reload the page, for now.</span>
+              </div>
+              <ul class="pklist" id="pkList"></ul>
+            </div>
           </section>
           <section class="panel" id="dvPanel" hidden>
             <div class="head">
@@ -44345,6 +44362,8 @@ var ZXING_Z = [
       onInsp = !!ck && ck === inspKey() && (!onSide || st.side > 2);
     var onDv = tp === 4 && !onInsp;
     $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
+    $("pkPdf").hidden = !(tp === 2 && !onSide);
+    $("topEmpty").hidden = !$("pkPdf").hidden;
     $("inspPanel").hidden = !onInsp;
     $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
@@ -45293,6 +45312,48 @@ var ZXING_Z = [
       render();
     }
   });
+  // Pick List: PDFs picked here last for this visit only. Saving and using them comes later.
+  var pkPdfs = [];
+  function renderPk() {
+    $("pkList").innerHTML = pkPdfs.length
+      ? pkPdfs
+          .map(function (p, i) {
+            return (
+              "<li><b>" +
+              esc(p.name) +
+              '</b><span class="m">' +
+              Math.max(1, Math.round(p.size / 1024)) +
+              ' KB</span><a href="' +
+              p.url +
+              '" target="_blank" rel="noopener">View</a><button data-rm="' +
+              i +
+              '">Remove</button></li>'
+            );
+          })
+          .join("")
+      : '<li class="m">No pick list PDFs yet. Add one to keep it handy.</li>';
+  }
+  $("pkAdd").onclick = function () {
+    pickFiles("application/pdf,.pdf", false, function (files) {
+      var pdfs = files.filter(function (f) {
+        return f.type === "application/pdf" || /\.pdf$/i.test(f.name);
+      });
+      if (!pdfs.length) return toast("Pick a PDF file.");
+      pdfs.forEach(function (f) {
+        pkPdfs.push({ name: f.name, size: f.size, url: URL.createObjectURL(f) });
+      });
+      renderPk();
+      toast(pdfs.length === 1 ? "PDF added." : pdfs.length + " PDFs added.");
+    });
+  };
+  $("pkList").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-rm]");
+    if (!b) return;
+    URL.revokeObjectURL(pkPdfs[+b.dataset.rm].url);
+    pkPdfs.splice(+b.dataset.rm, 1);
+    renderPk();
+  });
+  renderPk();
   var ewoScope = "all",
     ewoOpen = {},
     ewoMenuOn = false;
