@@ -5,8 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
     <style>
-/* Font for the Soft Bento theme; falls back to Segoe UI when offline. */
-@import url("https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap");
 :root {
   --bg: #f3f5f9;
   --panel: #fff;
@@ -4305,6 +4303,109 @@ html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: man
   select,
   textarea { font-size: 16px !important; }
 }
+
+/* =====================================================================
+   Apple Native layer (see .ux-profile.md): system type, unified radii,
+   hairline separators, 44px targets, short motion, AA focus rings.
+   Mint & Coral palette, dark canvas and pill buttons kept.
+   ===================================================================== */
+:root, :root * {
+  --r-lg: 22px;  /* frame, panels, dialogs */
+  --r-md: 14px;  /* cards, tiles, inputs */
+  --hair: rgba(255, 255, 255, .07);
+}
+body { font-family: -apple-system, "SF Pro Text", "Segoe UI Variable Text", "Segoe UI", system-ui, sans-serif; letter-spacing: -.005em; }
+
+/* Frame: quieter, one radius family */
+body { padding: 12px; }
+.app { border-radius: var(--r-lg); box-shadow: 0 12px 32px rgba(0, 0, 0, .14); min-height: calc(100vh - 24px); }
+.content { border-radius: var(--r-lg); }
+.side { height: calc(100vh - 24px); top: 12px; }
+
+/* Sidebar: Customize card goes quiet so mint marks only active/primary things */
+.tabs button { border-radius: var(--r-md); min-height: 44px; font-weight: 500; }
+.sidefoot { background: var(--tile); box-shadow: inset 0 0 0 1px var(--hair); border-radius: var(--r-md); }
+.sidefoot::before { color: var(--on-dark); font-size: 15px; font-weight: 600; }
+.sidefoot::after { color: var(--on-dark-mute); opacity: 1; }
+.side .ghost { background: var(--acc1); color: var(--char); font-weight: 600; min-height: 44px; }
+
+/* Top tabs: lighter weight, hairline edge, unified radius */
+.topnav { gap: 12px; }
+.topnav button, .profilebtn, .manage { border-radius: var(--r-md); font-weight: 590; box-shadow: inset 0 0 0 1px var(--hair); }
+.topnav button.on, .manage { box-shadow: none; }
+
+/* Pills stay pills; weights drop from 800 to semibold */
+.bar button, .primary, .bar .primary, .mbtn, .schip { font-weight: 590; min-height: 44px; }
+.bar button, .mbtn, .schip { box-shadow: inset 0 0 0 1px var(--hair); }
+.mbtn.on, .schip.on, .primary { box-shadow: none; }
+.mbtns, .schips { gap: 10px; }
+
+/* Content panel: one radius, sentence-case labels, roomier rows */
+.panel { border-radius: var(--r-lg); }
+.panel > .head { border-radius: var(--r-md); padding: 24px 28px; }
+.sidelabel, .tabs .grp, .eyebrow, th, .sumsec, .xg, .vlabel, .lgwho, .fdsec, .inqs .insec { text-transform: none !important; letter-spacing: 0 !important; font-weight: 590; }
+.head h2 { font-size: 30px; font-weight: 700; letter-spacing: -.02em; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { border-radius: var(--r-md); padding: 20px; box-shadow: inset 0 0 0 1px var(--hair); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr:hover { box-shadow: inset 0 0 0 1px var(--acc2); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(2) { font-size: 20px; font-weight: 650; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) { border-radius: 8px; }
+.qty button, td.act button { min-width: 44px; min-height: 44px; }
+dialog { border-radius: var(--r-lg); }
+dialog input, dialog textarea, dialog select { border-radius: 10px; min-height: 44px; }
+.dlcard, .dlstrip > * { border-radius: var(--r-md); }
+
+/* Motion: short and calm; no blur entrances */
+button, .mbtn, .schip, .topnav button { transition: background-color .16s ease-out, color .16s ease-out, box-shadow .16s ease-out; }
+@keyframes mgFromRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
+@keyframes mgFromLeft { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
+
+/* AA focus ring on everything */
+:focus-visible { outline: 2px solid var(--acc1) !important; outline-offset: 2px; }
+
+@media (max-width: 640px) {
+  body { padding: 0; }
+  .app { border-radius: 0; box-shadow: none; min-height: 100vh; }
+  .side { height: auto; top: auto; }
+  .content { border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .topnav button { border-radius: 12px; }
+  .side .ghost { min-height: 38px; }
+}
+
+/* ===== Pass 2: one bold thing (the rack label), everything else calm ===== */
+/* Bin locator as a rack label: dark tag, mint stripe, even-width digits */
+html body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.loc {
+  background: var(--char); color: var(--on-dark); border-left: 4px solid var(--acc1);
+  border-radius: 6px; padding: 7px 10px; font-size: 12.5px; font-weight: 600;
+  letter-spacing: 0; font-variant-numeric: tabular-nums; font-family: inherit;
+  justify-self: stretch; align-self: start; overflow-wrap: anywhere;
+}
+#panel tbody td.num { font-variant-numeric: tabular-nums; }
+
+/* Large title header instead of a dark box with a big number */
+.panel > .head { background: transparent !important; box-shadow: none !important; color: var(--ink); padding: 20px 20px 8px; align-items: flex-end; }
+.panel > .head h2 { font-size: 34px; letter-spacing: -.025em; }
+.panel > .head p { color: var(--mute); }
+.panel > .head .eyebrow { color: var(--mute); font-size: 13px; }
+.panel > .head .stat { display: flex; align-items: baseline; gap: 6px; }
+.panel > .head .stat b { font-size: 20px; font-weight: 650; color: var(--ink); font-variant-numeric: tabular-nums; }
+.panel > .head .stat span { background: none; color: var(--mute); padding: 0; margin: 0; font-weight: 500; }
+
+/* Top tabs as one segmented control */
+.topnav { background: var(--tile); border-radius: 18px; padding: 4px; gap: 2px; box-shadow: inset 0 0 0 1px var(--hair); }
+.topnav button { background: transparent; box-shadow: none; border-radius: 14px; }
+.topnav button:hover { background: rgba(255, 255, 255, .06); }
+.topnav button.on { background: var(--acc1); }
+
+/* Counts: plain numbers, no badges */
+.mbtn .c, .mbtn.on .c, .schip .c { background: none; color: inherit; opacity: .7; padding: 0 0 0 4px; font-weight: 500; font-variant-numeric: tabular-nums; }
+
+/* Quantity: one capsule stepper */
+.qty { background: var(--char) !important; border-radius: 999px; padding: 2px; gap: 0; box-shadow: inset 0 0 0 1px var(--hair); }
+.qty button { background: transparent !important; color: var(--on-dark) !important; border-radius: 999px; }
+.qty button:hover { color: var(--acc1) !important; background: rgba(255, 255, 255, .06) !important; }
+.qty b { min-width: 32px; text-align: center; color: var(--on-dark); font-variant-numeric: tabular-nums; }
+.qty span { color: var(--on-dark-mute); padding: 0 12px 0 2px; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
