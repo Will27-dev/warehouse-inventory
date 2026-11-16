@@ -4288,3 +4288,13 @@ html.dark .pfacts button[aria-selected="true"] .c { background:var(--char); colo
   .pfleft .avatar.lg { width:72px; height:72px; font-size:26px; }
   .pfacts { grid-template-columns:repeat(2, minmax(0, 1fr)); }
 }
+
+/* Phones: no automatic zooming. iPhones zoom into any text box under 16px and stay zoomed,
+   so every field is 16px on small screens. Double-tap zoom is off (pinch-zoom still works),
+   and text isn't enlarged when the phone turns sideways. */
+html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; touch-action: manipulation; }
+@media (max-width: 640px) {
+  input:not([type="checkbox"]):not([type="radio"]),
+  select,
+  textarea { font-size: 16px !important; }
+}
