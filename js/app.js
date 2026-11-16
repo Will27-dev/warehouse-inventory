@@ -2147,7 +2147,7 @@
       (l.folder ? " · from folder" : "") +
       "</small></div>" +
       (l.folder && !isMgr()
-        ? '<span class="dlftag">Folder</span>'
+        ? ""
         : '<div class="dlcb"><button data-photo>+ Photo</button></div>') +
       "</div>"
     );
