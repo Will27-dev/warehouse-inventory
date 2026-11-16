@@ -3155,16 +3155,16 @@ th {
 }
 
 /* Items as tiles */
-body:not(.ontop):not(.onside):not(.onsum) table,
-body:not(.ontop):not(.onside):not(.onsum) tbody {
+body:not(.ontop):not(.onside):not(.onsum) #panel table,
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody {
   display: block;
   width: 100%;
   min-width: 0;
 }
-body:not(.ontop):not(.onside):not(.onsum) thead {
+body:not(.ontop):not(.onside):not(.onsum) #panel thead {
   display: block;
 }
-body:not(.ontop):not(.onside):not(.onsum) thead tr {
+body:not(.ontop):not(.onside):not(.onsum) #panel thead tr {
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -3172,13 +3172,13 @@ body:not(.ontop):not(.onside):not(.onsum) thead tr {
   padding: 12px 16px;
   background: var(--head);
 }
-body:not(.ontop):not(.onside):not(.onsum) thead th {
+body:not(.ontop):not(.onside):not(.onsum) #panel thead th {
   display: none;
   padding: 0;
   border: 0;
   width: auto;
 }
-body:not(.ontop):not(.onside):not(.onsum) thead th:nth-child(5) {
+body:not(.ontop):not(.onside):not(.onsum) #panel thead th:nth-child(5) {
   display: block;
   background: none;
 }
@@ -3190,13 +3190,13 @@ body:not(.ontop):not(.onside):not(.onsum) #panel.xmode thead th.sel input {
   width: 28px;
   height: 28px;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 16px;
   padding: 16px;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   grid-template-areas: "num num" "desc desc" "loc loc" "qty edit";
@@ -3209,45 +3209,45 @@ body:not(.ontop):not(.onside):not(.onsum) tbody tr {
 body:not(.ontop):not(.onside):not(.onsum) #panel.xmode tbody tr {
   grid-template-areas: "sel sel" "num num" "desc desc" "loc loc" "qty edit";
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked {
   border-color: #15803d;
   background: #e3f3e8;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked td {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked td {
   background: none;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td {
   display: block;
   padding: 0;
   border: 0;
   width: auto;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td.sel {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.sel {
   grid-area: sel;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td.sel input {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.sel input {
   width: 30px;
   height: 30px;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(2) {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(2) {
   grid-area: num;
   font-size: 19px;
   font-weight: 800;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(3) {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(3) {
   grid-area: desc;
   font-size: 14px;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) {
   grid-area: loc;
   font-size: 12px;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(5) {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(5) {
   grid-area: qty;
   align-self: center;
   zoom: 1.3;
 }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(6) {
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(6) {
   grid-area: edit;
   align-self: end;
   justify-self: end;
@@ -3273,7 +3273,7 @@ body:not(.ontop):not(.onside):not(.onsum) #panel:not(.xmode) tbody td.sel {
   .topnav {
     grid-template-columns: repeat(3, 1fr);
   }
-  body:not(.ontop):not(.onside):not(.onsum) tbody {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
@@ -3284,7 +3284,7 @@ body:not(.ontop):not(.onside):not(.onsum) #panel:not(.xmode) tbody td.sel {
   .topnav {
     grid-template-columns: repeat(2, 1fr);
   }
-  body:not(.ontop):not(.onside):not(.onsum) tbody {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody {
     grid-template-columns: 1fr;
   }
   main {
@@ -3714,15 +3714,15 @@ main > section:not([hidden]),
   .stat b {
     font-size: 24px;
   }
-  body:not(.ontop):not(.onside):not(.onsum) tbody {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody {
     gap: 10px;
     padding: 10px;
   }
-  body:not(.ontop):not(.onside):not(.onsum) tbody tr {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr {
     padding: 14px;
     border-radius: 14px;
   }
-  body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) {
     word-break: break-all;
   }
   .ewobar,
@@ -3914,13 +3914,13 @@ main { padding:10px 22px 26px; }
 .panel > .head .stat b { color:var(--acc1); }
 .panel > .head .stat span { display:inline-block; margin-top:6px; padding:2px 10px; border-radius:999px; background:var(--acc2); color:var(--char); font-weight:700; }
 .scroll { border-top:0; }
-body:not(.ontop):not(.onside):not(.onsum) thead tr { background:transparent; }
+body:not(.ontop):not(.onside):not(.onsum) #panel thead tr { background:transparent; }
 .xbtn { background:var(--char); border-color:var(--char); color:#fff; }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr { background:var(--head); border:0; border-radius:22px; padding:18px; }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr:hover { box-shadow:0 0 0 2px var(--acc2); }
-body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked { background:var(--acc1-soft); box-shadow:0 0 0 2px var(--acc1-hover); }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(2) { font-size:22px; font-weight:700; letter-spacing:-.02em; }
-body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { justify-self:start; max-width:100%; white-space:normal; overflow-wrap:anywhere; background:var(--panel); border-radius:12px; padding:3px 10px; color:#55555b; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { background:var(--head); border:0; border-radius:22px; padding:18px; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr:hover { box-shadow:0 0 0 2px var(--acc2); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked { background:var(--acc1-soft); box-shadow:0 0 0 2px var(--acc1-hover); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(2) { font-size:22px; font-weight:700; letter-spacing:-.02em; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) { justify-self:start; max-width:100%; white-space:normal; overflow-wrap:anywhere; background:var(--panel); border-radius:12px; padding:3px 10px; color:#55555b; }
 .qty { background:var(--panel); border:0; }
 .qty button { background:var(--char); color:#fff; }
 .qty button:hover { background:var(--acc1); color:var(--char); }
@@ -3954,7 +3954,7 @@ dialog input, dialog textarea, dialog select { border:0; border-radius:14px; }
   .head h2 { font-size:26px; }
   .stat b { font-size:30px; }
   .panel > .head { margin:6px; padding:16px 16px 14px; border-radius:18px; }
-  body:not(.ontop):not(.onside):not(.onsum) tbody tr { padding:16px; border-radius:20px; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { padding:16px; border-radius:20px; }
 }
 
 /* =====================================================================
@@ -3967,8 +3967,8 @@ html.dark * {
 }
 html.dark .panel > .head { background:#0c1211; box-shadow:inset 0 0 0 1px rgba(255,255,255,.06); }
 html.dark th { background:var(--head); color:var(--mute); }
-html.dark body:not(.ontop):not(.onside):not(.onsum) tbody td:nth-child(4) { color:var(--mute); }
-html.dark body:not(.ontop):not(.onside):not(.onsum) tbody tr.picked { background:color-mix(in srgb, var(--acc1) 18%, var(--panel)); }
+html.dark body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) { color:var(--mute); }
+html.dark body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked { background:color-mix(in srgb, var(--acc1) 18%, var(--panel)); }
 html.dark .mgnav button.on .mgic { background:var(--acc1); color:var(--char); border-color:var(--acc1); }
 html.dark .mgnav button:hover .mgic { border-color:var(--acc1); }
 html.dark dialog { background:var(--panel); color:var(--ink); }
@@ -4260,3 +4260,31 @@ html.dark .dvcloud button { background:var(--acc1); color:var(--char); }
 .mgcact { display:flex; gap:8px; flex-wrap:wrap; }
 .mgcact button { padding:10px 16px; border:0; border-radius:999px; font-weight:800; background:var(--tile); color:var(--on-dark); }
 .mgcact button.primary { background:var(--acc1); color:var(--char); }
+
+/* Your profile: photo left, details + bio right, then the person's own work */
+#profDlg { width:min(780px, 96vw); }
+.pftop { display:grid; grid-template-columns:auto minmax(0, 1fr); gap:18px 22px; align-items:start; margin:6px 0 14px; }
+.pfleft { display:flex; flex-direction:column; align-items:center; gap:10px; }
+.pfleft .pfpicbtns { flex-direction:column; width:100%; }
+.pfleft .pfpicbtns button { width:100%; padding:7px 12px; font-size:13px; border-radius:999px; }
+.pfwho { display:flex; flex-direction:column; gap:2px; margin:0 0 10px; }
+.pfwho b { font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
+.pfwho span { font-size:12.5px; color:var(--mute); }
+.pfright label { margin-bottom:10px; }
+.pfacts { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin:4px 0 12px; }
+.pfacts button { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 8px; border:0 !important; border-radius:14px !important; background:var(--head) !important; color:var(--ink); font-weight:800; font-size:14px; }
+.pfacts button .c { padding:1px 8px; border-radius:999px; background:var(--panel); color:var(--mute); font-size:12px; font-weight:700; }
+.pfacts button:hover { box-shadow:0 0 0 2px var(--acc2); }
+.pfacts button[aria-selected="true"] { background:var(--char) !important; color:#fff; }
+.pfacts button[aria-selected="true"] .c { background:var(--acc1); color:var(--char); }
+html.dark .pfacts button[aria-selected="true"] { background:var(--acc1) !important; color:var(--char); }
+html.dark .pfacts button[aria-selected="true"] .c { background:var(--char); color:var(--acc1); }
+.pfwork { margin:0 0 14px; max-height:42vh; overflow:auto; border-radius:14px; background:var(--head); padding:4px; animation:mgRise .3s ease both; }
+.pfwork .empty { padding:22px 10px; }
+.pfwork .tw { border:0; }
+.pfwork .sumtbl { min-width:560px; }
+@media (max-width: 560px) {
+  .pftop { gap:12px 14px; }
+  .pfleft .avatar.lg { width:72px; height:72px; font-size:26px; }
+  .pfacts { grid-template-columns:repeat(2, minmax(0, 1fr)); }
+}

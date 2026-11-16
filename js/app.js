@@ -2825,7 +2825,10 @@
       "Material Transaction",
       "Inspections & Deliveries",
       "Analytics",
+      "Greens Management",
     ],
+    // Left-to-right order of the Manage buttons (indexes into MGOPTS; mgOpt stays the index).
+    MGORDER = [0, 1, 2, 3, 4, 6, 5],
     // Short descriptions shown when hovering over (or tabbing to) each Manage option.
     MGTIPS = [
       "Add people, change their access, and choose what each person is allowed to do.",
@@ -2834,6 +2837,7 @@
       "See who added, removed or moved stock on a chosen day, with a 7-day view per person.",
       "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
       "Charts and trends for your inventory. Coming soon.",
+      "Greens management tools. Coming soon.",
     ],
     MGICONS = [
       '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
@@ -2842,6 +2846,7 @@
       '<path d="M4 8h14l-3-3M20 16H6l3 3"/>',
       '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>',
       '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
+      '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19c3-4 6-7 10-9"/>',
     ];
   // Signed-in person (cloud account). Kept on the device so people stay signed in.
   try {
@@ -2991,14 +2996,108 @@
     pfPic = pr.pic || "";
     f.elements.nick.value = pr.nick || "";
     f.elements.bio.value = pr.bio || "";
-    $("pfWho").textContent = (sess.name || "") + " · " + sess.email + " · " + ROLE_LABEL[sess.role];
+    $("pfWho").innerHTML =
+      "<b>" + esc(sess.name || sess.email) + "</b><span>" + esc(sess.email) + " · " + ROLE_LABEL[sess.role] + "</span>";
     $("pfMsg").textContent = "";
     $("pfCount").textContent = f.elements.bio.value.length + " / 500";
     pfShowPic();
+    pfWorkSel = null;
+    renderPfWork();
     $("profileBtn").classList.add("on");
     $("profDlg").showModal();
   }
   $("profileBtn").onclick = openProfile;
+
+  /* ---------- Your profile: the person's own EWOs, pick lists, put aways and delivery trips ---------- */
+  var pfWorkSel = null;
+  function pfMine(i) {
+    var me = sess && sess.email;
+    if (i === 1)
+      return st.ewos.filter(function (e) {
+        return e.by === me;
+      });
+    if (i === 4)
+      return st.manifests.filter(function (m) {
+        return m.by === me;
+      });
+    return null; // Pick List and Put Away aren't built yet, so nobody has records there.
+  }
+  function renderPfWork() {
+    $("pfActs").innerHTML = [1, 2, 3, 4]
+      .map(function (i) {
+        var l = pfMine(i);
+        return (
+          '<button type="button" role="tab" data-pfw="' +
+          i +
+          '" aria-selected="' +
+          (pfWorkSel === i) +
+          '">' +
+          esc(oname(i)) +
+          '<span class="c">' +
+          (l ? l.length : "–") +
+          "</span></button>"
+        );
+      })
+      .join("");
+    var box = $("pfWork");
+    box.hidden = !pfWorkSel;
+    if (!pfWorkSel) return;
+    var name = esc(oname(pfWorkSel)),
+      l = (pfMine(pfWorkSel) || []).slice().reverse();
+    if (pfWorkSel === 2 || pfWorkSel === 3) {
+      box.innerHTML = '<div class="empty">' + name + " isn't set up yet, so there's nothing to show.</div>";
+    } else if (!l.length) {
+      box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
+    } else if (pfWorkSel === 1) {
+      box.innerHTML = ewoTableHtml(l, true);
+    } else {
+      box.innerHTML =
+        '<div class="tw"><table class="sumtbl"><thead><tr><th>Trip</th><th>Status</th><th>Receipts</th><th>Started</th><th></th></tr></thead><tbody>' +
+        l
+          .map(function (m) {
+            return (
+              '<tr><td class="cname">' +
+              dvTripName(m) +
+              "<small>" +
+              esc(m.no) +
+              "</small></td><td>" +
+              dvChip(m) +
+              '</td><td class="ph">' +
+              m.lines.length +
+              " · " +
+              dvBoxes(m.lines) +
+              " boxes</td><td>" +
+              dvWhen(m.ts) +
+              '</td><td class="act"><button type="button" data-pfopen="' +
+              m.id +
+              '">Open</button></td></tr>'
+            );
+          })
+          .join("") +
+        "</tbody></table></div>";
+    }
+  }
+  $("pfActs").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-pfw]");
+    if (!b) return;
+    var i = +b.dataset.pfw;
+    pfWorkSel = pfWorkSel === i ? null : i;
+    renderPfWork();
+  });
+  // "Open" on a trip jumps to it in the Delivery tab.
+  $("pfWork").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-pfopen]");
+    if (!b) return;
+    $("profDlg").close();
+    dvId = b.dataset.pfopen;
+    dvView = "trip";
+    dvFlash = "";
+    dvSel = null;
+    st.manage = false;
+    st.side = null;
+    st.top = 4;
+    render();
+  });
   $("profDlg").addEventListener("close", function () {
     $("profileBtn").classList.remove("on");
   });
@@ -3165,7 +3264,7 @@
     if (!ok) return;
     var nav = $("mgNav");
     if (nav.children.length !== MGOPTS.length)
-      nav.innerHTML = MGOPTS.map(function (x, i) {
+      nav.innerHTML = MGORDER.map(function (i) {
         return (
           '<button data-opt="' +
           i +
@@ -3178,7 +3277,7 @@
         );
       }).join("");
     MGOPTS.forEach(function (x, i) {
-      var b = nav.children[i];
+      var b = nav.querySelector('[data-opt="' + i + '"]');
       var lb = b.querySelector(".mgl");
       if (lb.textContent !== x) lb.textContent = x;
       b.classList.toggle("on", i === mgOpt);
@@ -3345,7 +3444,7 @@
     var next = +b.dataset.opt;
     if (next === mgOpt) return;
     // Lets the CSS slide the new section in from the side you moved toward.
-    $("mgBody").dataset.dir = next > mgOpt ? "fwd" : "back";
+    $("mgBody").dataset.dir = MGORDER.indexOf(next) > MGORDER.indexOf(mgOpt) ? "fwd" : "back";
     mgOpt = next;
     renderManage();
   });
@@ -6883,10 +6982,11 @@
     var changed = false,
       since = new Date(Date.now() - 45 * 864e5).toISOString(),
       rows = await sbRest("manifests?select=id,data&updated_at=gte." + encodeURIComponent(since) + "&order=updated_at.asc"),
-      seen = {};
+      seen = {},
+      dels = cloudDels();
     (rows || []).forEach(function (r) {
       var d = r.data;
-      if (!d || !d.id) return;
+      if (!d || !d.id || dels.indexOf(d.id) >= 0) return; // deleted here; the cloud delete is still queued
       seen[d.id] = 1;
       var loc = dvFind(d.id);
       if (!loc) {
@@ -6901,10 +7001,16 @@
         changed = true;
       }
     });
-    // Someone else's open trip that disappeared from the cloud was deleted on their device.
+    // A synced trip that disappeared from the cloud was deleted on another device (or by its owner).
     var before = st.manifests.length;
     st.manifests = st.manifests.filter(function (m2) {
-      return m2.by === curEmail() || m2.status === "submitted" || !m2.syncedUpd || seen[m2.id] || Date.now() - m2.upd > 45 * 864e5;
+      return (
+        seen[m2.id] ||
+        !m2.syncedUpd ||
+        cloudDirty(m2) ||
+        m2.status === "submitted" ||
+        Date.now() - m2.upd > 45 * 864e5 // older than what is fetched: keep
+      ) && dels.indexOf(m2.id) < 0;
     });
     return changed || st.manifests.length !== before;
   }
@@ -7875,7 +7981,8 @@
       });
       audit("Delivery", "Deleted " + dvTripName(m) + " (" + m.no + ") while loading");
       save();
-      if (m.syncedUpd) cloudForget(m.id);
+      // Always ask the cloud to delete it: its upload may still be on the way.
+      cloudForget(m.id);
       dvView = "home";
       toast("Trip deleted.");
     } else if ((b.dataset.dvq || b.hasAttribute("data-dvrm")) && m && dvMine(m) && m.status === "loading") {

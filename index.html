@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261114" />
+    <link rel="stylesheet" href="css/styles.css?v=20261116e" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -274,6 +274,15 @@
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></svg>
                     <h3>Analytics</h3>
                     <p>Charts and trends for your inventory will live here. Coming soon.</p>
+                  </div>
+                </div>
+              </div>
+              <div id="mgOpt6" hidden>
+                <div class="mgpad">
+                  <div class="anlsoon">
+                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
+                    <h3>Greens Management</h3>
+                    <p>Greens management tools will live here. Coming soon.</p>
                   </div>
                 </div>
               </div>
@@ -612,31 +621,37 @@
     <dialog id="profDlg">
       <form method="dialog" id="profForm">
         <h2>Your profile</h2>
-        <div class="pfhead">
-          <div class="pfpic" id="pfPic"></div>
-          <div class="pfpicbtns">
-            <button type="button" id="pfUpload">Upload photo</button>
-            <button type="button" id="pfRemove">Remove photo</button>
-            <input type="file" id="pfFile" accept="image/*" hidden />
+        <div class="pftop">
+          <div class="pfleft">
+            <div class="pfpic" id="pfPic"></div>
+            <div class="pfpicbtns">
+              <button type="button" id="pfUpload">Upload photo</button>
+              <button type="button" id="pfRemove">Remove photo</button>
+              <input type="file" id="pfFile" accept="image/*" hidden />
+            </div>
+          </div>
+          <div class="pfright">
+            <p class="pfwho" id="pfWho"></p>
+            <label
+              >Nickname<input
+                name="nick"
+                maxlength="40"
+                autocomplete="off"
+                placeholder="What people call you"
+            /></label>
+            <label
+              >Bio<textarea
+                name="bio"
+                rows="4"
+                maxlength="500"
+                placeholder="A little about you, your role, your area…"
+              ></textarea>
+              <small id="pfCount" class="pfcount"></small>
+            </label>
           </div>
         </div>
-        <p class="pfwho" id="pfWho"></p>
-        <label
-          >Nickname<input
-            name="nick"
-            maxlength="40"
-            autocomplete="off"
-            placeholder="What people call you"
-        /></label>
-        <label
-          >Bio<textarea
-            name="bio"
-            rows="5"
-            maxlength="500"
-            placeholder="A little about you, your role, your area…"
-          ></textarea>
-          <small id="pfCount" class="pfcount"></small>
-        </label>
+        <div class="pfacts" id="pfActs" role="tablist" aria-label="Your work"></div>
+        <div class="pfwork" id="pfWork" role="tabpanel" hidden></div>
         <div class="pfdark">
           <button type="button" class="dmswitch" id="darkSwitch" role="switch" aria-checked="false">
             <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span
@@ -784,10 +799,10 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261114"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261114"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261114"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261114"></script>
-    <script src="js/app.js?v=20261114"></script>
+    <script src="js/data/items-data.js?v=20261116e"></script>
+    <script src="js/vendor/pdfjs-embedded.js?v=20261116e"></script>
+    <script src="js/vendor/jbig2-wasm.js?v=20261116e"></script>
+    <script src="js/vendor/zxing-embedded.js?v=20261116e"></script>
+    <script src="js/app.js?v=20261116e"></script>
   </body>
 </html>
