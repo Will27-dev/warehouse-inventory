@@ -2146,7 +2146,7 @@
       (n === 1 ? " photo" : " photos") +
       (l.folder ? " · from folder" : "") +
       "</small></div>" +
-      (l.folder
+      (l.folder && !isMgr()
         ? '<span class="dlftag">Folder</span>'
         : '<div class="dlcb"><button data-photo>+ Photo</button></div>') +
       "</div>"
@@ -2330,15 +2330,21 @@
       for (var i = 0; i < items.length; i++) {
         var it = items[i];
         if (!it.id) {
-          var sub = await sbList("delivery-photos", base + "/" + it.name + "/"),
+          var dir = base + "/" + it.name,
+            sub = await sbList("delivery-photos", dir + "/"),
             ps = sub
               .filter(function (f) {
                 return f.id && DLF_IMG.test(f.name);
               })
               .map(function (f) {
-                return base + "/" + it.name + "/" + f.name;
-              });
-          if (ps.length) locs.push({ name: it.name, paths: ps });
+                return dir + "/" + f.name;
+              }),
+            note = sub.some(function (f) {
+              return f.name === "notes.txt";
+            })
+              ? await (await sbDownload("delivery-photos", dir + "/notes.txt")).text()
+              : "";
+          if (ps.length || note) locs.push({ name: it.name, paths: ps, dir: dir, notes: note });
         } else if (DLF_IMG.test(it.name)) locs.push({ name: it.name.replace(/\.[^.]+$/, ""), paths: [base + "/" + it.name] });
       }
       var all = [].concat.apply(
@@ -2352,15 +2358,18 @@
         return x.name.localeCompare(y.name, undefined, { numeric: true });
       });
       dlf.cache[a.id] = locs.map(function (l) {
+        var paths = l.paths.filter(function (p) {
+          return url[p];
+        });
         return {
           id: "f:" + l.name,
           name: l.name,
-          notes: "Stored in the cloud (" + base + ").",
-          pics: l.paths
-            .map(function (p) {
-              return url[p];
-            })
-            .filter(Boolean),
+          notes: l.notes || "",
+          pics: paths.map(function (p) {
+            return url[p];
+          }),
+          paths: paths,
+          dir: l.dir || null,
           folder: true,
         };
       });
@@ -2370,6 +2379,37 @@
       dlf.err = x instanceof TypeError ? "offline" : x.message;
     }
     if (!$("mapPanel").hidden) renderMap();
+  }
+  // Saves an edited cloud location as "<Button>/<Name>/" (photos + notes.txt); renames move the files.
+  // ed = { paths: kept cloud paths, pics: their links followed by new pictures (data URLs) }.
+  async function dlfSave(a, l, name, notes, ed) {
+    var B = "delivery-photos",
+      dir = dlfFolderName(a.name) + "/" + dlfFolderName(name),
+      drop = l.paths.filter(function (p) {
+        return ed.paths.indexOf(p) < 0;
+      });
+    if (l.dir && l.dir !== dir) drop.push(l.dir + "/notes.txt");
+    if (!notes) drop.push(dir + "/notes.txt");
+    toast("Saving to the cloud…");
+    try {
+      if (drop.length) await sbFetch("/storage/v1/object/" + B, { method: "DELETE", body: { prefixes: drop } });
+      for (var i = 0; i < ed.paths.length; i++) {
+        var to = dir + "/" + ed.paths[i].split("/").pop();
+        if (ed.paths[i] !== to)
+          await sbFetch("/storage/v1/object/move", {
+            method: "POST",
+            body: { bucketId: B, sourceKey: ed.paths[i], destinationKey: to },
+          });
+      }
+      var news = ed.pics.slice(ed.paths.length);
+      for (i = 0; i < news.length; i++)
+        await sbUpload(B, dir + "/photo-" + Date.now() + "-" + i + ".jpg", await (await fetch(news[i])).blob());
+      if (notes) await sbUpload(B, dir + "/notes.txt", new Blob([notes], { type: "text/plain" }));
+      toast("Saved “" + name + "”.");
+    } catch (x) {
+      toast("Couldn't save to the cloud: " + x.message);
+    }
+    await dlfScan(a, true);
   }
   function dlfRender() {
     var box = $("dlFolder");
@@ -2504,7 +2544,7 @@
     var a = findArea(aId),
       l = lId ? findLoc(a, lId) : null,
       f = $("spotForm").elements;
-    spotEd = { a: aId, l: lId || null, pics: l ? l.pics.slice() : [] };
+    spotEd = { a: aId, l: lId || null, pics: l ? l.pics.slice() : [], paths: l && l.folder ? l.paths.slice() : null };
     $("spotTitle").textContent = l ? "Edit location" : "Add location to " + a.name;
     f.nm.value = l ? l.name : "";
     f.notes.value = l ? l.notes : "";
@@ -2553,7 +2593,7 @@
   }
   $("spotFile").addEventListener("change", function () {
     var files = [].slice.call(this.files),
-      room = PMAX - spotEd.pics.length;
+      room = spotEd.paths ? 99 : PMAX - spotEd.pics.length; // PMAX only limits pictures kept on this device
     if (files.length > room) {
       toast("Up to " + PMAX + " pictures per location.");
       files = files.slice(0, room);
@@ -2572,6 +2612,7 @@
     var b = e.target.closest("button[data-rm]");
     if (b) {
       spotEd.pics.splice(+b.dataset.rm, 1);
+      if (spotEd.paths) spotEd.paths.splice(+b.dataset.rm, 1); // no-op for new pictures (past the end)
       drawThumbs();
     }
   });
@@ -2580,7 +2621,24 @@
   };
   $("spotDel").onclick = function () {
     if (!confirm("Delete this location, with its pictures and notes?")) return;
-    var a = findArea(spotEd.a);
+    var a = findArea(spotEd.a),
+      cl = spotEd.paths && findLoc(a, spotEd.l);
+    if (cl) {
+      $("spotDlg").close();
+      sbFetch("/storage/v1/object/delivery-photos", {
+        method: "DELETE",
+        body: { prefixes: cl.paths.concat(cl.dir ? [cl.dir + "/notes.txt"] : []) },
+      }).then(
+        function () {
+          toast("Location deleted.");
+          dlfScan(a, true);
+        },
+        function (x) {
+          toast("Couldn't delete from the cloud: " + x.message);
+        }
+      );
+      return;
+    }
     if (a)
       a.locs = a.locs.filter(function (x) {
         return x.id !== spotEd.l;
@@ -2600,6 +2658,10 @@
     }
     var a = findArea(spotEd.a),
       l = spotEd.l ? findLoc(a, spotEd.l) : null;
+    if (l && l.folder) {
+      dlfSave(a, l, name, f.notes.value.trim(), spotEd);
+      return;
+    }
     if (l) {
       l.name = name;
       l.notes = f.notes.value.trim();
@@ -2616,8 +2678,8 @@
       l = findLoc(a, lId);
     if (!l) return;
     viewRef = { a: aId, l: lId };
-    // Folder photos are changed in the folder itself, so no Add/Edit here.
-    $("viewAdd").hidden = $("viewEdit").hidden = !!l.folder;
+    // Cloud photos: only the owner/admins can change them (storage rules).
+    $("viewAdd").hidden = $("viewEdit").hidden = !!l.folder && !isMgr();
     $("viewBody").innerHTML =
       '<div class="vlabel" style="margin:0 0 4px">' +
       esc(a.name) +
@@ -2675,7 +2737,8 @@
       files = [].slice.call(this.files);
     this.value = "";
     if (!l || !files.length) return;
-    var room = PMAX - l.pics.length;
+    var room = l.folder ? 99 : PMAX - l.pics.length,
+      news = [];
     if (files.length > room) {
       toast("Up to " + PMAX + " pictures per location.");
       files = files.slice(0, room);
@@ -2684,13 +2747,16 @@
     if (!left) return;
     files.forEach(function (f) {
       shrink(f, function (u) {
-        if (u) l.pics.push(u);
-        if (--left === 0) {
-          saveDl();
-          renderMap();
-          if ($("viewDlg").open) viewLoc(tg.a, tg.l);
-          toast("Picture added.");
-        }
+        if (u) (l.folder ? news : l.pics).push(u);
+        if (--left > 0) return;
+        if (l.folder)
+          return dlfSave(a, l, l.name, l.notes, { paths: l.paths, pics: l.pics.concat(news) }).then(function () {
+            if ($("viewDlg").open && findLoc(a, tg.l)) viewLoc(tg.a, tg.l);
+          });
+        saveDl();
+        renderMap();
+        if ($("viewDlg").open) viewLoc(tg.a, tg.l);
+        toast("Picture added.");
       });
     });
   });
