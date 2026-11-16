@@ -46108,8 +46108,16 @@ var ZXING_Z = [
     return String(s).toLowerCase().replace(/[^a-z0-9]/g, "");
   }
   // Folder names can't contain / \ : * ? " < > |, so "BOF/Caster" becomes "BOF-Caster".
+  // Cloud storage only takes plain letters and a few symbols ("Invalid key" otherwise):
+  // "Bob’s Café – Dock #4" becomes "Bob's Cafe - Dock 4".
   function dlfFolderName(s) {
-    return String(s).replace(/[\\/:*?"<>|]+/g, "-").trim();
+    return String(s)
+      .normalize("NFD")
+      .replace(/[̀-ͯ#]/g, "")
+      .replace(/[‘’`]/g, "'")
+      .replace(/[^\w!.'() &$@=;+,-]+/g, "-")
+      .replace(/\s+/g, " ")
+      .trim();
   }
   async function dlfScan(a, force) {
     if (!a || !cloudOn()) return;
@@ -46196,7 +46204,7 @@ var ZXING_Z = [
       for (i = 0; i < news.length; i++)
         await sbUpload(B, dir + "/photo-" + Date.now() + "-" + i + ".jpg", await (await fetch(news[i])).blob());
       if (notes) await sbUpload(B, dir + "/notes.txt", new Blob([notes], { type: "text/plain" }));
-      toast("Saved “" + name + "”.");
+      toast("Saved “" + dir.split("/").pop() + "”.");
     } catch (x) {
       toast("Couldn't save to the cloud: " + x.message);
     }
@@ -46253,7 +46261,7 @@ var ZXING_Z = [
             return DLF_IMG.test(f.name);
           })
           .map(function (f) {
-            return { path: dlfFolderName(open.name) + "/" + f.name, file: f };
+            return { path: dlfFolderName(open.name) + "/" + dlfFolderName(f.name), file: f };
           });
         if (!jobs.length) return toast("No photos were picked.");
         await sbUploadAll("delivery-photos", jobs, "photo");
@@ -46269,7 +46277,7 @@ var ZXING_Z = [
           if (!hit) return skipped++;
           var r = hit.rest; // [photo] or [sub folder, ..., photo]: keep one sub folder level
           jobs.push({
-            path: dlfFolderName(hit.a.name) + "/" + (r.length > 1 ? r[0].trim() + "/" : "") + f.name,
+            path: dlfFolderName(hit.a.name) + "/" + (r.length > 1 ? dlfFolderName(r[0]) + "/" : "") + dlfFolderName(f.name),
             file: f,
           });
         });
