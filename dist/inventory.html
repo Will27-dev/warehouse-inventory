@@ -2576,7 +2576,7 @@ tr.hid td,
 .tpbar .sp {
   flex: 1;
 }
-/* Manage → Inspections & Deliveries: linked PDF folder */
+/* Manage → Inspection Sheets: linked PDF folder */
 .fdsec {
   margin: 0 0 12px;
   font-size: 14px;
@@ -4426,7 +4426,15 @@ body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
 .pkname { margin: 4px 0 2px; font-size: 24px; font-weight: 650; letter-spacing: -.015em; }
 .pkmeta { margin: 0 0 16px; color: var(--mute); font-size: 14px; }
 .pksplit { display: grid; grid-template-columns: minmax(0, 1fr) min-content; gap: 20px; align-items: start; }
-.pkdoc { display: grid; gap: 12px; }
+.pkdocwrap { min-width: 0; }
+.pkdoc { display: flex; align-items: start; overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: 10px; }
+.pkdoc::-webkit-scrollbar { display: none; }
+.pkdoc > .pkpage { flex: 0 0 100%; scroll-snap-align: start; }
+.pkpager { display: flex; align-items: center; justify-content: center; gap: 12px; padding-top: 10px; }
+.pkpager button { width: 44px; height: 44px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--head); color: var(--ink); border: 1px solid var(--line); cursor: pointer; }
+.pkpager button:hover:not(:disabled) { border-color: var(--acc1); }
+.pkpager button:disabled { opacity: .4; cursor: default; }
+.pkpager span { min-width: 150px; text-align: center; color: var(--mute); font-size: 14px; font-variant-numeric: tabular-nums; }
 .pkdoc canvas { width: 100%; height: auto; border-radius: 10px; background: #fff; box-shadow: inset 0 0 0 1px var(--line); }
 .pknote { color: var(--mute); margin: 8px 0; }
 .pktab { width: 100%; min-width: 0; table-layout: auto; border-collapse: collapse; font-variant-numeric: tabular-nums; font-size: 14px; }
@@ -4435,7 +4443,7 @@ body:not(.ontop):not(.onside):not(.onsum) #panel .scroll { max-height: none; }
 .pktab td .m { color: var(--mute); }
 .pktab input { width: 60px; min-height: 44px; padding: 0 10px; border-radius: 10px; border: 1px solid var(--line); background: var(--head); color: var(--ink); font: inherit; }
 .pktab input:focus-visible { border-color: var(--acc1); }
-@media (max-width: 1240px) { .pksplit { grid-template-columns: minmax(0, 1fr); } .pkdoc { max-width: 820px; } }
+@media (max-width: 1240px) { .pksplit { grid-template-columns: minmax(0, 1fr); } .pkdocwrap { max-width: 820px; } }
 @media (max-width: 640px) {
   .pksplit { grid-template-columns: minmax(0, 1fr); }
   .pktab thead { display: none; }
@@ -4606,7 +4614,18 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
                 <h3 class="pkname" id="pkName"></h3>
                 <p class="pkmeta" id="pkMeta"></p>
                 <div class="pksplit">
-                  <div class="pkdoc" id="pkDoc"></div>
+                  <div class="pkdocwrap">
+                    <div class="pkdoc" id="pkDoc" tabindex="0" aria-label="Pick slip pages"></div>
+                    <div class="pkpager" id="pkPager" hidden>
+                      <button type="button" id="pkPrev" aria-label="Previous page">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+                      </button>
+                      <span id="pkPageNo" aria-live="polite"></span>
+                      <button type="button" id="pkNext" aria-label="Next page">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+                      </button>
+                    </div>
+                  </div>
                   <div id="pkRows"></div>
                 </div>
               </div>
@@ -45530,10 +45549,37 @@ var ZXING_Z = [
       wrap.dataset.pg = i;
       wrap.appendChild(cv);
       box.appendChild(wrap);
+      pkPagerSync();
       await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
     }
     if (pkPdfs[pkOpen] === p) pkMarks(p);
   }
+  // The slip's pages slide sideways one at a time (swipe, arrow keys or the pager buttons).
+  function pkPagerSync() {
+    var box = $("pkDoc"),
+      n = box.children.length,
+      i = Math.min(n - 1, Math.round(box.scrollLeft / (box.clientWidth || 1))),
+      cur = box.children[i];
+    $("pkPager").hidden = n < 2;
+    $("pkPageNo").textContent =
+      (cur && cur.classList.contains("pkprobs") ? "Problems, page " : "Page ") + (i + 1) + " of " + n;
+    $("pkPrev").disabled = i <= 0;
+    $("pkNext").disabled = i >= n - 1;
+  }
+  function pkSlide(d) {
+    var box = $("pkDoc");
+    box.scrollBy({
+      left: d * box.clientWidth,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }
+  $("pkDoc").addEventListener("scroll", pkPagerSync, { passive: true });
+  $("pkPrev").onclick = function () {
+    pkSlide(-1);
+  };
+  $("pkNext").onclick = function () {
+    pkSlide(1);
+  };
   // Problem rows: a black circle on the item # in the slip, and a Problems page after the last page.
   function pkMarks(p) {
     var box = $("pkDoc");
@@ -45553,12 +45599,14 @@ var ZXING_Z = [
         "left:" + r.box[0] + "%;top:" + r.box[1] + "%;width:" + r.box[2] + "%;height:" + r.box[3] + "%";
       pg.appendChild(c);
     });
+    pkPagerSync();
     if (!probs.length) return;
     var pp = document.createElement("section");
     pp.className = "pkpage pkprobs";
     pp.setAttribute("aria-label", "Problems");
     pp.innerHTML = pkProbsHtml(p);
     box.appendChild(pp);
+    pkPagerSync();
   }
   function pkProbsHtml(p) {
     return (
@@ -47548,7 +47596,7 @@ var ZXING_Z = [
       "View Delivery Manifests",
       "Templates",
       "Picks and Put Away",
-      "Inspections & Deliveries",
+      "Inspection Sheets",
       "Analytics",
       "Greens Management",
     ],
@@ -50759,7 +50807,7 @@ var ZXING_Z = [
       save();
       ins = null;
       renderInsp();
-      toast("Inspection sheet finished. It is saved under Manage → Inspections & Deliveries.");
+      toast("Inspection sheet finished. It is saved under Manage → Inspection Sheets.");
     } catch (e) {
       console.error(e);
       toast("The sheet could not be saved. Browser storage may be full.");
@@ -50767,7 +50815,7 @@ var ZXING_Z = [
     }
   };
 
-  /* ---------- finished sheets (Manage → Inspections & Deliveries) ---------- */
+  /* ---------- finished sheets (Manage → Inspection Sheets) ---------- */
   /* =====================================================================
      Manage: finished inspection sheets, PDF export and viewer
      ===================================================================== */
@@ -50835,7 +50883,7 @@ var ZXING_Z = [
   }
 
   /* =====================================================================
-     Manage: inspection PDFs in cloud storage (Inspections & Deliveries)
+     Manage: inspection PDFs in cloud storage (Inspection Sheets)
      Bucket "inspection-pdfs": PDFs at the top level or one sub folder deep. Everyone signed in
      sees them; owner/admins upload single PDFs or a whole folder.
      ===================================================================== */
@@ -52025,7 +52073,7 @@ var ZXING_Z = [
       n.logs +
       " log entries and " +
       n.trips +
-      " of your trips. Upload them once from the device that has your real data; other devices then download them. For photos and PDFs, use <b>Upload a folder</b> in Delivery Locations and in Inspections &amp; Deliveries.</p></div>" +
+      " of your trips. Upload them once from the device that has your real data; other devices then download them. For photos and PDFs, use <b>Upload a folder</b> in Delivery Locations and in Inspection Sheets.</p></div>" +
       '<div class="mgcact"><button class="primary" data-cloudup="go">Upload this device\'s data</button><button data-cloudup="hide">Not this device</button></div></div>';
   }
   $("mgBody").addEventListener("click", async function (e) {

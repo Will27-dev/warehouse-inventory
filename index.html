@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261117i" />
+    <link rel="stylesheet" href="css/styles.css?v=20261117l" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -140,7 +140,18 @@
                 <h3 class="pkname" id="pkName"></h3>
                 <p class="pkmeta" id="pkMeta"></p>
                 <div class="pksplit">
-                  <div class="pkdoc" id="pkDoc"></div>
+                  <div class="pkdocwrap">
+                    <div class="pkdoc" id="pkDoc" tabindex="0" aria-label="Pick slip pages"></div>
+                    <div class="pkpager" id="pkPager" hidden>
+                      <button type="button" id="pkPrev" aria-label="Previous page">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>
+                      </button>
+                      <span id="pkPageNo" aria-live="polite"></span>
+                      <button type="button" id="pkNext" aria-label="Next page">
+                        <svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18l6-6-6-6" /></svg>
+                      </button>
+                    </div>
+                  </div>
                   <div id="pkRows"></div>
                 </div>
               </div>
@@ -849,10 +860,10 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261117i"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261117i"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261117i"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261117i"></script>
-    <script src="js/app.js?v=20261117i"></script>
+    <script src="js/data/items-data.js?v=20261117l"></script>
+    <script src="js/vendor/pdfjs-embedded.js?v=20261117l"></script>
+    <script src="js/vendor/jbig2-wasm.js?v=20261117l"></script>
+    <script src="js/vendor/zxing-embedded.js?v=20261117l"></script>
+    <script src="js/app.js?v=20261117l"></script>
   </body>
 </html>

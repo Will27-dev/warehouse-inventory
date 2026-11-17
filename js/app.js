@@ -1524,10 +1524,37 @@
       wrap.dataset.pg = i;
       wrap.appendChild(cv);
       box.appendChild(wrap);
+      pkPagerSync();
       await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
     }
     if (pkPdfs[pkOpen] === p) pkMarks(p);
   }
+  // The slip's pages slide sideways one at a time (swipe, arrow keys or the pager buttons).
+  function pkPagerSync() {
+    var box = $("pkDoc"),
+      n = box.children.length,
+      i = Math.min(n - 1, Math.round(box.scrollLeft / (box.clientWidth || 1))),
+      cur = box.children[i];
+    $("pkPager").hidden = n < 2;
+    $("pkPageNo").textContent =
+      (cur && cur.classList.contains("pkprobs") ? "Problems, page " : "Page ") + (i + 1) + " of " + n;
+    $("pkPrev").disabled = i <= 0;
+    $("pkNext").disabled = i >= n - 1;
+  }
+  function pkSlide(d) {
+    var box = $("pkDoc");
+    box.scrollBy({
+      left: d * box.clientWidth,
+      behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+    });
+  }
+  $("pkDoc").addEventListener("scroll", pkPagerSync, { passive: true });
+  $("pkPrev").onclick = function () {
+    pkSlide(-1);
+  };
+  $("pkNext").onclick = function () {
+    pkSlide(1);
+  };
   // Problem rows: a black circle on the item # in the slip, and a Problems page after the last page.
   function pkMarks(p) {
     var box = $("pkDoc");
@@ -1547,12 +1574,14 @@
         "left:" + r.box[0] + "%;top:" + r.box[1] + "%;width:" + r.box[2] + "%;height:" + r.box[3] + "%";
       pg.appendChild(c);
     });
+    pkPagerSync();
     if (!probs.length) return;
     var pp = document.createElement("section");
     pp.className = "pkpage pkprobs";
     pp.setAttribute("aria-label", "Problems");
     pp.innerHTML = pkProbsHtml(p);
     box.appendChild(pp);
+    pkPagerSync();
   }
   function pkProbsHtml(p) {
     return (
@@ -3542,7 +3571,7 @@
       "View Delivery Manifests",
       "Templates",
       "Picks and Put Away",
-      "Inspections & Deliveries",
+      "Inspection Sheets",
       "Analytics",
       "Greens Management",
     ],
@@ -6753,7 +6782,7 @@
       save();
       ins = null;
       renderInsp();
-      toast("Inspection sheet finished. It is saved under Manage → Inspections & Deliveries.");
+      toast("Inspection sheet finished. It is saved under Manage → Inspection Sheets.");
     } catch (e) {
       console.error(e);
       toast("The sheet could not be saved. Browser storage may be full.");
@@ -6761,7 +6790,7 @@
     }
   };
 
-  /* ---------- finished sheets (Manage → Inspections & Deliveries) ---------- */
+  /* ---------- finished sheets (Manage → Inspection Sheets) ---------- */
   /* =====================================================================
      Manage: finished inspection sheets, PDF export and viewer
      ===================================================================== */
@@ -6829,7 +6858,7 @@
   }
 
   /* =====================================================================
-     Manage: inspection PDFs in cloud storage (Inspections & Deliveries)
+     Manage: inspection PDFs in cloud storage (Inspection Sheets)
      Bucket "inspection-pdfs": PDFs at the top level or one sub folder deep. Everyone signed in
      sees them; owner/admins upload single PDFs or a whole folder.
      ===================================================================== */
@@ -8019,7 +8048,7 @@
       n.logs +
       " log entries and " +
       n.trips +
-      " of your trips. Upload them once from the device that has your real data; other devices then download them. For photos and PDFs, use <b>Upload a folder</b> in Delivery Locations and in Inspections &amp; Deliveries.</p></div>" +
+      " of your trips. Upload them once from the device that has your real data; other devices then download them. For photos and PDFs, use <b>Upload a folder</b> in Delivery Locations and in Inspection Sheets.</p></div>" +
       '<div class="mgcact"><button class="primary" data-cloudup="go">Upload this device\'s data</button><button data-cloudup="hide">Not this device</button></div></div>';
   }
   $("mgBody").addEventListener("click", async function (e) {
