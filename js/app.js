@@ -1665,12 +1665,82 @@
   }
   // A submitted pick list is one entry in the shared activity log (category "Pick lists"),
   // so it syncs to the cloud with everything else and shows under Picks and Put Away.
+  function pkNum(v) {
+    var x = parseFloat(String(v == null ? "" : v).replace(/,/g, ""));
+    return isNaN(x) ? null : x;
+  }
+  // Before submitting: list lines where the slip's on hand and ours differ, and what Picked takes off.
+  var pkOkFor = null;
   function pkSubmit(p) {
     if (!sess) return toast("Sign in first, so the pick list reaches the cloud.");
     var no = (p.meta && p.meta.no) || "",
-      probs = Object.keys(p.prob).length;
-    if (!confirm("Submit " + (no ? "pick slip " + no : p.name) + "? It's sent to the cloud and can't be changed after."))
-      return;
+      off = [],
+      cant = [],
+      bad = p.rows.filter(function (r, j) {
+        var slip = pkNum(r.oh),
+          now = pkNow(r),
+          got = pkNum(p.picked[j]);
+        if (got > 0) (pkTarget(r) ? off : cant).push(r.n + " (" + got + ")");
+        return slip == null || now == null || slip !== now;
+      }),
+      li = function (l) {
+        return "<li>" + l + "</li>";
+      },
+      h = "";
+    if (bad.length)
+      h +=
+        '<p class="pkwarn"><b>On hand doesn\'t match on ' +
+        bad.length +
+        (bad.length === 1 ? " line." : " lines.") +
+        "</b> The slip's On hand and our On hand now are different here:</p><ul class=\"pkmis\">" +
+        bad
+          .map(function (r) {
+            var now = pkNow(r);
+            return li(
+              "<b>" + esc(r.n) + "</b> to " + esc(r.dest) + ": slip " + esc(r.oh) + ", now " + (now == null ? "not in list" : now)
+            );
+          })
+          .join("") +
+        "</ul><p>Go back and use Update qty on those lines, or submit anyway.</p>";
+    if (off.length)
+      h +=
+        "<p>Picked amounts come off our saved quantities when you submit: " +
+        esc(off.join(", ")) +
+        ".</p>";
+    if (cant.length)
+      h +=
+        "<p>These picked amounts can't come off, because the item isn't in the list or is in more than one bin: " +
+        esc(cant.join(", ")) +
+        ".</p>";
+    if (off.length && !can("qty"))
+      h += "<p>You can't change quantities, so picked amounts won't come off. Ask a manager for that permission.</p>";
+    $("pkOkTitle").textContent = "Submit " + (no ? "pick slip " + no : p.name) + "?";
+    $("pkOkBody").innerHTML = h + "<p class=\"m\">It's sent to the cloud and can't be changed after.</p>";
+    $("pkOkGo").textContent = bad.length ? "Submit anyway" : "Submit";
+    pkOkFor = p;
+    $("pkOkDlg").showModal();
+  }
+  $("pkOkBack").onclick = function () {
+    $("pkOkDlg").close();
+  };
+  $("pkOkGo").onclick = function () {
+    $("pkOkDlg").close();
+    if (pkOkFor) pkSend(pkOkFor);
+  };
+  function pkSend(p) {
+    var no = (p.meta && p.meta.no) || "",
+      probs = Object.keys(p.prob).length,
+      nowAt = p.rows.map(pkNow),
+      taken = {};
+    // Picked comes off the saved qty (after any Update qty), logged against this slip.
+    if (can("qty"))
+      p.rows.forEach(function (r, j) {
+        var got = pkNum(p.picked[j]),
+          tg = got > 0 && pkTarget(r);
+        if (!tg) return;
+        adjustQty(tg.id, -got, "Picked on pick slip " + (no || p.name));
+        taken[j] = got;
+      });
     var ts = Date.now();
     if (!st.audit) st.audit = [];
     st.audit.push({
@@ -1688,10 +1758,11 @@
         no: no,
         date: (p.meta && p.meta.date) || "",
         name: p.name,
-        rows: p.rows.map(function (r) {
-          return { n: r.n, alloc: r.alloc, uom: r.uom, dest: r.dest, to: r.to, oh: r.oh, loc: r.loc, now: pkNow(r) };
+        rows: p.rows.map(function (r, j) {
+          return { n: r.n, alloc: r.alloc, uom: r.uom, dest: r.dest, to: r.to, oh: r.oh, loc: r.loc, now: nowAt[j] };
         }),
         picked: p.picked,
+        taken: taken,
         upd: Object.keys(p.upd).reduce(function (o, j) {
           o[j] = 1;
           return o;
@@ -1702,7 +1773,8 @@
     save();
     p.sent = ts;
     renderPk();
-    toast("Pick list submitted.");
+    var nt = Object.keys(taken).length;
+    toast(nt ? "Pick list submitted. Picked amounts taken off " + nt + (nt === 1 ? " item." : " items.") : "Pick list submitted.");
   }
   // Edits are new activity entries pointing at the first submission (pick.of), because the
   // shared log is add-only. The newest entry for a pick list is the one shown.

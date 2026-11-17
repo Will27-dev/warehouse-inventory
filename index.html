@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261117e" />
+    <link rel="stylesheet" href="css/styles.css?v=20261117f" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -808,6 +808,14 @@
         </div>
       </form>
     </dialog>
+    <dialog id="pkOkDlg" aria-labelledby="pkOkTitle">
+      <h2 id="pkOkTitle">Submit pick list?</h2>
+      <div id="pkOkBody"></div>
+      <div class="actions">
+        <span class="sp"></span><button type="button" id="pkOkBack">Go back</button
+        ><button type="button" class="primary" id="pkOkGo">Submit</button>
+      </div>
+    </dialog>
     <dialog id="pkSubDlg" class="pksubdlg" aria-labelledby="pkSubTitle">
       <h2 id="pkSubTitle">Pick list</h2>
       <p class="pkmeta" id="pkSubMeta"></p>
@@ -841,10 +849,10 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261117e"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261117e"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261117e"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261117e"></script>
-    <script src="js/app.js?v=20261117e"></script>
+    <script src="js/data/items-data.js?v=20261117f"></script>
+    <script src="js/vendor/pdfjs-embedded.js?v=20261117f"></script>
+    <script src="js/vendor/jbig2-wasm.js?v=20261117f"></script>
+    <script src="js/vendor/zxing-embedded.js?v=20261117f"></script>
+    <script src="js/app.js?v=20261117f"></script>
   </body>
 </html>

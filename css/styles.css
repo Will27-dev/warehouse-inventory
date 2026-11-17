@@ -4455,3 +4455,7 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
 .pksubdlg .pkprobs { aspect-ratio: auto; margin-top: 16px; }
 .mglist li button { margin-left: auto; flex: none; min-height: 36px; padding: 0 14px; border-radius: 999px; background: var(--head); color: var(--ink); border: 1px solid var(--line); font: inherit; font-weight: 590; cursor: pointer; }
 .mglist li button:hover { border-color: var(--acc1); }
+#pkOkBody p { margin: 0 0 10px; }
+#pkOkBody .m { color: var(--mute); font-size: 14px; }
+.pkwarn b { color: var(--ink); }
+.pkmis { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
