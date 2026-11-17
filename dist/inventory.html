@@ -4739,7 +4739,7 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
                       multiple
                       hidden
                     /><span class="m"
-                      >PDF files only, up to 30 MB each. Kept as guides for other functions.</span
+                      >PDFs up to 30 MB, saved to the cloud Templates folder so every device can use them.</span
                     >
                   </div>
                   <div class="tpdrop" id="tpDrop">Drag PDF files here to upload them</div>
@@ -48780,6 +48780,25 @@ var ZXING_Z = [
       tpCloudErr = x instanceof TypeError ? "offline" : x.message;
     }
     renderTemplates();
+    if (inMenuOn) renderInsp();
+  }
+  // Per-device settings for a cloud template (page turn, typed question text), kept in st.tplSet by
+  // name. The first time, they start from a template of the same name saved on this device.
+  function tpCloudRef(cf) {
+    var name = cf.name.replace(/\.pdf$/i, "");
+    if (!st.tplSet) st.tplSet = {};
+    var t = st.tplSet[name];
+    if (!t) {
+      var loc =
+        st.tpl.find(function (x) {
+          return x.name === name;
+        }) || {};
+      t = st.tplSet[name] = { rot: loc.rot, qtext: loc.qtext, note: loc.note || "" };
+    }
+    t.id = "c:" + name;
+    t.name = name;
+    t.file = cf.name;
+    return t;
   }
   function tpCloudHtml() {
     var h = '<h3 class="fdsec">In the cloud</h3>';
@@ -48822,7 +48841,7 @@ var ZXING_Z = [
   }
   function renderTemplates() {
     var box = $("tpList"),
-      cloud = tpCloudHtml() + '<h3 class="fdsec">On this device</h3>';
+      cloud = tpCloudHtml() + '<h3 class="fdsec">Saved on this device only</h3>';
     if (!st.tpl.length) {
       box.innerHTML =
         cloud +
@@ -48865,43 +48884,26 @@ var ZXING_Z = [
         .join("") +
       "</tbody></table></div>";
   }
+  // Uploads go to the cloud Templates folder, so every signed-in device can use them.
   async function tpAdd(files) {
-    var added = 0;
-    for (var i = 0; i < files.length; i++) {
-      var f = files[i];
-      if (!(f.type === "application/pdf" || /\.pdf$/i.test(f.name))) {
-        toast("“" + f.name + "” is not a PDF.");
-        continue;
-      }
-      if (f.size > 30 * 1024 * 1024) {
-        toast("“" + f.name + "” is larger than 30 MB.");
-        continue;
-      }
-      var id = "f" + Date.now().toString(36) + Math.random().toString(36).slice(2, 5);
-      try {
-        await tpTx("readwrite", function (os) {
-          return os.put({ id: id, blob: f });
-        });
-      } catch (e) {
-        toast("Could not store “" + f.name + "”. Browser storage may be full.");
-        continue;
-      }
-      st.tpl.push({
-        id: id,
-        name: f.name.replace(/\.pdf$/i, ""),
-        note: "",
-        size: f.size,
-        ts: Date.now(),
-        by: curEmail(),
+    if (!cloudOn() || !isMgr()) return toast("Sign in as a manager to upload templates to the cloud.");
+    var jobs = [];
+    files.forEach(function (f) {
+      if (!(f.type === "application/pdf" || /\.pdf$/i.test(f.name))) return toast("“" + f.name + "” is not a PDF.");
+      if (f.size > 30 * 1024 * 1024) return toast("“" + f.name + "” is larger than 30 MB.");
+      var same = (tpCloud || []).some(function (c) {
+        return c.name === f.name;
       });
-      audit("Templates", "Uploaded the PDF “" + f.name + "”");
-      added++;
-    }
-    if (added) {
+      if (same && !confirm("“" + f.name + "” is already in the cloud. Replace it?")) return;
+      jobs.push({ path: TP_DIR + f.name, file: f });
+    });
+    if (!jobs.length) return;
+    var ok = await sbUploadAll("inspection-pdfs", jobs, "template");
+    if (ok) {
+      audit("Templates", "Uploaded " + ok + (ok === 1 ? " template" : " templates") + " to the cloud");
       save();
-      renderTemplates();
-      toast(added + (added === 1 ? " PDF uploaded." : " PDFs uploaded."));
     }
+    tpCloudScan();
   }
   $("tpUpload").onclick = function () {
     $("tpFile").click();
@@ -50308,23 +50310,31 @@ var ZXING_Z = [
         ? "Start a new inspection sheet from the template library."
         : "Sign in to create an inspection sheet.";
     if (inMenuOn && !ins)
-      $("inMenu").innerHTML = st.tpl.length
-        ? st.tpl
-            .slice()
-            .reverse()
-            .map(function (f) {
-              return (
-                '<button class="ddopt" data-tpl="' +
-                f.id +
-                '"><span>' +
-                esc(f.name) +
-                "</span>" +
-                (f.note ? '<span class="c">' + esc(f.note) + "</span>" : "") +
-                "</button>"
-              );
-            })
-            .join("")
-        : '<div class="xn">No templates yet. Upload PDF sheets under Manage → Templates.</div>';
+      $("inMenu").innerHTML =
+        tpCloud && tpCloud.length
+          ? tpCloud
+              .map(function (cf) {
+                var f = tpCloudRef(cf);
+                return (
+                  '<button class="ddopt" data-tpl="' +
+                  esc(f.id) +
+                  '"><span>' +
+                  esc(f.name) +
+                  "</span>" +
+                  (f.note ? '<span class="c">' + esc(f.note) + "</span>" : "") +
+                  "</button>"
+                );
+              })
+              .join("")
+          : '<div class="xn">' +
+            (tpCloudErr === "offline"
+              ? "Offline: templates load when you're back online."
+              : tpCloudErr
+                ? "Couldn't load the templates: " + esc(tpCloudErr)
+                : !tpCloud
+                  ? "Loading templates…"
+                  : "No templates yet. A manager can upload PDF sheets under Manage → Templates.") +
+            "</div>";
   }
   function opDefault() {
     return sess ? (sess.role === "owner" ? sess.email.split("@")[0] : sess.name || sess.email) : "";
@@ -50334,13 +50344,18 @@ var ZXING_Z = [
       toast("Sign in first so your name can be filled in on the sheet.");
       return;
     }
-    var f = st.tpl.find(function (x) {
-      return x.id === id;
-    });
+    var f =
+      id.indexOf("c:") === 0
+        ? (tpCloud || []).map(tpCloudRef).find(function (x) {
+            return x.id === id;
+          })
+        : st.tpl.find(function (x) {
+            return x.id === id;
+          });
     if (!f) return;
     $("inspNote").textContent = "Loading “" + f.name + "”…";
     try {
-      var blob = await tpBlob(id);
+      var blob = f.file ? await sbDownload("inspection-pdfs", TP_DIR + f.file) : await tpBlob(id);
       if (!blob) {
         toast(
           "The file data for that template could not be found. Upload it again under Manage → Templates."
@@ -50483,6 +50498,7 @@ var ZXING_Z = [
       return;
     }
     inMenuOn = !inMenuOn;
+    if (inMenuOn) tpCloudScan(); // fresh list from the cloud each time the menu opens
     renderInsp();
   });
   $("inMenu").addEventListener("click", function (e) {
