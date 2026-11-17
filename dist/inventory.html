@@ -5270,7 +5270,12 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
       <h2 id="pkSubTitle">Pick list</h2>
       <p class="pkmeta" id="pkSubMeta"></p>
       <div id="pkSubBody"></div>
-      <div class="actions"><span class="sp"></span><button type="button" id="pkSubClose">Close</button></div>
+      <div class="actions">
+        <button type="button" id="pkSubEdit" hidden>Edit</button><span class="sp"></span
+        ><button type="button" id="pkSubCancel" hidden>Cancel</button
+        ><button type="button" id="pkSubClose">Close</button
+        ><button type="button" class="primary" id="pkSubSave" hidden>Save changes</button>
+      </div>
     </dialog>
     <dialog id="dlg">
       <form method="dialog" id="form">
@@ -45561,8 +45566,9 @@ var ZXING_Z = [
       "</ol>"
     );
   }
-  // ro: a submitted pick list, shown as text with no boxes to change.
+  // ro: true = a submitted pick list as text; "edit" = a manager fixing one (picked and problems only).
   function pkRowsHtml(p, ro) {
+    var ed = ro === "edit";
     if (p.err) return '<p class="pknote">Couldn\'t read this PDF: ' + esc(p.err) + "</p>";
     if (!p.rows) return '<p class="pknote">Reading the pick list…</p>';
     if (!p.rows.length)
@@ -45575,7 +45581,7 @@ var ZXING_Z = [
           var now = "now" in r ? r.now : pkNow(r),
             tg = !ro && pkTarget(r),
             why = tg ? "" : now == null ? "This item # is not in the list" : "This item # is in more than one bin";
-          if (ro)
+          if (ro === true)
             return (
               '<tr><td data-l="Item #"><b>' +
               esc(r.n) +
@@ -45618,14 +45624,18 @@ var ZXING_Z = [
             esc(r.oh) +
             '</td><td data-l="On hand now">' +
             (now == null ? '<span class="m">Not in list</span>' : now) +
-            '</td><td data-l="Check" class="pkchk"><label' +
+            '</td><td data-l="Check" class="pkchk">' +
+            (ed
+              ? '<span class="m">' + (p.upd[j] ? "Qty updated" : "") + "</span>"
+              : "<label" +
             (why ? ' title="' + why + '"' : "") +
             '><input type="checkbox" data-upd="' +
             j +
             '"' +
             (p.upd[j] ? " checked" : "") +
             (why && !p.upd[j] ? " disabled" : "") +
-            "> Update qty</label><label><input type=\"checkbox\" data-prob=\"" +
+            "> Update qty</label>") +
+            "<label><input type=\"checkbox\" data-prob=\"" +
             j +
             '"' +
             (p.prob[j] != null ? " checked" : "") +
@@ -45684,32 +45694,127 @@ var ZXING_Z = [
     renderPk();
     toast("Pick list submitted.");
   }
-  // Read-only view of a submitted pick list (from Manage or the profile).
-  function pkViewSub(k) {
-    var e = (st.audit || []).find(function (x) {
-      return x.k === k && x.pick;
+  // Edits are new activity entries pointing at the first submission (pick.of), because the
+  // shared log is add-only. The newest entry for a pick list is the one shown.
+  function pkLatest(k) {
+    return (st.audit || [])
+      .filter(function (x) {
+        return x.pick && (x.k === k || x.pick.of === k);
+      })
+      .sort(function (a, b) {
+        return b.ts - a.ts;
+      })[0];
+  }
+  function pkWho(email) {
+    var u = allPeople().find(function (x) {
+      return x.email === email;
     });
+    return (u && (u.name || u.email)) || email || "someone not signed in";
+  }
+  var pkSub = null; // { k: first submission's key, e: newest entry, p: list shown, editing }
+  function pkViewSub(k) {
+    var e = pkLatest(k);
     if (!e) return toast("That pick list isn't on this device yet.");
-    var s = e.pick,
-      p = { name: s.name, rows: s.rows, picked: s.picked || {}, upd: s.upd || {}, prob: s.prob || {}, meta: s },
-      who = allPeople().find(function (u) {
-        return u.email === e.by;
-      });
-    $("pkSubTitle").textContent = s.no ? "Pick slip " + s.no : s.name;
+    var s = e.pick;
+    pkSub = {
+      k: k,
+      e: e,
+      editing: false,
+      p: {
+        name: s.name,
+        rows: s.rows,
+        picked: Object.assign({}, s.picked),
+        upd: s.upd || {},
+        prob: Object.assign({}, s.prob),
+        meta: s,
+      },
+    };
+    renderPkSub();
+    if (!$("pkSubDlg").open) $("pkSubDlg").showModal();
+  }
+  function renderPkSub() {
+    var e = pkSub.e,
+      s = e.pick,
+      first =
+        (st.audit || []).find(function (x) {
+          return x.k === pkSub.k;
+        }) || e,
+      p = pkSub.p,
+      fmt = function (ts) {
+        return new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+      };
+    $("pkSubTitle").textContent = (pkSub.editing ? "Edit pick slip " : "Pick slip ") + (s.no || s.name);
     $("pkSubMeta").textContent = [
-      "Submitted by " + ((who && (who.name || who.email)) || e.by || "someone not signed in"),
-      new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      "Submitted by " + pkWho(first.by) + ", " + fmt(first.ts),
+      s.of ? "edited by " + pkWho(e.by) + ", " + fmt(e.ts) : "",
       s.date ? "printed " + s.date : "",
     ]
       .filter(Boolean)
-      .join(", ");
+      .join("; ");
     $("pkSubBody").innerHTML =
-      pkRowsHtml(p, true) + (Object.keys(p.prob).length ? '<section class="pkprobs">' + pkProbsHtml(p) + "</section>" : "");
-    $("pkSubDlg").showModal();
+      pkRowsHtml(p, pkSub.editing ? "edit" : true) +
+      (Object.keys(p.prob).length ? '<section class="pkprobs">' + pkProbsHtml(p) + "</section>" : "");
+    $("pkSubEdit").hidden = pkSub.editing || !isMgr();
+    $("pkSubSave").hidden = $("pkSubCancel").hidden = !pkSub.editing;
+    $("pkSubClose").hidden = pkSub.editing;
   }
   $("pkSubClose").onclick = function () {
     $("pkSubDlg").close();
   };
+  $("pkSubEdit").onclick = function () {
+    if (!isMgr()) return;
+    pkSub.editing = true;
+    renderPkSub();
+  };
+  $("pkSubCancel").onclick = function () {
+    pkViewSub(pkSub.k);
+  };
+  $("pkSubSave").onclick = function () {
+    if (!isMgr() || !sess) return toast("Sign in as a manager to save changes.");
+    var p = pkSub.p,
+      s = pkSub.e.pick,
+      probs = Object.keys(p.prob).length,
+      no = s.no ? "pick slip " + s.no : s.name;
+    if (!st.audit) st.audit = [];
+    st.audit.push({
+      ts: Date.now(),
+      by: curEmail(),
+      cat: "Pick lists",
+      text:
+        "Edited " +
+        no +
+        ": " +
+        s.rows.length +
+        (s.rows.length === 1 ? " line" : " lines") +
+        (probs ? ", " + probs + (probs === 1 ? " problem" : " problems") : ""),
+      k: nid("a"),
+      pick: Object.assign({}, s, { picked: p.picked, prob: p.prob, of: pkSub.k }),
+    });
+    save();
+    pkViewSub(pkSub.k);
+    if (st.manage) renderManage();
+    toast("Changes saved.");
+  };
+  $("pkSubBody").addEventListener("input", function (e) {
+    if (pkSub && pkSub.editing && e.target.dataset.pk) pkSub.p.picked[e.target.dataset.pk] = e.target.value;
+  });
+  $("pkSubBody").addEventListener("change", function (e) {
+    var el = e.target;
+    if (!pkSub || !pkSub.editing || !el.dataset.prob) return;
+    var j = +el.dataset.prob,
+      p = pkSub.p;
+    if (!el.checked) {
+      delete p.prob[j];
+      return renderPkSub();
+    }
+    el.checked = false; // ticks once the note is saved
+    pkProbFor = p;
+    pkProbAfter = renderPkSub;
+    pkProbRow = j;
+    $("pkDlgTitle").textContent = "Problem with " + p.rows[j].n;
+    $("pkForm").reset();
+    $("pkDlg").showModal();
+  });
   document.addEventListener("click", function (e) {
     var b = e.target.closest("button[data-pkview]");
     if (b) pkViewSub(b.dataset.pkview);
@@ -45793,7 +45898,9 @@ var ZXING_Z = [
     var p = pkPdfs[pkOpen];
     if (p && e.target.dataset.pk) p.picked[e.target.dataset.pk] = e.target.value;
   });
-  var pkProbRow = -1;
+  var pkProbRow = -1,
+    pkProbFor = null,
+    pkProbAfter = renderPk;
   $("pkRows").addEventListener("change", function (e) {
     var p = pkPdfs[pkOpen],
       el = e.target,
@@ -45834,6 +45941,8 @@ var ZXING_Z = [
         return renderPk();
       }
       el.checked = false; // ticks once the note is saved
+      pkProbFor = p;
+      pkProbAfter = renderPk;
       pkProbRow = j;
       $("pkDlgTitle").textContent = "Problem with " + p.rows[j].n;
       $("pkForm").reset();
@@ -45844,12 +45953,12 @@ var ZXING_Z = [
     $("pkDlg").close();
   };
   $("pkForm").addEventListener("submit", function (ev) {
-    var p = pkPdfs[pkOpen],
+    var p = pkProbFor,
       note = $("pkForm").elements.note.value.trim();
     if (ev.submitter && ev.submitter.value !== "save") return;
     if (!p || pkProbRow < 0 || !note) return;
     p.prob[pkProbRow] = note;
-    renderPk();
+    pkProbAfter();
   });
   renderPk();
   var ewoScope = "all",
@@ -47550,7 +47659,7 @@ var ZXING_Z = [
       });
     if (i === 2)
       return (st.audit || []).filter(function (e) {
-        return e.pick && e.by === me;
+        return e.pick && !e.pick.of && e.by === me;
       });
     return null; // Put Away isn't built yet, so nobody has records there.
   }
@@ -48222,16 +48331,16 @@ var ZXING_Z = [
     var list = st.audit
       .filter(function (e) {
         var d = dayOf(e.ts);
-        return (e.by || "") === email && d >= r.from && d <= r.to;
+        return isSubm(e) && (e.by || "") === email && d >= r.from && d <= r.to;
       })
       .reverse();
-    var cats = AUD_CATS.map(function (c) {
+    var cats = SUB_CATS.map(function (c) {
       var l = list.filter(function (e) {
         return e.cat === c;
       });
       if (!l.length) return "";
       return (
-        '<details class="mgcat"><summary>' +
+        '<details class="mgcat" open><summary>' +
         esc(c) +
         '<span class="cnt">' +
         l.length +
@@ -48249,6 +48358,7 @@ var ZXING_Z = [
               }) +
               "</time><span>" +
               esc(e.text) +
+              (e.pick && pkLatest(e.k) !== e ? ' <span class="m">(edited)</span>' : "") +
               "</span>" +
               (e.pick ? '<button type="button" data-pkview="' + esc(e.k) + '">View</button>' : "") +
               "</li>"
@@ -48267,27 +48377,32 @@ var ZXING_Z = [
       r.to +
       '"></label><button data-range>Show</button><button data-last7>Last 7 days</button><span class="m">' +
       list.length +
-      (list.length === 1 ? " action" : " actions") +
+      (list.length === 1 ? " submission" : " submissions") +
       ", " +
       esc(fmtDay(r.from)) +
       " to " +
       esc(fmtDay(r.to)) +
       "</span></div>" +
       (cats ||
-        '<div class="empty" style="padding:14px 0">No activity recorded in this date range.</div>')
+        '<div class="empty" style="padding:14px 0">No pick lists or put aways in this date range.</div>')
     );
   }
 
+  // Picks and Put Away lists submissions only (first submissions; edits show inside them).
+  var SUB_CATS = ["Pick lists", "Put aways"];
+  function isSubm(e) {
+    return SUB_CATS.indexOf(e.cat) >= 0 && !(e.pick && e.pick.of);
+  }
   function renderMaterial() {
     var day = mgDayVal(),
       cnt = {};
     st.audit.forEach(function (e) {
-      if (dayOf(e.ts) === day) cnt[e.by || ""] = (cnt[e.by || ""] || 0) + 1;
+      if (isSubm(e) && dayOf(e.ts) === day) cnt[e.by || ""] = (cnt[e.by || ""] || 0) + 1;
     });
     var h =
-        '<p class="mgnote" style="padding:0 0 12px">People who made a transaction on <b>' +
+        '<p class="mgnote" style="padding:0 0 12px">People who submitted a pick list or put away on <b>' +
         esc(fmtDay(day)) +
-        "</b>. Select a name to see their last 7 days, grouped by category, and use the dates to look at a different range. Use the Day box above to list another day.</p>",
+        "</b>. Select a name to see their last 7 days, and use the dates to look at a different range. Use the Day box above to list another day.</p>",
       shown = 0;
     allPeople().forEach(function (p) {
       var n = cnt[p.email];
@@ -48295,7 +48410,7 @@ var ZXING_Z = [
       shown++;
       h +=
         '<details class="mgdet">' +
-        personHead(p, n, n === 1 ? "action that day" : "actions that day") +
+        personHead(p, n, n === 1 ? "submission that day" : "submissions that day") +
         '<div class="mgdbody">' +
         matBodyHtml(p.email) +
         "</div></details>";
@@ -48304,14 +48419,14 @@ var ZXING_Z = [
       shown++;
       h +=
         '<details class="mgdet">' +
-        personHead({ name: "Not signed in", email: "" }, cnt[""], "actions that day") +
+        personHead({ name: "Not signed in", email: "" }, cnt[""], "submissions that day") +
         '<div class="mgdbody">' +
         matBodyHtml("") +
         "</div></details>";
     }
     if (!shown)
       h +=
-        '<div class="empty" style="padding:22px 0">Nobody made a transaction on ' +
+        '<div class="empty" style="padding:22px 0">Nobody submitted a pick list or put away on ' +
         esc(fmtDay(day)) +
         ".</div>";
     $("mgMaterial").innerHTML = h;
