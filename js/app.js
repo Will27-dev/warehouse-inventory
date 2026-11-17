@@ -452,6 +452,7 @@
     $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
     $("pkPdf").hidden = !(tp === 2 && !onSide);
     $("topEmpty").hidden = !$("pkPdf").hidden;
+    $("topNote").hidden = !$("pkPdf").hidden;
     $("inspPanel").hidden = !onInsp;
     $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
@@ -1400,9 +1401,355 @@
       render();
     }
   });
-  // Pick List: PDFs picked here last for this visit only. Saving and using them comes later.
-  var pkPdfs = [];
+  /* ---------- Pick List: read a USS Pick Slip Report PDF ----------
+     PDFs last for this visit only. Each one is read with pdf.js: the slip on the left,
+     its lines on the right (item #, allocated, UOM, deliver-to, picked box, on hand). */
+  var pkPdfs = [],
+    pkOpen = -1;
+  // Reads the pick lines: each 10-digit item # in the Item Number column starts a line; the
+  // other values sit on the same text row. Source locator spans two rows ("…000." + "0FF.000…").
+  // shortcut: column positions are fixed to the USS Pick Slip Report layout (792pt landscape); read them from the header row if the report changes.
+  async function pkParse(doc) {
+    var rows = [],
+      meta = {};
+    for (var p = 1; p <= doc.numPages; p++) {
+      var pg = await doc.getPage(p),
+        vp = pg.getViewport({ scale: 1 }),
+        its = (await pg.getTextContent()).items
+        .filter(function (t) {
+          return t.str.trim();
+        })
+        .map(function (t) {
+          return { s: t.str.trim(), x: t.transform[4], y: t.transform[5], w: t.width, h: t.height };
+        });
+      its.forEach(function (a, k) {
+        var nx = its[k + 1];
+        if (nx && a.s === "Pick Slip No:") meta.no = nx.s;
+        if (nx && a.s === "Date Printed:") meta.date = nx.s;
+        if (a.x < 110 || a.x > 130 || !/^\d{10}$/.test(a.s)) return;
+        var near = function (x0, x1, below) {
+            return its.filter(function (t) {
+              return t.x >= x0 && t.x < x1 && a.y - t.y >= -3 && a.y - t.y <= below;
+            });
+          },
+          cell = function (x0, x1) {
+            return (near(x0, x1, 3)[0] || {}).s || "";
+          },
+          to = cell(465, 540),
+          m = /^36K-([^-\s]+)/i.exec(to),
+          c1 = vp.convertToViewportPoint(a.x - 6, a.y - 4),
+          c2 = vp.convertToViewportPoint(a.x + a.w + 6, a.y + a.h + 3);
+        rows.push({
+          n: a.s,
+          pg: p,
+          // where the item # sits on its page, in % of the page, for the problem circle
+          box: [
+            (Math.min(c1[0], c2[0]) / vp.width) * 100,
+            (Math.min(c1[1], c2[1]) / vp.height) * 100,
+            (Math.abs(c2[0] - c1[0]) / vp.width) * 100,
+            (Math.abs(c2[1] - c1[1]) / vp.height) * 100,
+          ],
+          alloc: cell(325, 372),
+          uom: cell(395, 428),
+          dest: m ? m[1] : to,
+          to: to,
+          oh: cell(725, 790),
+          loc: near(0, 110, 12)
+            .sort(function (u, v) {
+              return v.y - u.y;
+            })
+            .map(function (t) {
+              return t.s;
+            })
+            .join(""),
+        });
+      });
+    }
+    return { rows: rows, meta: meta };
+  }
+  // The one saved record Update qty changes: the slip's bin, or the only bin holding that item #.
+  function pkTarget(r) {
+    var all = items.filter(function (i) {
+        return i.n === r.n;
+      }),
+      bin = all.filter(function (i) {
+        return i.l === r.loc;
+      });
+    return bin.length === 1 ? bin[0] : !bin.length && all.length === 1 ? all[0] : null;
+  }
+  // On-hand quantity in this app: the slip's bin if it is listed, otherwise every bin with that item #.
+  function pkNow(r) {
+    var all = items.filter(function (i) {
+        return i.n === r.n;
+      }),
+      bin = all.filter(function (i) {
+        return i.l === r.loc;
+      });
+    if (!all.length) return null;
+    return (bin.length ? bin : all).reduce(function (s, i) {
+      return s + (+i.q || 0);
+    }, 0);
+  }
+  async function pkLoad(p) {
+    try {
+      var lib = await loadPdfJs();
+      p.doc = await lib.getDocument({
+        data: new Uint8Array(await p.file.arrayBuffer()),
+        useSystemFonts: true,
+        isEvalSupported: false,
+        verbosity: 0,
+        wasmUrl: WASM_BASE,
+      }).promise;
+      var r = await pkParse(p.doc);
+      p.rows = r.rows;
+      p.meta = r.meta;
+    } catch (x) {
+      p.err = x.message || "This file could not be read.";
+    }
+    if (pkPdfs[pkOpen] === p) renderPk();
+  }
+  async function pkDraw(p) {
+    var box = $("pkDoc");
+    box.innerHTML = "";
+    for (var i = 1; i <= p.doc.numPages && pkPdfs[pkOpen] === p; i++) {
+      var page = await p.doc.getPage(i),
+        vp = page.getViewport({ scale: ((box.clientWidth || 600) / page.getViewport({ scale: 1 }).width) * (devicePixelRatio || 1) }),
+        cv = document.createElement("canvas");
+      cv.width = Math.round(vp.width);
+      cv.height = Math.round(vp.height);
+      cv.setAttribute("role", "img");
+      cv.setAttribute("aria-label", "Page " + i + " of " + p.name);
+      var wrap = document.createElement("div");
+      wrap.className = "pkpage";
+      wrap.dataset.pg = i;
+      wrap.appendChild(cv);
+      box.appendChild(wrap);
+      await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+    }
+    if (pkPdfs[pkOpen] === p) pkMarks(p);
+  }
+  // Problem rows: a black circle on the item # in the slip, and a Problems page after the last page.
+  function pkMarks(p) {
+    var box = $("pkDoc");
+    box.querySelectorAll(".pkmark, .pkprobs").forEach(function (el) {
+      el.remove();
+    });
+    var probs = (p.rows || []).filter(function (r, j) {
+      r.j = j;
+      return p.prob[j] != null;
+    });
+    probs.forEach(function (r) {
+      var pg = box.querySelector('.pkpage[data-pg="' + r.pg + '"]');
+      if (!pg) return;
+      var c = document.createElement("span");
+      c.className = "pkmark";
+      c.style.cssText =
+        "left:" + r.box[0] + "%;top:" + r.box[1] + "%;width:" + r.box[2] + "%;height:" + r.box[3] + "%";
+      pg.appendChild(c);
+    });
+    if (!probs.length) return;
+    var pp = document.createElement("section");
+    pp.className = "pkpage pkprobs";
+    pp.setAttribute("aria-label", "Problems");
+    pp.innerHTML = pkProbsHtml(p);
+    box.appendChild(pp);
+  }
+  function pkProbsHtml(p) {
+    return (
+      "<h4>Problems</h4><p>" +
+      esc([p.meta && p.meta.no ? "Pick slip " + p.meta.no : p.name, p.meta && p.meta.date].filter(Boolean).join(", ")) +
+      "</p><ol>" +
+      p.rows
+        .map(function (r, j) {
+          if (p.prob[j] == null) return "";
+          return (
+            "<li><b>" +
+            esc(r.n) +
+            "</b> <span>" +
+            esc([r.alloc + " " + r.uom, r.to].filter(Boolean).join(", ")) +
+            "</span><p>" +
+            esc(p.prob[j]) +
+            "</p></li>"
+          );
+        })
+        .join("") +
+      "</ol>"
+    );
+  }
+  // ro: a submitted pick list, shown as text with no boxes to change.
+  function pkRowsHtml(p, ro) {
+    if (p.err) return '<p class="pknote">Couldn\'t read this PDF: ' + esc(p.err) + "</p>";
+    if (!p.rows) return '<p class="pknote">Reading the pick list…</p>';
+    if (!p.rows.length)
+      return '<p class="pknote">No pick lines were found. This reader knows the USS Pick Slip Report layout; check that this PDF is one.</p>';
+    return (
+      '<table class="pktab"><thead><tr><th>Item #</th><th>Allocated</th><th>UOM</th><th>Deliver to</th>' +
+      "<th>Picked</th><th>On hand (slip)</th><th>On hand now</th><th>Check</th></tr></thead><tbody>" +
+      p.rows
+        .map(function (r, j) {
+          var now = "now" in r ? r.now : pkNow(r),
+            tg = !ro && pkTarget(r),
+            why = tg ? "" : now == null ? "This item # is not in the list" : "This item # is in more than one bin";
+          if (ro)
+            return (
+              '<tr><td data-l="Item #"><b>' +
+              esc(r.n) +
+              '</b></td><td data-l="Allocated">' +
+              esc(r.alloc) +
+              '</td><td data-l="UOM">' +
+              esc(r.uom) +
+              '</td><td data-l="Deliver to" title="' +
+              esc(r.to) +
+              '">' +
+              esc(r.dest) +
+              '</td><td data-l="Picked">' +
+              esc(p.picked[j] || "–") +
+              '</td><td data-l="On hand (slip)">' +
+              esc(r.oh) +
+              '</td><td data-l="On hand now">' +
+              (now == null ? '<span class="m">Not in list</span>' : now) +
+              '</td><td data-l="Check">' +
+              esc([p.upd[j] ? "Qty updated" : "", p.prob[j] != null ? "Problem" : ""].filter(Boolean).join(", ") || "–") +
+              "</td></tr>"
+            );
+          return (
+            '<tr><td data-l="Item #"><b>' +
+            esc(r.n) +
+            '</b></td><td data-l="Allocated">' +
+            esc(r.alloc) +
+            '</td><td data-l="UOM">' +
+            esc(r.uom) +
+            '</td><td data-l="Deliver to" title="' +
+            esc(r.to) +
+            '">' +
+            esc(r.dest) +
+            '</td><td data-l="Picked"><input type="number" inputmode="numeric" min="0" data-pk="' +
+            j +
+            '" value="' +
+            esc(p.picked[j] == null ? "" : p.picked[j]) +
+            '" aria-label="Picked quantity for item ' +
+            esc(r.n) +
+            '"></td><td data-l="On hand (slip)">' +
+            esc(r.oh) +
+            '</td><td data-l="On hand now">' +
+            (now == null ? '<span class="m">Not in list</span>' : now) +
+            '</td><td data-l="Check" class="pkchk"><label' +
+            (why ? ' title="' + why + '"' : "") +
+            '><input type="checkbox" data-upd="' +
+            j +
+            '"' +
+            (p.upd[j] ? " checked" : "") +
+            (why && !p.upd[j] ? " disabled" : "") +
+            "> Update qty</label><label><input type=\"checkbox\" data-prob=\"" +
+            j +
+            '"' +
+            (p.prob[j] != null ? " checked" : "") +
+            "> Problem</label></td></tr>"
+          );
+        })
+        .join("") +
+      "</tbody></table>" +
+      (p.sent
+        ? '<p class="pknote">Submitted ' +
+          esc(new Date(p.sent).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })) +
+          ". You'll find it under Pick List in your profile.</p>"
+        : ro
+        ? ""
+        : '<div class="pksub"><button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
+    );
+  }
+  // A submitted pick list is one entry in the shared activity log (category "Pick lists"),
+  // so it syncs to the cloud with everything else and shows under Picks and Put Away.
+  function pkSubmit(p) {
+    if (!sess) return toast("Sign in first, so the pick list reaches the cloud.");
+    var no = (p.meta && p.meta.no) || "",
+      probs = Object.keys(p.prob).length;
+    if (!confirm("Submit " + (no ? "pick slip " + no : p.name) + "? It's sent to the cloud and can't be changed after."))
+      return;
+    var ts = Date.now();
+    if (!st.audit) st.audit = [];
+    st.audit.push({
+      ts: ts,
+      by: curEmail(),
+      cat: "Pick lists",
+      text:
+        (no ? "Pick slip " + no : p.name) +
+        ": " +
+        p.rows.length +
+        (p.rows.length === 1 ? " line" : " lines") +
+        (probs ? ", " + probs + (probs === 1 ? " problem" : " problems") : ""),
+      k: nid("a"),
+      pick: {
+        no: no,
+        date: (p.meta && p.meta.date) || "",
+        name: p.name,
+        rows: p.rows.map(function (r) {
+          return { n: r.n, alloc: r.alloc, uom: r.uom, dest: r.dest, to: r.to, oh: r.oh, loc: r.loc, now: pkNow(r) };
+        }),
+        picked: p.picked,
+        upd: Object.keys(p.upd).reduce(function (o, j) {
+          o[j] = 1;
+          return o;
+        }, {}),
+        prob: p.prob,
+      },
+    });
+    save();
+    p.sent = ts;
+    renderPk();
+    toast("Pick list submitted.");
+  }
+  // Read-only view of a submitted pick list (from Manage or the profile).
+  function pkViewSub(k) {
+    var e = (st.audit || []).find(function (x) {
+      return x.k === k && x.pick;
+    });
+    if (!e) return toast("That pick list isn't on this device yet.");
+    var s = e.pick,
+      p = { name: s.name, rows: s.rows, picked: s.picked || {}, upd: s.upd || {}, prob: s.prob || {}, meta: s },
+      who = allPeople().find(function (u) {
+        return u.email === e.by;
+      });
+    $("pkSubTitle").textContent = s.no ? "Pick slip " + s.no : s.name;
+    $("pkSubMeta").textContent = [
+      "Submitted by " + ((who && (who.name || who.email)) || e.by || "someone not signed in"),
+      new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" }),
+      s.date ? "printed " + s.date : "",
+    ]
+      .filter(Boolean)
+      .join(", ");
+    $("pkSubBody").innerHTML =
+      pkRowsHtml(p, true) + (Object.keys(p.prob).length ? '<section class="pkprobs">' + pkProbsHtml(p) + "</section>" : "");
+    $("pkSubDlg").showModal();
+  }
+  $("pkSubClose").onclick = function () {
+    $("pkSubDlg").close();
+  };
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-pkview]");
+    if (b) pkViewSub(b.dataset.pkview);
+  });
   function renderPk() {
+    var p = pkPdfs[pkOpen];
+    $("pkHome").hidden = !!p;
+    $("pkView").hidden = !p;
+    if (p) {
+      var no = p.meta && p.meta.no;
+      $("pkCrumb").textContent = $("pkName").textContent = no ? "Slip " + no : p.name;
+      $("pkMeta").textContent = [
+        p.name,
+        p.meta && p.meta.date ? "printed " + p.meta.date : "",
+        p.rows ? p.rows.length + (p.rows.length === 1 ? " line" : " lines") : "",
+      ]
+        .filter(Boolean)
+        .join(", ");
+      $("pkRows").innerHTML = pkRowsHtml(p, !!p.sent);
+      if (p.doc && p.drawn !== p.doc) {
+        p.drawn = p.doc;
+        pkDraw(p);
+      } else if (p.drawn) pkMarks(p);
+      return;
+    }
     $("pkList").innerHTML = pkPdfs.length
       ? pkPdfs
           .map(function (p, i) {
@@ -1411,9 +1758,9 @@
               esc(p.name) +
               '</b><span class="m">' +
               Math.max(1, Math.round(p.size / 1024)) +
-              ' KB</span><a href="' +
-              p.url +
-              '" target="_blank" rel="noopener">View</a><button data-rm="' +
+              ' KB</span><button data-open="' +
+              i +
+              '">Open</button><button data-rm="' +
               i +
               '">Remove</button></li>'
             );
@@ -1421,24 +1768,102 @@
           .join("")
       : '<li class="m">No pick list PDFs yet. Add one to keep it handy.</li>';
   }
+  function pkShow(i) {
+    pkOpen = i;
+    if (pkPdfs[i]) pkPdfs[i].drawn = null; // the slip panel is rebuilt each time it opens
+    renderPk();
+    scrollTo(0, 0);
+  }
   $("pkAdd").onclick = function () {
     pickFiles("application/pdf,.pdf", false, function (files) {
       var pdfs = files.filter(function (f) {
         return f.type === "application/pdf" || /\.pdf$/i.test(f.name);
       });
       if (!pdfs.length) return toast("Pick a PDF file.");
+      var first = pkPdfs.length;
       pdfs.forEach(function (f) {
-        pkPdfs.push({ name: f.name, size: f.size, url: URL.createObjectURL(f) });
+        var p = { name: f.name, size: f.size, file: f, rows: null, picked: {}, upd: {}, prob: {} };
+        pkPdfs.push(p);
+        pkLoad(p);
       });
-      renderPk();
-      toast(pdfs.length === 1 ? "PDF added." : pdfs.length + " PDFs added.");
+      pkShow(first);
     });
   };
   $("pkList").addEventListener("click", function (e) {
-    var b = e.target.closest("button[data-rm]");
+    var b = e.target.closest("button");
     if (!b) return;
-    URL.revokeObjectURL(pkPdfs[+b.dataset.rm].url);
-    pkPdfs.splice(+b.dataset.rm, 1);
+    if (b.dataset.open) return pkShow(+b.dataset.open);
+    if (b.dataset.rm) {
+      pkPdfs.splice(+b.dataset.rm, 1);
+      renderPk();
+    }
+  });
+  $("pkBack").onclick = function () {
+    pkShow(-1);
+  };
+  $("pkRows").addEventListener("click", function (e) {
+    if (e.target.closest("#pkSubmit") && pkPdfs[pkOpen]) pkSubmit(pkPdfs[pkOpen]);
+  });
+  $("pkRows").addEventListener("input", function (e) {
+    var p = pkPdfs[pkOpen];
+    if (p && e.target.dataset.pk) p.picked[e.target.dataset.pk] = e.target.value;
+  });
+  var pkProbRow = -1;
+  $("pkRows").addEventListener("change", function (e) {
+    var p = pkPdfs[pkOpen],
+      el = e.target,
+      j;
+    if (!p) return;
+    if (el.dataset.upd) {
+      j = +el.dataset.upd;
+      var r = p.rows[j];
+      if (!can("qty")) {
+        el.checked = !el.checked;
+        return deny("add or edit quantities");
+      }
+      // Ticking sets the saved qty to the slip's on hand; unticking puts the old qty back.
+      if (el.checked) {
+        var tg = pkTarget(r),
+          want = parseFloat(String(r.oh).replace(/,/g, ""));
+        if (!tg || isNaN(want)) {
+          el.checked = false;
+          return toast("This line's quantity can't be updated.");
+        }
+        p.upd[j] = { id: tg.id, old: Number(tg.q) || 0 };
+        adjustQty(tg.id, want - p.upd[j].old, "Pick slip " + ((p.meta && p.meta.no) || p.name));
+      } else if (p.upd[j]) {
+        var cur = items.find(function (i) {
+          return i.id === p.upd[j].id;
+        });
+        if (cur) adjustQty(cur.id, p.upd[j].old - (Number(cur.q) || 0), "Undo pick slip update");
+        delete p.upd[j];
+      }
+      save();
+      renderPk();
+      toast(el.checked ? "Quantity updated to " + r.oh + "." : "Quantity put back.");
+    }
+    if (el.dataset.prob) {
+      j = +el.dataset.prob;
+      if (!el.checked) {
+        delete p.prob[j];
+        return renderPk();
+      }
+      el.checked = false; // ticks once the note is saved
+      pkProbRow = j;
+      $("pkDlgTitle").textContent = "Problem with " + p.rows[j].n;
+      $("pkForm").reset();
+      $("pkDlg").showModal();
+    }
+  });
+  $("pkCancel").onclick = function () {
+    $("pkDlg").close();
+  };
+  $("pkForm").addEventListener("submit", function (ev) {
+    var p = pkPdfs[pkOpen],
+      note = $("pkForm").elements.note.value.trim();
+    if (ev.submitter && ev.submitter.value !== "save") return;
+    if (!p || pkProbRow < 0 || !note) return;
+    p.prob[pkProbRow] = note;
     renderPk();
   });
   renderPk();
@@ -2940,7 +3365,7 @@
       "Add/Edit user",
       "View Delivery Manifests",
       "Templates",
-      "Material Transaction",
+      "Picks and Put Away",
       "Inspections & Deliveries",
       "Analytics",
       "Greens Management",
@@ -2952,7 +3377,7 @@
       "Add people, change their access, and choose what each person is allowed to do.",
       "See every delivery (EWO) created on a chosen day, grouped by the person who made it.",
       "Upload PDF forms to keep as guides and use as inspection sheet templates.",
-      "See who added, removed or moved stock on a chosen day, with a 7-day view per person.",
+      "Submitted pick lists, plus who added, removed or moved stock on a chosen day, with a 7-day view per person.",
       "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
       "Charts and trends for your inventory. Coming soon.",
       "Greens management tools. Coming soon.",
@@ -3138,7 +3563,11 @@
       return st.manifests.filter(function (m) {
         return m.by === me;
       });
-    return null; // Pick List and Put Away aren't built yet, so nobody has records there.
+    if (i === 2)
+      return (st.audit || []).filter(function (e) {
+        return e.pick && e.by === me;
+      });
+    return null; // Put Away isn't built yet, so nobody has records there.
   }
   function renderPfWork() {
     $("pfActs").innerHTML = [1, 2, 3, 4]
@@ -3162,12 +3591,34 @@
     if (!pfWorkSel) return;
     var name = esc(oname(pfWorkSel)),
       l = (pfMine(pfWorkSel) || []).slice().reverse();
-    if (pfWorkSel === 2 || pfWorkSel === 3) {
+    if (pfWorkSel === 3) {
       box.innerHTML = '<div class="empty">' + name + " isn't set up yet, so there's nothing to show.</div>";
     } else if (!l.length) {
       box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
     } else if (pfWorkSel === 1) {
       box.innerHTML = ewoTableHtml(l, true);
+    } else if (pfWorkSel === 2) {
+      box.innerHTML =
+        '<div class="tw"><table class="sumtbl"><thead><tr><th>Pick slip</th><th>Lines</th><th>Submitted</th><th></th></tr></thead><tbody>' +
+        l
+          .map(function (e) {
+            var s = e.pick;
+            return (
+              '<tr><td class="cname">' +
+              esc(s.no || s.name) +
+              (s.date ? "<small>printed " + esc(s.date) + "</small>" : "") +
+              '</td><td class="ph">' +
+              s.rows.length +
+              (Object.keys(s.prob || {}).length ? " · " + Object.keys(s.prob).length + (Object.keys(s.prob).length === 1 ? " problem" : " problems") : "") +
+              "</td><td>" +
+              dvWhen(e.ts) +
+              '</td><td class="act"><button type="button" data-pkview="' +
+              esc(e.k) +
+              '">View</button></td></tr>'
+            );
+          })
+          .join("") +
+        "</tbody></table></div>";
     } else {
       box.innerHTML =
         '<div class="tw"><table class="sumtbl"><thead><tr><th>Trip</th><th>Status</th><th>Receipts</th><th>Started</th><th></th></tr></thead><tbody>' +
@@ -3764,6 +4215,7 @@
     $("mgManifests").innerHTML = h;
   }
   var AUD_CATS = [
+    "Pick lists",
     "Quantity changes",
     "Transfers",
     "EWOs",
@@ -3812,7 +4264,9 @@
               }) +
               "</time><span>" +
               esc(e.text) +
-              "</span></li>"
+              "</span>" +
+              (e.pick ? '<button type="button" data-pkview="' + esc(e.k) + '">View</button>' : "") +
+              "</li>"
             );
           })
           .join("") +

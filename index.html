@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261116o" />
+    <link rel="stylesheet" href="css/styles.css?v=20261117d" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -121,16 +121,29 @@
               <div>
                 <div class="eyebrow">Section</div>
                 <h2 id="topTitle"></h2>
-                <p>Content for this section has not been set up yet.</p>
+                <p id="topNote">Content for this section has not been set up yet.</p>
               </div>
             </div>
             <div class="empty" id="topEmpty">Nothing here yet.</div>
             <div class="mgpad" id="pkPdf" hidden>
-              <div class="tpbar">
-                <button class="primary" id="pkAdd">+ Add PDF</button
-                ><span class="m">PDFs added here stay until you close or reload the page, for now.</span>
+              <div id="pkHome">
+                <div class="tpbar">
+                  <button class="primary" id="pkAdd">+ Add PDF</button
+                  ><span class="m">PDFs added here stay until you close or reload the page, for now.</span>
+                </div>
+                <ul class="pklist" id="pkList"></ul>
               </div>
-              <ul class="pklist" id="pkList"></ul>
+              <div id="pkView" hidden>
+                <nav class="pkcrumb" aria-label="Breadcrumb">
+                  <button id="pkBack">Pick lists</button><span aria-hidden="true">›</span><span id="pkCrumb"></span>
+                </nav>
+                <h3 class="pkname" id="pkName"></h3>
+                <p class="pkmeta" id="pkMeta"></p>
+                <div class="pksplit">
+                  <div class="pkdoc" id="pkDoc"></div>
+                  <div id="pkRows"></div>
+                </div>
+              </div>
             </div>
           </section>
           <section class="panel" id="dvPanel" hidden>
@@ -784,6 +797,23 @@
         </div>
       </form>
     </dialog>
+    <dialog id="pkDlg">
+      <form method="dialog" id="pkForm">
+        <h2 id="pkDlgTitle">Problem</h2>
+        <label>What's wrong?<textarea name="note" rows="4" maxlength="1000" required></textarea></label>
+        <div class="actions">
+          <span class="sp"></span>
+          <button type="button" id="pkCancel">Cancel</button>
+          <button class="primary" value="save">Save problem</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="pkSubDlg" class="pksubdlg" aria-labelledby="pkSubTitle">
+      <h2 id="pkSubTitle">Pick list</h2>
+      <p class="pkmeta" id="pkSubMeta"></p>
+      <div id="pkSubBody"></div>
+      <div class="actions"><span class="sp"></span><button type="button" id="pkSubClose">Close</button></div>
+    </dialog>
     <dialog id="dlg">
       <form method="dialog" id="form">
         <h2 id="dlgTitle">Add item</h2>
@@ -806,10 +836,10 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261116o"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261116o"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261116o"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261116o"></script>
-    <script src="js/app.js?v=20261116o"></script>
+    <script src="js/data/items-data.js?v=20261117d"></script>
+    <script src="js/vendor/pdfjs-embedded.js?v=20261117d"></script>
+    <script src="js/vendor/jbig2-wasm.js?v=20261117d"></script>
+    <script src="js/vendor/zxing-embedded.js?v=20261117d"></script>
+    <script src="js/app.js?v=20261117d"></script>
   </body>
 </html>
