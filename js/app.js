@@ -4041,7 +4041,10 @@
       renderManifests();
       cloudSync();
     }
-    if (mgOpt === 2) renderTemplates();
+    if (mgOpt === 2) {
+      renderTemplates();
+      if (!tpCloud && !tpCloudErr) tpCloudScan();
+    }
     if (mgOpt === 3) renderMaterial();
     if (mgOpt === 4) {
       renderFinished();
@@ -4756,14 +4759,72 @@
   /* =====================================================================
      Manage: PDF templates library
      ===================================================================== */
+  // Cloud templates: PDFs in the "Templates" folder of the inspection-pdfs bucket (read on first open, or Refresh).
+  var TP_DIR = "Templates/",
+    tpCloud = null,
+    tpCloudErr = "";
+  async function tpCloudScan() {
+    if (!cloudOn()) return renderTemplates();
+    try {
+      tpCloud = (await sbList("inspection-pdfs", TP_DIR)).filter(function (f) {
+        return f.id && /\.pdf$/i.test(f.name);
+      });
+      tpCloudErr = "";
+    } catch (x) {
+      tpCloudErr = x instanceof TypeError ? "offline" : x.message;
+    }
+    renderTemplates();
+  }
+  function tpCloudHtml() {
+    var h = '<h3 class="fdsec">In the cloud</h3>';
+    if (!cloudOn()) return h + '<p class="fdnote">Sign in to see the templates stored in the cloud.</p>';
+    h +=
+      '<div class="tpbar"><span class="m">' +
+      (tpCloudErr === "offline"
+        ? "Offline: cloud templates show again when you're back online."
+        : tpCloudErr
+          ? "Couldn't load the cloud templates: " + esc(tpCloudErr)
+          : !tpCloud
+            ? "Loading…"
+            : tpCloud.length + (tpCloud.length === 1 ? " template" : " templates") + " in the cloud Templates folder.") +
+      '</span><span class="sp"></span><button data-tcr>Refresh</button></div>';
+    if (!tpCloud || !tpCloud.length) return h;
+    return (
+      h +
+      '<div class="tw" style="margin-top:14px;border:1px solid var(--line);border-radius:10px"><table class="sumtbl"><thead><tr><th>Template (PDF)</th><th>Size</th><th>Modified</th><th></th></tr></thead><tbody>' +
+      tpCloud
+        .map(function (f, i) {
+          var md = f.metadata || {},
+            mod = Date.parse(md.lastModified || f.updated_at || f.created_at);
+          return (
+            '<tr><td class="cname">' +
+            esc(f.name.replace(/\.pdf$/i, "")) +
+            '</td><td class="ph">' +
+            fmtSize(md.size || 0) +
+            "</td><td>" +
+            (mod ? new Date(mod).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" }) : "–") +
+            '</td><td class="act"><button data-tcv="' +
+            i +
+            '">View</button><button data-tcd="' +
+            i +
+            '">Download</button></td></tr>'
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
   function renderTemplates() {
-    var box = $("tpList");
+    var box = $("tpList"),
+      cloud = tpCloudHtml() + '<h3 class="fdsec">On this device</h3>';
     if (!st.tpl.length) {
       box.innerHTML =
+        cloud +
         '<div class="empty" style="padding:26px 0">No templates uploaded yet. Upload a PDF to keep it here as a guide.</div>';
       return;
     }
     box.innerHTML =
+      cloud +
       '<div class="tw" style="margin-top:14px;border:1px solid var(--line);border-radius:10px"><table class="sumtbl"><thead><tr><th>Template (PDF)</th><th>Guide for</th><th>Size</th><th>Uploaded</th><th></th></tr></thead><tbody>' +
       st.tpl
         .slice()
@@ -4872,6 +4933,20 @@
   $("tpList").addEventListener("click", async function (e) {
     var b = e.target.closest("button");
     if (!b) return;
+    if (b.hasAttribute("data-tcr")) {
+      tpCloud = null;
+      renderTemplates();
+      return tpCloudScan();
+    }
+    var cf = tpCloud && tpCloud[+(b.dataset.tcv || b.dataset.tcd)];
+    if (cf && (b.dataset.tcv || b.dataset.tcd)) {
+      try {
+        tpShow(await sbDownload("inspection-pdfs", TP_DIR + cf.name), cf.name.replace(/\.pdf$/i, ""), !!b.dataset.tcd);
+      } catch (x) {
+        toast("“" + cf.name + "” could not be opened: " + x.message);
+      }
+      return;
+    }
     var id = b.dataset.v || b.dataset.d || b.dataset.e || b.dataset.r,
       f = st.tpl.find(function (x) {
         return x.id === id;
@@ -4910,11 +4985,15 @@
       toast("The file data for “" + f.name + "” could not be found. Please upload it again.");
       return;
     }
+    tpShow(blob, f.name, !!b.dataset.d);
+  });
+  // Opens a template PDF in the viewer, or downloads it.
+  function tpShow(blob, name, dl) {
     var url = URL.createObjectURL(new Blob([blob], { type: "application/pdf" }));
-    if (b.dataset.d) {
+    if (dl) {
       var a = document.createElement("a");
       a.href = url;
-      a.download = f.name + ".pdf";
+      a.download = name + ".pdf";
       document.body.appendChild(a);
       a.click();
       a.remove();
@@ -4925,11 +5004,11 @@
     }
     pdfClean();
     pdfUrl = url;
-    pdfName = f.name;
-    $("pdfTitle").textContent = f.name;
+    pdfName = name;
+    $("pdfTitle").textContent = name;
     $("pdfFrame").src = url;
     $("pdfDlg").showModal();
-  });
+  }
   $("pdfClose").onclick = function () {
     $("pdfDlg").close();
   };

@@ -4459,3 +4459,7 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
 #pkOkBody .m { color: var(--mute); font-size: 14px; }
 .pkwarn b { color: var(--ink); }
 .pkmis { margin: 0 0 10px; padding-left: 20px; display: grid; gap: 4px; font-size: 14px; font-variant-numeric: tabular-nums; }
+/* Manage → Templates: cloud folder section */
+#tpList .fdsec { margin-top: 22px; }
+#tpList .tpbar button { min-height: 44px; background: var(--head); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; font: inherit; font-weight: 590; cursor: pointer; }
+#tpList .tpbar button:hover { border-color: var(--acc1); }
