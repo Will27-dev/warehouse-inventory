@@ -8417,6 +8417,10 @@
     dvId = null,
     dvFlash = "",
     dvSel = null,
+    dvAddNew = false, // delivering: the "Add new item to trip?" scan bar is open
+    camHold = "", // code being held in view; it counts after 1.5 s
+    camHoldAt = 0,
+    camHoldSeen = 0,
     camStream = null,
     camTimer = null,
     camLastCode = "",
@@ -8508,13 +8512,15 @@
       "</datalist>"
     );
   }
-  function dvScanBar(ph) {
+  function dvScanBar(ph, extra) {
     return (
       '<div class="dvscan"><label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8"/></svg><input id="dvScan" autocomplete="off" placeholder="' +
       ph +
       '" aria-label="' +
       ph +
-      '"></label><button class="primary" data-dv="add">Enter</button><button data-dv="cam">Scan QR code</button></div>' +
+      '"></label><button class="primary" data-dv="add">Enter</button><button data-dv="cam">Scan QR code</button>' +
+      (extra || "") +
+      "</div>" +
       (dvFlash ? '<p class="dvflash">' + dvFlash + "</p>" : "")
     );
   }
@@ -8654,16 +8660,14 @@
   function dvLoadHtml(m) {
     return (
       dvTripHead(m) +
-      '<div class="dvfields"><label>New scans go to department #<input id="dvCurDept" inputmode="numeric" maxlength="20" autocomplete="off" placeholder="e.g. 120" value="' +
-      esc(m.curDept || "") +
-      '"></label><label>Location (when a QR code has none)<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Used only if the QR code has no location" value="' +
+      '<div class="dvfields"><label>Location (when a QR code has none)<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Used only if the QR code has no location" value="' +
       esc(m.curLoc || "") +
       '"></label>' +
       dvPlacesHtml() +
       "</div>" +
       dvScanBar("Scan a QR code, or type a receipt number and press Enter") +
       (m.lines.length
-        ? '<div class="tw dvtw"><table class="sumtbl dvlines"><thead><tr><th>Receipt #</th><th>Dept #</th><th>Location</th><th>Boxes</th><th></th></tr></thead><tbody>' +
+        ? '<div class="tw dvtw"><table class="sumtbl dvlines"><thead><tr><th>Receipt #</th><th>Location</th><th>Boxes</th><th></th></tr></thead><tbody>' +
           m.lines
             .map(function (l) {
               return (
@@ -8671,9 +8675,7 @@
                 l.id +
                 '"><td class="num">' +
                 esc(l.rc) +
-                '</td><td><input class="dvdept" data-f="dept" inputmode="numeric" maxlength="20" value="' +
-                esc(l.dept) +
-                '" placeholder="Dept #"></td><td><input data-f="loc" list="dvPlaces" maxlength="120" value="' +
+                '</td><td><input data-f="loc" list="dvPlaces" maxlength="120" value="' +
                 esc(l.loc) +
                 '" placeholder="Location"></td><td><span class="qty"><button data-dvq="-1" aria-label="One less box">−</button><b>' +
                 esc(l.boxes) +
@@ -8682,7 +8684,7 @@
             })
             .join("") +
           "</tbody></table></div>"
-        : '<div class="empty dvempty">Nothing loaded yet. Set the department # above, then scan the QR code on each receipt. The QR code fills in the receipt #, location and box count.</div>') +
+        : '<div class="empty dvempty">Nothing loaded yet. Scan the QR code on each receipt. The QR code fills in the receipt #, location and box count.</div>') +
       '<div class="dvfoot"><span class="dvtot">' +
       m.lines.length +
       (m.lines.length === 1 ? " receipt" : " receipts") +
@@ -8716,13 +8718,16 @@
       ' boxes left</span><div class="pbar"><i style="width:' +
       pct +
       '%"></i></div></div>' +
-      (left.length ? dvScanBar("Scan a receipt's QR code to find it on this trip") : "") +
+      (dvAddNew
+        ? dvScanBar("Scan or type the receipt # of the package to add", '<button data-dv="addnew-off">Cancel</button>')
+        : '<p class="dvp"><button class="primary" data-dv="addnew">Add new item to trip?</button></p>' +
+          (dvFlash ? '<p class="dvflash">' + dvFlash + "</p>" : "")) +
       (left.length
         ? dvByDept(left)
             .map(function (g) {
               return (
                 '<section class="dvgrp"><h4><span>' +
-                (g.dept ? "Dept " + esc(g.dept) : "No department") +
+                (g.dept ? "Dept " + esc(g.dept) : left.some(function (l) { return String(l.dept || "").trim(); }) ? "No department" : "Receipts") +
                 "</span><small>" +
                 g.lines.length +
                 (g.lines.length === 1 ? " receipt · " : " receipts · ") +
@@ -8921,7 +8926,7 @@
     return r;
   }
   // A scanned/typed code: while loading it's added (QR box count, or again = one more box);
-  // while delivering it selects that receipt so it can be marked delivered.
+  // while delivering it adds a package that was missed at loading ("Add new item to trip?").
   function dvAddCode(raw) {
     var m = dvFind(dvId),
       p = dvParse(raw),
@@ -8936,21 +8941,14 @@
       return l.rc.toLowerCase() === code.toLowerCase();
     };
     if (m.status === "delivering") {
-      var hit = dvLeft(m).find(same),
-        was = m.lines.find(same);
-      dvSel = hit ? hit.id : null;
-      dvFlash = hit
-        ? "Found <b>" + esc(code) + "</b>. Select Delivered when it's dropped off."
-        : was
-          ? "<b>" + esc(code) + "</b> is already marked delivered."
-          : "<b>" + esc(code) + "</b> isn't on this trip.";
-      if (hit) dvBeep();
-      renderDv();
-      var c = document.querySelector(".dvcard.on");
-      if (c) c.scrollIntoView({ block: "center", behavior: "smooth" });
-      return code;
-    }
-    if (m.status !== "loading") return;
+      if (m.lines.find(same)) {
+        dvFlash = "<b>" + esc(code) + "</b> is already on this trip.";
+        renderDv();
+        return code;
+      }
+      dvAddNew = false;
+      audit("Delivery", dvTripName(m) + " (" + m.no + "): added " + code + " after loading");
+    } else if (m.status !== "loading") return;
     var line = m.lines.find(same);
     if (line && p.boxes) {
       // A QR code carries the full box count, so scanning it again doesn't add boxes.
@@ -8973,7 +8971,7 @@
       };
       m.lines.push(line);
       dvFlash =
-        "Loaded <b>" +
+        (m.status === "delivering" ? "Added <b>" : "Loaded <b>") +
         esc(code) +
         "</b>" +
         (line.dept ? " · Dept " + esc(line.dept) : "") +
@@ -8994,9 +8992,9 @@
       return;
     }
     var miss = m.lines.filter(function (l) {
-      return !String(l.dept || "").trim() || !String(l.loc || "").trim();
+      return !String(l.loc || "").trim();
     }).length;
-    if (miss && !confirm(miss + " receipt(s) have no department # or location. Start delivering anyway?")) return;
+    if (miss && !confirm(miss + " receipt(s) have no location. Start delivering anyway?")) return;
     m.status = "delivering";
     m.loadedTs = Date.now();
     audit("Delivery", dvTripName(m) + " (" + m.no + ") loaded: " + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes");
@@ -9073,6 +9071,7 @@
       dvView = "home";
       dvFlash = "";
       dvSel = null;
+      dvAddNew = false;
     } else if (act === "new") {
       var today = dayOf(Date.now()),
         mineToday = st.manifests.filter(function (x) {
@@ -9106,6 +9105,7 @@
       dvView = "trip";
       dvFlash = "";
       dvSel = null;
+      dvAddNew = false;
     } else if (b.dataset.dvSub) {
       dvSubmit(dvFind(b.dataset.dvSub));
       return;
@@ -9116,6 +9116,9 @@
     } else if (act === "cam") {
       camOpen();
       return;
+    } else if (act === "addnew" || act === "addnew-off") {
+      dvAddNew = act === "addnew";
+      dvFlash = "";
     } else if (act === "loaded" && m) {
       dvDoneLoading(m);
       return;
@@ -9186,8 +9189,7 @@
     var m = dvFind(dvId),
       t = e.target;
     if (!m || !dvMine(m) || m.status !== "loading") return;
-    if (t.id === "dvCurDept") m.curDept = t.value.trim();
-    else if (t.id === "dvCurLoc") m.curLoc = t.value;
+    if (t.id === "dvCurLoc") m.curLoc = t.value;
     else if (t.dataset.f) {
       var line = m.lines.find(function (x) {
         return x.id === t.closest("tr").dataset.l;
@@ -9328,11 +9330,25 @@
       try {
         var code = await rd.detect(v),
           now = Date.now();
+        // A code counts only after it stays in view for 1.5 s (yellow dot shows the hold);
+        // a short miss (< 0.4 s) between frames doesn't restart it.
+        if (camHold && (!code || code !== camHold) && now - camHoldSeen > 400) {
+          camHold = "";
+          $("camDlg").classList.remove("hold");
+          $("camLast").textContent = "Point the camera at a QR code.";
+        }
         if (code) {
           // The same label still in view counts once; it counts again only after it has
           // been out of view for a moment (e.g. the next box with the same receipt #).
           if (code === camLastCode && now - camLastAt < 1500) camLastAt = now;
-          else {
+          else if (code !== camHold) {
+            camHold = code;
+            camHoldAt = camHoldSeen = now;
+            $("camDlg").classList.add("hold");
+            $("camLast").textContent = "Hold still…";
+          } else if ((camHoldSeen = now) - camHoldAt >= 1500) {
+            camHold = "";
+            $("camDlg").classList.remove("hold");
             camLastCode = code;
             camLastAt = now;
             dvAddCode(code);
@@ -9351,6 +9367,8 @@
     clearInterval(camTimer);
     camTimer = null;
     camBusy = false;
+    camHold = "";
+    $("camDlg").classList.remove("hold");
     if (camStream)
       camStream.getTracks().forEach(function (t) {
         t.stop();
