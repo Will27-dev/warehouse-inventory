@@ -4025,6 +4025,33 @@ body.onland { overflow: hidden; }
   .gtab td + td { margin-top: 4px; }
   .gtab td:nth-child(3) { margin-top: 10px; font-weight: 700; }
 }
+
+/* ---------- Manage launcher: one square tile per tool, with a live count ---------- */
+.mgst { display: none; }
+.mgnav:not(.picked) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 6px 24px 22px; }
+.mgnav:not(.picked) button[data-opt] { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 184px; padding: 18px 20px; background: var(--page); color: var(--ink); border: 0; border-top: 6px solid var(--char); text-align: left; transition: border-color .15s ease; }
+.mgnav:not(.picked) button[data-opt]:hover { background: var(--page); border-top-color: var(--acc1); }
+.mgnav:not(.picked) button[data-opt].warn { border-top-color: var(--acc2); }
+.mgnav:not(.picked) button[data-opt="5"] { background: transparent; color: var(--mute); border: 2px dashed var(--line); }
+.mgnav:not(.picked) button[data-opt] .mgic,
+.mgnav:not(.picked) button[data-opt] .mgtip,
+.mgnav:not(.picked) button[data-opt]::after { display: none; }
+.mgnav:not(.picked) button[data-opt] .mgl { align-self: auto; font-family: var(--disp); font-size: 22px; font-weight: 700; line-height: 1.15; }
+.mgnav:not(.picked) .mgst { display: flex; flex-direction: column; gap: 2px; }
+.mgnav:not(.picked) .mgst b { font-family: var(--disp); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
+.mgnav:not(.picked) .mgst b:empty { display: none; }
+.mgnav:not(.picked) .warn .mgst b { color: var(--acc2); }
+.mgnav:not(.picked) .mgst small { font-size: 14px; font-weight: 400; color: var(--mute); }
+html.dark .mgnav:not(.picked) .warn .mgst b { color: #F08A66; }
+@media (max-width: 1000px) {
+  .mgnav:not(.picked) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 560px) {
+  .mgnav:not(.picked) { gap: 10px; padding: 4px 12px 16px; }
+  .mgnav:not(.picked) button[data-opt] { min-height: 150px; padding: 14px 14px 16px; }
+  .mgnav:not(.picked) .mgl { font-size: 18px; }
+  .mgnav:not(.picked) .mgst b { font-size: 32px; }
+}
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -47825,6 +47852,41 @@ var ZXING_Z = [
   /* =====================================================================
      Manage page: users, permissions, delivery manifests, material transactions
      ===================================================================== */
+  // Live line on each Manage tile: [big number, words, needs attention].
+  function mgStatus(i) {
+    var today = dayOf(Date.now()),
+      n;
+    if (i === 0) {
+      n = st.users.filter(function (u) {
+        return u.role !== "user";
+      }).length;
+      return [st.users.length, (st.users.length === 1 ? "person, " : "people, ") + n + " can manage"];
+    }
+    if (i === 1) {
+      n = (st.manifests || []).filter(function (m) {
+        return m.status === "submitted" && dayOf(m.subTs) === today;
+      }).length;
+      return [n, n === 1 ? "trip submitted today" : "trips submitted today"];
+    }
+    if (i === 2) return [st.tpl.length, "saved on this device"];
+    if (i === 3) {
+      n = st.audit.filter(function (e) {
+        return isSubm(e) && dayOf(e.ts) === today;
+      }).length;
+      return [n, "submitted today"];
+    }
+    if (i === 4) {
+      var td = st.insp.filter(function (r) {
+          return visibleP(r.by) && dayOf(r.ts) === today;
+        }),
+        no = td.filter(function (r) {
+          return r.counts && r.counts.no;
+        }).length;
+      return no ? [no, (no === 1 ? "sheet" : "sheets") + " with a No today", true] : [td.length, "finished today"];
+    }
+    if (i === 6) return [$("grBtns").children.length, "sites"];
+    return ["", "Coming soon"];
+  }
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
     var ok = isMgr();
@@ -47847,7 +47909,7 @@ var ZXING_Z = [
           MGICONS[i] +
           '</svg></span><span class="mgl"></span><span class="mgtip">' +
           esc(MGTIPS[i]) +
-          "</span></button>"
+          '</span><span class="mgst"><b></b><small></small></span></button>'
         );
       }).join("");
     MGOPTS.forEach(function (x, i) {
@@ -47856,6 +47918,10 @@ var ZXING_Z = [
       if (lb.textContent !== x) lb.textContent = x;
       b.classList.toggle("on", i === mgOpt);
       $("mgOpt" + i).hidden = i !== mgOpt;
+      var s = mgStatus(i);
+      b.querySelector(".mgst b").textContent = s[0];
+      b.querySelector(".mgst small").textContent = s[1];
+      b.classList.toggle("warn", !!s[2]);
     });
     nav.classList.toggle("picked", mgOpt >= 0);
     $("mgBody").querySelector(".mgbar").hidden = mgOpt < 0;

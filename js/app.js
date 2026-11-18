@@ -4193,6 +4193,41 @@
   /* =====================================================================
      Manage page: users, permissions, delivery manifests, material transactions
      ===================================================================== */
+  // Live line on each Manage tile: [big number, words, needs attention].
+  function mgStatus(i) {
+    var today = dayOf(Date.now()),
+      n;
+    if (i === 0) {
+      n = st.users.filter(function (u) {
+        return u.role !== "user";
+      }).length;
+      return [st.users.length, (st.users.length === 1 ? "person, " : "people, ") + n + " can manage"];
+    }
+    if (i === 1) {
+      n = (st.manifests || []).filter(function (m) {
+        return m.status === "submitted" && dayOf(m.subTs) === today;
+      }).length;
+      return [n, n === 1 ? "trip submitted today" : "trips submitted today"];
+    }
+    if (i === 2) return [st.tpl.length, "saved on this device"];
+    if (i === 3) {
+      n = st.audit.filter(function (e) {
+        return isSubm(e) && dayOf(e.ts) === today;
+      }).length;
+      return [n, "submitted today"];
+    }
+    if (i === 4) {
+      var td = st.insp.filter(function (r) {
+          return visibleP(r.by) && dayOf(r.ts) === today;
+        }),
+        no = td.filter(function (r) {
+          return r.counts && r.counts.no;
+        }).length;
+      return no ? [no, (no === 1 ? "sheet" : "sheets") + " with a No today", true] : [td.length, "finished today"];
+    }
+    if (i === 6) return [$("grBtns").children.length, "sites"];
+    return ["", "Coming soon"];
+  }
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
     var ok = isMgr();
@@ -4215,7 +4250,7 @@
           MGICONS[i] +
           '</svg></span><span class="mgl"></span><span class="mgtip">' +
           esc(MGTIPS[i]) +
-          "</span></button>"
+          '</span><span class="mgst"><b></b><small></small></span></button>'
         );
       }).join("");
     MGOPTS.forEach(function (x, i) {
@@ -4224,6 +4259,10 @@
       if (lb.textContent !== x) lb.textContent = x;
       b.classList.toggle("on", i === mgOpt);
       $("mgOpt" + i).hidden = i !== mgOpt;
+      var s = mgStatus(i);
+      b.querySelector(".mgst b").textContent = s[0];
+      b.querySelector(".mgst small").textContent = s[1];
+      b.classList.toggle("warn", !!s[2]);
     });
     nav.classList.toggle("picked", mgOpt >= 0);
     $("mgBody").querySelector(".mgbar").hidden = mgOpt < 0;
