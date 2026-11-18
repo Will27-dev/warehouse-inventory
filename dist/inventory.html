@@ -3825,7 +3825,7 @@ main > section:not([hidden]),
   --acc1-hover: color-mix(in srgb, var(--acc1) 82%, #000);
   --acc1-soft: color-mix(in srgb, var(--acc1) 28%, #fff);
   --on-dark:#f2f2f3; --on-dark-mute:#a5a6ad;
-  --bg:var(--canvas); --panel:#fff; --ink:#151517; --mute:#76767d; --line:#e6e6e3; --head:#f4f4f2;
+  --bg:var(--canvas); --panel:#fff; --ink:#151517; --mute:#65656c; --line:#e6e6e3; --head:#f4f4f2;
   --side:var(--char); --side2:var(--char); --side-ink:var(--on-dark); --side-mute:var(--on-dark-mute);
   --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#d92d20; --shadow:none;
 }
@@ -3873,7 +3873,7 @@ body { padding:16px; }
 .bar button { background:var(--tile); color:var(--on-dark); border:0; border-radius:999px; font-weight:600; }
 .bar button:hover { background:color-mix(in srgb, var(--tile) 85%, #fff); }
 .primary, .bar .primary { background:var(--acc1); color:var(--char); border:0; border-radius:999px; font-size:15px; font-weight:800; }
-.primary:hover, .bar .primary:hover { filter:none; background:var(--acc1-hover); }
+.primary:hover, .bar .primary:hover, .bar button.primary:hover { filter:none; background:var(--acc1-hover); border-color:var(--acc1-hover); }
 
 /* Location filters on the dark canvas */
 main { padding:10px 22px 26px; }
@@ -3973,7 +3973,7 @@ html.dm-fade * {
 .dmswitch { display:inline-flex; align-items:center; gap:10px; padding:4px 6px 4px 4px; border:0; background:none; font:inherit; font-size:13px; font-weight:700; color:var(--ink); cursor:pointer; border-radius:999px; }
 .dmswitch:focus-visible { outline:2px solid var(--acc1); outline-offset:3px; }
 .dmtrack { position:relative; width:54px; height:30px; flex:none; border-radius:999px; background:#d9dedd; box-shadow:inset 0 1px 3px rgba(0,0,0,.18); transition:background-color .35s ease; }
-.dmknob { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:999px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:left .38s cubic-bezier(.34,1.56,.64,1), background-color .35s ease; }
+.dmknob { position:absolute; top:3px; left:3px; width:24px; height:24px; border-radius:999px; background:#fff; box-shadow:0 2px 6px rgba(0,0,0,.25); transition:left .3s cubic-bezier(.16,1,.3,1), background-color .3s ease-out; }
 /* Sun / moon on the knob */
 .dmknob::after { content:""; position:absolute; inset:6px; border-radius:50%; background:#f5b335; box-shadow:0 0 0 2px rgba(245,179,53,.25); transition:all .35s ease; }
 .dmswitch[aria-checked="true"] .dmtrack { background:var(--acc1); }
@@ -4593,7 +4593,6 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
           <section class="panel" id="topPanel" hidden>
             <div class="head">
               <div>
-                <div class="eyebrow">Section</div>
                 <h2 id="topTitle"></h2>
                 <p id="topNote">Content for this section has not been set up yet.</p>
               </div>
@@ -4634,7 +4633,6 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
           <section class="panel" id="dvPanel" hidden>
             <div class="head">
               <div>
-                <div class="eyebrow">Section</div>
                 <h2 id="dvTitle">Delivery</h2>
                 <p>Scan items onto delivery manifests, then submit them as a record.</p>
               </div>
@@ -4796,7 +4794,6 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
           <section class="panel" id="contactsPanel" hidden>
             <div class="head">
               <div>
-                <div class="eyebrow">Section</div>
                 <h2 id="ctTitle"></h2>
                 <p>Names and numbers you need to reach quickly.</p>
               </div>
@@ -4883,7 +4880,6 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
           <section class="panel" id="ewoPanel" hidden>
             <div class="head">
               <div>
-                <div class="eyebrow">Section</div>
                 <h2 id="ewoTitle">EWO</h2>
                 <p id="ewoNote"></p>
               </div>
@@ -4938,7 +4934,6 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
           <section class="panel" id="mapPanel" hidden>
             <div class="head">
               <div>
-                <div class="eyebrow">Section</div>
                 <h2 id="mapTitle">Delivery Locations</h2>
                 <p>
                   Search for a delivery location, or choose an area below to browse its locations.
