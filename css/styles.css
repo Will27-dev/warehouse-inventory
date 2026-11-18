@@ -3822,7 +3822,6 @@ main > section:not([hidden]),
   --side:var(--char); --side2:var(--char); --side-ink:var(--on-dark); --side-mute:var(--on-dark-mute);
   --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#d92d20; --shadow:none;
 }
-body { font-family:"Plus Jakarta Sans","Segoe UI Variable Display","Segoe UI",system-ui,sans-serif; }
 
 /* App frame on the tinted page */
 html, body { background:var(--page); }
@@ -3866,7 +3865,7 @@ body { padding:16px; }
 .bar button { background:var(--tile); color:var(--on-dark); border:0; border-radius:999px; font-weight:600; }
 .bar button:hover { background:color-mix(in srgb, var(--tile) 85%, #fff); }
 .primary, .bar .primary { background:var(--acc1); color:var(--char); border:0; border-radius:999px; font-size:15px; font-weight:800; }
-.primary:hover, .bar .primary:hover, .bar button.primary:hover { filter:none; background:var(--acc1-hover); border-color:var(--acc1-hover); }
+.primary:hover, .bar .primary:hover, .bar button.primary:hover { filter:none; background:var(--acc1-hover); border-color:var(--acc1-hover); color:var(--char); }
 
 /* Location filters on the dark canvas */
 main { padding:10px 22px 26px; }
@@ -4471,3 +4470,115 @@ dialog.pksubdlg { width: min(760px, calc(100vw - 24px)); }
 #tpList .fdsec { margin-top: 22px; }
 #tpList .tpbar button { min-height: 44px; background: var(--head); color: var(--ink); border: 1px solid var(--line); border-radius: 999px; font: inherit; font-weight: 590; cursor: pointer; }
 #tpList .tpbar button:hover { border-color: var(--acc1); }
+
+/* ===== Enhance pass: type details, status colour, card layout, feedback motion ===== */
+/* Type: balanced headings, no lone last words, themed selection and scrollbars */
+h1, h2, h3, h4 { text-wrap: balance; }
+p, li, .empty, .pknote { text-wrap: pretty; }
+::selection { background: color-mix(in srgb, var(--acc1) 40%, transparent); }
+.tw, .scroll, .pfwork, .dvtw, dialog { scrollbar-color: color-mix(in srgb, var(--mute) 50%, transparent) transparent; }
+
+/* Colour: readable red in dark mode (was 3.4:1 on dark cards, now 7:1) */
+html.dark, html.dark * { --warn: #ff8a80; }
+/* Pick List: lines where the slip and our on hand differ, and lines marked as a problem */
+.pktab td.pkoff { color: var(--warn); font-weight: 650; }
+.pktab td.pkoff small { display: block; font-size: 12px; font-weight: 500; }
+.pktab tr.pkprob { background: color-mix(in srgb, var(--acc2) 8%, transparent); }
+
+/* Item cards: Edit sits beside the item number, the stepper gets the full row (it overflowed before) */
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { grid-template-areas: "num edit" "desc desc" "loc loc" "qty qty"; }
+body:not(.ontop):not(.onside):not(.onsum) #panel.xmode tbody tr { grid-template-areas: "sel sel" "num edit" "desc desc" "loc loc" "qty qty"; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.act { align-self: start; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr .qty { display: flex; width: 100%; }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr .qty b { flex: 1; }
+
+/* Motion: dialogs and toasts arrive instead of appearing; a problem circle stamps onto the slip;
+   an updated On hand now cell glows mint for a moment. Reduced motion turns these off. */
+dialog[open] { animation: dlgIn .22s cubic-bezier(.16,1,.3,1); }
+dialog[open]::backdrop { animation: bdIn .22s ease-out; }
+@keyframes dlgIn { from { opacity: 0; transform: translateY(8px) scale(.98); } }
+@keyframes bdIn { from { opacity: 0; } }
+.toast:not([hidden]) { animation: toastIn .24s cubic-bezier(.16,1,.3,1); }
+@keyframes toastIn { from { opacity: 0; transform: translate(-50%, 12px); } }
+.pkmark.new { animation: pkStamp .34s cubic-bezier(.16,1,.3,1); }
+@keyframes pkStamp { from { opacity: 0; transform: scale(1.6); } }
+.pktab td.pkflash { animation: pkFlash 1.2s ease-out; }
+@keyframes pkFlash { from { background: color-mix(in srgb, var(--acc1) 45%, transparent); } }
+
+/* ===== Login, Pick List and Manage refresh ===== */
+/* Login: signed-out card */
+.lgbody { padding: 32px 28px 40px; }
+#lgForm.lgcard { width: min(400px, 100%); padding: 28px; border-radius: var(--r-lg); background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
+#lgForm label { font-size: 14px; font-weight: 590; color: var(--ink); margin-bottom: 16px; }
+#lgForm input { min-height: 48px; margin-top: 6px; padding: 0 14px; border-radius: var(--r-md); background: var(--panel); font-size: 16px; }
+#lgForm input:focus { border-color: var(--acc1); box-shadow: 0 0 0 3px color-mix(in srgb, var(--acc1) 30%, transparent); }
+#lgForm .lgerr { color: var(--warn); font-size: 14px; }
+#lgForm .lgsubmit { min-height: 48px; border: 0; border-radius: 999px; font-size: 16px; }
+
+/* Login: signed-in account */
+.lgacct { width: min(820px, 100%); display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px 32px; }
+.lgprof { gap: 18px; margin: 0; }
+.lgname { font-size: 26px; font-weight: 700; letter-spacing: -.02em; margin: 0; }
+.lgnick { font-size: 14px; margin-top: 2px; }
+.lgmail { margin: 10px 0 0; font-size: 14px; overflow-wrap: anywhere; }
+.lgrole { display: inline-block; margin-top: 8px; padding: 3px 12px; border-radius: 999px; background: var(--char); color: var(--acc1); font-size: 13px; font-weight: 650; }
+.lgbio { margin-top: 16px; max-width: 60ch; }
+.lgcan { padding: 20px 22px; border-radius: var(--r-md); background: var(--head); }
+.lgcan h3 { margin: 0 0 10px; font-size: 16px; font-weight: 650; }
+.lgcan ul { list-style: none; margin: 0; padding: 0; }
+.lgcan li { display: flex; align-items: flex-start; gap: 12px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; }
+.lgcan li:first-child { border-top: 0; }
+.lgcan li svg { flex: none; width: 26px; height: 26px; padding: 4px; border-radius: 999px; }
+.lgcan li.yes svg { background: var(--acc1); color: var(--char); }
+.lgcan li.no { color: var(--mute); }
+.lgcan li.no svg { background: var(--line); color: var(--mute); }
+.lgcan li small { display: block; font-size: 13px; }
+.lgbtns { grid-column: 1 / -1; display: flex; flex-wrap: wrap; align-items: center; gap: 10px; padding-top: 16px; border-top: 1px solid var(--line); }
+.lgbtns .sp { flex: 1; }
+.lgbtns button { min-height: 44px; padding: 0 20px; border-radius: 999px; border: 1px solid var(--line); background: var(--head); color: var(--ink); font: inherit; font-weight: 590; cursor: pointer; }
+.lgbtns button:hover { border-color: var(--acc1); }
+.lgbtns .lgmg { background: var(--acc2); border-color: var(--acc2); color: var(--char); }
+.lgbtns .lgmg:hover { background: color-mix(in srgb, var(--acc2) 82%, #000); border-color: transparent; }
+#lgOut { background: none; border-color: transparent; color: var(--warn); }
+#lgOut:hover { border-color: var(--warn); }
+@media (max-width: 720px) {
+  .lgacct { grid-template-columns: minmax(0, 1fr); }
+  .lgbtns .sp { display: none; }
+}
+
+/* Pick List: drop area */
+.pkdrop { display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 32px 20px; border: 2px dashed var(--line); border-radius: var(--r-md); text-align: center; transition: border-color .16s ease-out, background-color .16s ease-out; }
+.pkdrop svg { width: 52px; height: 52px; padding: 12px; margin-bottom: 4px; border-radius: 16px; background: var(--char); color: var(--acc1); }
+.pkdrop b { font-size: 17px; font-weight: 650; }
+.pkdrop .m { max-width: 46ch; color: var(--mute); font-size: 14px; }
+.pkdrop .primary { margin-top: 10px; min-height: 44px; padding: 0 22px; }
+.pkdrop.over { border-color: var(--acc1); background: color-mix(in srgb, var(--acc1) 10%, transparent); }
+@media (hover: none) { .pkdnd { display: none; } }
+.pkdrop + .pklist { margin-top: 18px; }
+
+/* Pick List: progress beside Submit */
+.pksub { align-items: center; gap: 16px 24px; flex-wrap: wrap; margin-top: 16px; padding: 16px 18px; border-radius: var(--r-md); background: var(--head); }
+.pkprog { flex: 1 1 240px; display: flex; flex-direction: column; gap: 8px; font-size: 14px; color: var(--mute); font-variant-numeric: tabular-nums; }
+.pkprog b { color: var(--ink); font-weight: 650; }
+.pkprog .pbar { height: 8px; border-radius: 999px; background: var(--line); overflow: hidden; }
+.pkprog .pbar i { display: block; height: 100%; border-radius: 999px; background: var(--acc1); transition: width .3s cubic-bezier(.16,1,.3,1); }
+
+/* Manage: options as a settings list, description always visible (touch has no hover) */
+.mgnav:not(.picked) { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 340px), 1fr)); gap: 0 28px; padding: 6px 24px 18px; }
+.mgnav button[data-opt] { width: auto; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; grid-template-rows: auto auto; column-gap: 14px; row-gap: 2px; align-items: center; justify-items: start; min-height: 72px; padding: 12px 6px; border: 0; border-bottom: 1px solid var(--line); border-radius: 0; text-align: left; font-size: 16px; font-weight: 650; }
+.mgnav button[data-opt] .mgic { grid-row: 1 / span 2; width: 44px; height: 44px; border-width: 0; background: var(--head); color: var(--ink); box-shadow: none; }
+.mgnav button[data-opt] .mgic svg { width: 22px; height: 22px; }
+.mgnav button[data-opt]:hover .mgic, .mgnav button[data-opt]:hover .mgic svg { transform: none; box-shadow: none; }
+.mgnav button[data-opt]:hover { background: color-mix(in srgb, var(--head) 60%, transparent); }
+.mgnav button[data-opt] .mgl { grid-column: 2; align-self: end; }
+.mgnav button[data-opt] .mgtip { grid-column: 2; align-self: start; position: static; width: auto; padding: 0; background: none; box-shadow: none; color: var(--mute); font-size: 13.5px; font-weight: 400; line-height: 1.4; opacity: 1 !important; visibility: visible !important; transform: none !important; transition: none; pointer-events: none; }
+.mgnav button[data-opt] .mgtip::before { display: none; }
+.mgnav button[data-opt]::after { content: ""; grid-column: 3; grid-row: 1 / span 2; width: 8px; height: 8px; margin: 0 6px; border-right: 2px solid var(--mute); border-bottom: 2px solid var(--mute); transform: rotate(-45deg); }
+.mgnav.picked button[data-opt] { min-height: 44px; padding: 0 6px; border: 0; grid-template-rows: auto; }
+.mgnav.picked button[data-opt] .mgtip, .mgnav.picked button[data-opt]::after { display: none; }
+.mgnav.picked button[data-opt] .mgic { grid-row: 1; }
+.mgnav.picked button[data-opt] .mgl { align-self: center; }
+.mgnav.picked button[data-opt]:hover { background: none; }
+@media (max-width: 640px) {
+  .mgnav:not(.picked) { padding: 4px 14px 14px; }
+}

@@ -1556,6 +1556,7 @@
     pkSlide(1);
   };
   // Problem rows: a black circle on the item # in the slip, and a Problems page after the last page.
+  var pkStamp = -1; // row whose circle was just added, so only that one animates
   function pkMarks(p) {
     var box = $("pkDoc");
     box.querySelectorAll(".pkmark, .pkprobs").forEach(function (el) {
@@ -1570,10 +1571,18 @@
       if (!pg) return;
       var c = document.createElement("span");
       c.className = "pkmark";
+      if (r.j === pkStamp) {
+        c.className += " new";
+        box.scrollTo({
+          left: [].indexOf.call(box.children, pg) * box.clientWidth,
+          behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth",
+        });
+      }
       c.style.cssText =
         "left:" + r.box[0] + "%;top:" + r.box[1] + "%;width:" + r.box[2] + "%;height:" + r.box[3] + "%";
       pg.appendChild(c);
     });
+    pkStamp = -1;
     pkPagerSync();
     if (!probs.length) return;
     var pp = document.createElement("section");
@@ -1618,11 +1627,12 @@
       p.rows
         .map(function (r, j) {
           var now = "now" in r ? r.now : pkNow(r),
+            off = now != null && pkNum(r.oh) !== now,
             tg = !ro && pkTarget(r),
             why = tg ? "" : now == null ? "This item # is not in the list" : "This item # is in more than one bin";
           if (ro === true)
             return (
-              '<tr><td data-l="Item #"><b>' +
+              "<tr" + (p.prob[j] != null ? ' class="pkprob"' : "") + '><td data-l="Item #"><b>' +
               esc(r.n) +
               '</b></td><td data-l="Allocated">' +
               esc(r.alloc) +
@@ -1636,14 +1646,16 @@
               esc(p.picked[j] || "–") +
               '</td><td data-l="On hand (slip)">' +
               esc(r.oh) +
-              '</td><td data-l="On hand now">' +
-              (now == null ? '<span class="m">Not in list</span>' : now) +
+              '</td><td data-l="On hand now"' +
+              (off ? ' class="pkoff"' : "") +
+              ">" +
+              (now == null ? '<span class="m">Not in list</span>' : now + (off ? "<small>Differs</small>" : "")) +
               '</td><td data-l="Check">' +
               esc([p.upd[j] ? "Qty updated" : "", p.prob[j] != null ? "Problem" : ""].filter(Boolean).join(", ") || "–") +
               "</td></tr>"
             );
           return (
-            '<tr><td data-l="Item #"><b>' +
+            "<tr" + (p.prob[j] != null ? ' class="pkprob"' : "") + '><td data-l="Item #"><b>' +
             esc(r.n) +
             '</b></td><td data-l="Allocated">' +
             esc(r.alloc) +
@@ -1661,8 +1673,10 @@
             esc(r.n) +
             '"></td><td data-l="On hand (slip)">' +
             esc(r.oh) +
-            '</td><td data-l="On hand now">' +
-            (now == null ? '<span class="m">Not in list</span>' : now) +
+            '</td><td data-l="On hand now"' +
+            (off ? ' class="pkoff"' : "") +
+            ">" +
+            (now == null ? '<span class="m">Not in list</span>' : now + (off ? "<small>Differs</small>" : "")) +
             '</td><td data-l="Check" class="pkchk">' +
             (ed
               ? '<span class="m">' + (p.upd[j] ? "Qty updated" : "") + "</span>"
@@ -1689,7 +1703,27 @@
           ". You'll find it under Pick List in your profile.</p>"
         : ro
         ? ""
-        : '<div class="pksub"><button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
+        : '<div class="pksub">' +
+          pkProgHtml(p) +
+          '<button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
+    );
+  }
+  function pkProgHtml(p) {
+    var n = p.rows.length,
+      done = p.rows.filter(function (r, j) {
+        return pkNum(p.picked[j]) != null;
+      }).length,
+      pr = Object.keys(p.prob).length;
+    return (
+      '<div class="pkprog" id="pkProg"><span><b>' +
+      done +
+      " of " +
+      n +
+      "</b> lines picked" +
+      (pr ? ", " + pr + (pr === 1 ? " problem" : " problems") : "") +
+      '</span><span class="pbar" aria-hidden="true"><i style="width:' +
+      Math.round((done / (n || 1)) * 100) +
+      '%"></i></span></div>'
     );
   }
   // A submitted pick list is one entry in the shared activity log (category "Pick lists"),
@@ -1967,7 +2001,7 @@
             );
           })
           .join("")
-      : '<li class="m">No pick list PDFs yet. Add one to keep it handy.</li>';
+      : ""; // the drop area above already says what to do
   }
   function pkShow(i) {
     pkOpen = i;
@@ -1975,21 +2009,35 @@
     renderPk();
     scrollTo(0, 0);
   }
-  $("pkAdd").onclick = function () {
-    pickFiles("application/pdf,.pdf", false, function (files) {
-      var pdfs = files.filter(function (f) {
-        return f.type === "application/pdf" || /\.pdf$/i.test(f.name);
-      });
-      if (!pdfs.length) return toast("Pick a PDF file.");
-      var first = pkPdfs.length;
-      pdfs.forEach(function (f) {
-        var p = { name: f.name, size: f.size, file: f, rows: null, picked: {}, upd: {}, prob: {} };
-        pkPdfs.push(p);
-        pkLoad(p);
-      });
-      pkShow(first);
+  function pkAddFiles(files) {
+    var pdfs = files.filter(function (f) {
+      return f.type === "application/pdf" || /\.pdf$/i.test(f.name);
     });
+    if (!pdfs.length) return toast("Pick a PDF file.");
+    var first = pkPdfs.length;
+    pdfs.forEach(function (f) {
+      var p = { name: f.name, size: f.size, file: f, rows: null, picked: {}, upd: {}, prob: {} };
+      pkPdfs.push(p);
+      pkLoad(p);
+    });
+    pkShow(first);
+  }
+  $("pkAdd").onclick = function () {
+    pickFiles("application/pdf,.pdf", false, pkAddFiles);
   };
+  // Drag PDFs from the computer onto the drop area.
+  $("pkDrop").addEventListener("dragover", function (e) {
+    e.preventDefault();
+    this.classList.add("over");
+  });
+  $("pkDrop").addEventListener("dragleave", function () {
+    this.classList.remove("over");
+  });
+  $("pkDrop").addEventListener("drop", function (e) {
+    e.preventDefault();
+    this.classList.remove("over");
+    pkAddFiles([].slice.call(e.dataTransfer.files));
+  });
   $("pkList").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
@@ -2007,7 +2055,10 @@
   });
   $("pkRows").addEventListener("input", function (e) {
     var p = pkPdfs[pkOpen];
-    if (p && e.target.dataset.pk) p.picked[e.target.dataset.pk] = e.target.value;
+    if (p && e.target.dataset.pk) {
+      p.picked[e.target.dataset.pk] = e.target.value;
+      if ($("pkProg")) $("pkProg").outerHTML = pkProgHtml(p);
+    }
   });
   var pkProbRow = -1,
     pkProbFor = null,
@@ -2043,6 +2094,8 @@
       }
       save();
       renderPk();
+      var box = $("pkRows").querySelector('[data-upd="' + j + '"]');
+      if (box) box.closest("tr").querySelector('[data-l="On hand now"]').classList.add("pkflash");
       toast(el.checked ? "Quantity updated to " + r.oh + "." : "Quantity put back.");
     }
     if (el.dataset.prob) {
@@ -2069,6 +2122,7 @@
     if (ev.submitter && ev.submitter.value !== "save") return;
     if (!p || pkProbRow < 0 || !note) return;
     p.prob[pkProbRow] = note;
+    if (pkProbAfter === renderPk) pkStamp = pkProbRow;
     pkProbAfter();
   });
   renderPk();
@@ -3577,7 +3631,7 @@
     ],
     // Left-to-right order of the Manage buttons (indexes into MGOPTS; mgOpt stays the index).
     MGORDER = [0, 1, 2, 3, 4, 6, 5],
-    // Short descriptions shown when hovering over (or tabbing to) each Manage option.
+    // Short descriptions shown under each Manage option.
     MGTIPS = [
       "Add people, change their access, and choose what each person is allowed to do.",
       "See every delivery (EWO) created on a chosen day, grouped by the person who made it.",
@@ -3928,39 +3982,42 @@
     document.documentElement.style.setProperty("--tab", "#f5b335");
     var b = $("lgBody"),
       r = curRec();
+    $("lgH").textContent = sess && r ? "Your account" : "Log in";
+    $("lgP").textContent = sess && r ? "You're signed in on this device." : "Sign in with your email and password.";
     if (sess && r) {
       b.innerHTML =
-        '<div class="lgcard"><div class="lgprof">' +
+        '<div class="lgacct"><div class="lgid"><div class="lgprof">' +
         avatarHtml(sess.email, sess.name, "lg") +
-        '<div><div class="lgwho">Signed in as</div><div class="lgname">' +
+        '<div><div class="lgname">' +
         esc(sess.name) +
         "</div>" +
         (profOf(sess.email).nick
           ? '<div class="lgnick">“' + esc(profOf(sess.email).nick) + "”</div>"
           : "") +
-        "</div></div>" +
+        '<div class="lgmail">' +
+        esc(sess.email) +
+        '</div><div class="lgrole">' +
+        ROLE_LABEL[r.role] +
+        "</div></div></div>" +
         (profOf(sess.email).bio
           ? '<div class="lgbio">' + esc(profOf(sess.email).bio) + "</div>"
           : "") +
-        '<div class="lgmail">' +
-        esc(sess.email) +
-        " · " +
-        ROLE_LABEL[r.role] +
-        '</div><div class="lgperms">' +
+        '</div><div class="lgcan"><h3>What you can do</h3><ul>' +
         PERMS.map(function (k) {
+          var y = can(k[0]);
           return (
-            '<span class="pill' +
-            (can(k[0]) ? " yes" : "") +
-            '">' +
-            (can(k[0]) ? "✓ " : "") +
+            '<li class="' + (y ? "yes" : "no") + '">' +
+            (y ? '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 6 9 17l-5-5"/></svg>' : '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M18 6 6 18M6 6l12 12"/></svg>') +
+            "<span>" +
             esc(k[1]) +
-            "</span>"
+            (y ? "" : "<small>Ask a manager if you need this.</small>") +
+            "</span></li>"
           );
         }).join("") +
-        '</div><div class="lgbtns">' +
+        '</ul></div><div class="lgbtns">' +
         '<button id="lgProfile">Edit profile</button>' +
-        (isMgr() ? '<button id="lgManage" class="manage big">Open Manage</button>' : "") +
-        '<button id="lgOut">Sign out</button></div></div>';
+        (isMgr() ? '<button id="lgManage" class="lgmg">Open Manage</button>' : "") +
+        '<span class="sp"></span><button id="lgOut">Sign out</button></div></div>';
       return;
     }
     b.innerHTML =
@@ -4035,6 +4092,7 @@
     $("mgGate").hidden = ok;
     $("mgBody").hidden = !ok;
     $("mgN").textContent = ok ? st.users.length : "–";
+    $("mgN").nextElementSibling.textContent = ok && st.users.length === 1 ? "user" : "users";
     if (!ok) return;
     var nav = $("mgNav");
     if (!nav.querySelector("[data-opt]"))
@@ -4048,7 +4106,7 @@
           '"><span class="mgic"><svg viewBox="0 0 24 24" fill="none" ' +
           'stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">' +
           MGICONS[i] +
-          '</svg></span><span class="mgl"></span><span class="mgtip" role="tooltip">' +
+          '</svg></span><span class="mgl"></span><span class="mgtip">' +
           esc(MGTIPS[i]) +
           "</span></button>"
         );
