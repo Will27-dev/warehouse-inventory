@@ -22,22 +22,6 @@
   --tab: #2f7fd1;
   --shadow: 0 1px 2px rgba(16, 28, 48, 0.06), 0 8px 24px rgba(16, 28, 48, 0.06);
 }
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg: #0a111c;
-    --panel: #121c2b;
-    --ink: #e7edf5;
-    --mute: #92a1b5;
-    --line: #243348;
-    --head: #17233a;
-    --side: #070d18;
-    --side2: #0e1830;
-    --btn: #e7edf5;
-    --btn-ink: #0a111c;
-    --warn: #ff8a80;
-    --shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 8px 24px rgba(0, 0, 0, 0.3);
-  }
-}
 * {
   box-sizing: border-box;
 }
@@ -834,13 +818,11 @@ dialog .rm input {
 :root {
   color-scheme: light dark;
 }
-@media (prefers-color-scheme: dark) {
-  .pos {
-    color: #5fd68c;
-  }
-  .neg {
-    color: #ff9b6a;
-  }
+html.dark .pos {
+  color: #5fd68c;
+}
+html.dark .neg {
+  color: #ff9b6a;
 }
 @media (max-width: 820px) {
   .tabs .sidelabel {
@@ -3378,14 +3360,6 @@ main > section:not([hidden]),
 .topnav button:hover::before {
   transform: scale(1.12);
 }
-@media (prefers-reduced-motion: reduce) {
-  *,
-  *::before,
-  *::after {
-    animation: none !important;
-    transition: none !important;
-  }
-}
 
 /* Manage options as circles */
 .mgnav {
@@ -4340,7 +4314,6 @@ dialog input, dialog textarea, dialog select { border-radius: 10px; min-height: 
 button, .mbtn, .schip, .topnav button { transition: background-color .16s ease-out, color .16s ease-out, box-shadow .16s ease-out; }
 @keyframes mgFromRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: none; } }
 @keyframes mgFromLeft { from { opacity: 0; transform: translateX(-16px); } to { opacity: 1; transform: none; } }
-@media (prefers-reduced-motion: reduce) { *, *::before, *::after { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
 
 /* AA focus ring on everything */
 :focus-visible { outline: 2px solid var(--acc1) !important; outline-offset: 2px; }
@@ -4589,6 +4562,28 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
 @media (max-width: 640px) {
   .mgnav:not(.picked) { padding: 4px 14px 14px; }
 }
+
+/* ===== Audit fixes ===== */
+/* Native controls and scrollbars follow the app's own light/dark switch */
+html.dark { color-scheme: dark; }
+
+/* Reduce motion: nothing slides, pops or lifts; fades and colour changes that confirm an action stay */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: .01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-property: color, background-color, border-color, opacity !important;
+  }
+  dialog[open], dialog[open]::backdrop, .toast:not([hidden]) { animation: rmFade .2s ease-out !important; }
+  .pktab td.pkflash { animation: pkFlash 1.2s ease-out !important; }
+}
+@keyframes rmFade { from { opacity: 0; } }
+
+/* 44px tap targets on phones (.ux-profile.md) */
+.mglist li button { min-height: 44px; }
+@media (max-width: 640px) {
+  .profilebtn, .manage, .side .ghost { min-height: 44px; }
+}
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4621,7 +4616,7 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
               <rect x="8" y="3" width="8" height="8" />
             </svg>
           </div>
-          <div><b>Warehouse inventory</b><span>Location look-up</span></div>
+          <div><b role="heading" aria-level="1">Warehouse inventory</b><span>Location look-up</span></div>
         </div>
         <div>
           <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
@@ -5182,7 +5177,7 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
         </div>
       </form>
     </dialog>
-    <dialog id="viewDlg">
+    <dialog id="viewDlg" aria-label="Location details">
       <div id="viewBody"></div>
       <div class="actions">
         <button type="button" id="viewAdd">Add pictures</button><span class="sp"></span
@@ -5203,7 +5198,7 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
       </form>
     </dialog>
     <input type="file" id="dlPhotoIn" accept="image/*" multiple hidden />
-    <dialog id="imgDlg" class="imgdlg"><img id="imgBig" alt="" /></dialog>
+    <dialog id="imgDlg" class="imgdlg" aria-label="Picture"><img id="imgBig" alt="" /></dialog>
     <dialog id="ctDlg">
       <form method="dialog" id="ctForm">
         <h2 id="ctDlgTitle">Add contact</h2>
@@ -5304,9 +5299,9 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
     </dialog>
     <dialog id="qtDlg">
       <form method="dialog" id="qtForm">
-        <h2>Type the question text</h2>
+        <h2 id="qtTitle">Type the question text</h2>
         <p class="m" id="qtHelp" style="color: var(--mute); font-size: 13px"></p>
-        <textarea name="t" rows="14" style="width: 100%; font: inherit"></textarea>
+        <textarea name="t" aria-labelledby="qtTitle" rows="14" style="width: 100%; font: inherit"></textarea>
         <p class="mgmsg" id="qtMsg" role="alert"></p>
         <div class="actions">
           <span class="sp"></span><button type="button" id="qtCancel">Cancel</button
@@ -5437,6 +5432,8 @@ dialog[open]::backdrop { animation: bdIn .22s ease-out; }
       </form>
     </dialog>
 
+    <!-- items-data.js has its own version tag: change it only when the item data changes,
+         so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script>
 /* Item data imported from Warehouse_Location_Look_Up.xlsx.
    One row per line: [item number, description, locator, quantity, unit] */
@@ -44149,7 +44146,8 @@ var ZXING_Z = [
  *   Activity log ................................. audit
  *   Summary ...................................... renderSummary
  *
- * Globals from other files: BASE, PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z.
+ * Globals from other files: BASE (loaded with the page); PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z
+ * (js/vendor/, loaded by needVendor the first time a PDF or the camera scanner is used).
  */
 (function () {
   "use strict";
@@ -49264,8 +49262,28 @@ var ZXING_Z = [
   });
 
   /* ---------- Inspection sheets ---------- */
-  /* PDFJS_Z lives in a separate file (see index.html) */
-  /* PDFW_Z lives in a separate file (see index.html) */
+  /* PDFJS_Z and PDFW_Z live in js/vendor/pdfjs-embedded.js, JBIG2_Z in jbig2-wasm.js, ZXING_Z in
+     zxing-embedded.js. They are about 1 MB together, so each loads the first time it's needed
+     (dist/inventory.html has them inline, so the globals already exist there). */
+  var VER = ((document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/)) || [])[1] || "",
+    vendorP = {};
+  function needVendor(file, glob, what) {
+    if (window[glob]) return Promise.resolve();
+    return (
+      vendorP[file] ||
+      (vendorP[file] = new Promise(function (res, rej) {
+        var s = document.createElement("script");
+        s.src = "js/vendor/" + file + (VER ? "?v=" + VER : "");
+        s.onload = res;
+        s.onerror = function () {
+          delete vendorP[file];
+          s.remove();
+          rej(new Error("Couldn't load the " + what + ". Check your signal and try again."));
+        };
+        document.head.appendChild(s);
+      }))
+    );
+  }
   var INSC = 2,
     ins = null,
     inMenuOn = false,
@@ -49306,6 +49324,8 @@ var ZXING_Z = [
     if (pdfjsP) return pdfjsP;
     pdfjsP = (async function () {
       installWasmShim();
+      await needVendor("pdfjs-embedded.js", "PDFJS_Z", "PDF reader");
+      await needVendor("jbig2-wasm.js", "JBIG2_Z", "PDF reader");
       var lib = await gunzipB64(PDFJS_Z),
         wk = await gunzipB64(PDFW_Z);
       var m = await import(URL.createObjectURL(new Blob([lib], { type: "text/javascript" })));
@@ -53140,7 +53160,10 @@ var ZXING_Z = [
   function loadZxing() {
     if (window.ZXing) return Promise.resolve(window.ZXing);
     if (zxingP) return zxingP;
-    zxingP = gunzipB64(ZXING_Z)
+    zxingP = needVendor("zxing-embedded.js", "ZXING_Z", "barcode reader")
+      .then(function () {
+        return gunzipB64(ZXING_Z);
+      })
       .then(function (buf) {
         return new Promise(function (res, rej) {
           var s = document.createElement("script");

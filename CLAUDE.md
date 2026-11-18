@@ -6,7 +6,7 @@
 
 ## Project basics
 - Plain HTML/CSS/JS, no build step to run: `index.html`, `css/styles.css`, `js/app.js`. `python build.py` rebuilds `dist/inventory.html` after changes.
-- Bump the `?v=` tag on the script/style links in `index.html` whenever `js/app.js` or `css/styles.css` changes, so browsers load the new files.
+- Bump the `?v=` tag on the script/style links in `index.html` whenever `js/app.js` or `css/styles.css` changes, so browsers load the new files. `js/data/items-data.js` has its own `?v=data-...` tag: change it only when the item data changes. The PDF/barcode files in `js/vendor/` load on first use with app.js's tag.
 - Cloud: Supabase project `mkovvhsceckubkdxuemi` (setup in `supabase/`). Only the publishable key belongs in website code.
 - Show changes on desktop and phone before pushing; push to GitHub (`main`, GitHub Pages) only when asked.
 

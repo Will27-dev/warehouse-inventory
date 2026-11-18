@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261118c" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118d" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -36,7 +36,7 @@
               <rect x="8" y="3" width="8" height="8" />
             </svg>
           </div>
-          <div><b>Warehouse inventory</b><span>Location look-up</span></div>
+          <div><b role="heading" aria-level="1">Warehouse inventory</b><span>Location look-up</span></div>
         </div>
         <div>
           <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
@@ -597,7 +597,7 @@
         </div>
       </form>
     </dialog>
-    <dialog id="viewDlg">
+    <dialog id="viewDlg" aria-label="Location details">
       <div id="viewBody"></div>
       <div class="actions">
         <button type="button" id="viewAdd">Add pictures</button><span class="sp"></span
@@ -618,7 +618,7 @@
       </form>
     </dialog>
     <input type="file" id="dlPhotoIn" accept="image/*" multiple hidden />
-    <dialog id="imgDlg" class="imgdlg"><img id="imgBig" alt="" /></dialog>
+    <dialog id="imgDlg" class="imgdlg" aria-label="Picture"><img id="imgBig" alt="" /></dialog>
     <dialog id="ctDlg">
       <form method="dialog" id="ctForm">
         <h2 id="ctDlgTitle">Add contact</h2>
@@ -719,9 +719,9 @@
     </dialog>
     <dialog id="qtDlg">
       <form method="dialog" id="qtForm">
-        <h2>Type the question text</h2>
+        <h2 id="qtTitle">Type the question text</h2>
         <p class="m" id="qtHelp" style="color: var(--mute); font-size: 13px"></p>
-        <textarea name="t" rows="14" style="width: 100%; font: inherit"></textarea>
+        <textarea name="t" aria-labelledby="qtTitle" rows="14" style="width: 100%; font: inherit"></textarea>
         <p class="mgmsg" id="qtMsg" role="alert"></p>
         <div class="actions">
           <span class="sp"></span><button type="button" id="qtCancel">Cancel</button
@@ -852,10 +852,9 @@
       </form>
     </dialog>
 
-    <script src="js/data/items-data.js?v=20261118c"></script>
-    <script src="js/vendor/pdfjs-embedded.js?v=20261118c"></script>
-    <script src="js/vendor/jbig2-wasm.js?v=20261118c"></script>
-    <script src="js/vendor/zxing-embedded.js?v=20261118c"></script>
-    <script src="js/app.js?v=20261118c"></script>
+    <!-- items-data.js has its own version tag: change it only when the item data changes,
+         so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
+    <script src="js/data/items-data.js?v=data-20261112"></script>
+    <script src="js/app.js?v=20261118d"></script>
   </body>
 </html>

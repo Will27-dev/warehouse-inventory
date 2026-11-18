@@ -6,6 +6,9 @@ root = os.path.dirname(os.path.abspath(__file__))
 # "?v=..." on links in index.html only busts browser caches; the file itself has no query.
 def read(p): return open(os.path.join(root, p.split("?")[0]), encoding="utf8").read()
 html = read("index.html")
+# The live site loads these on first use; the single file needs them inline.
+vendor = ["js/vendor/pdfjs-embedded.js", "js/vendor/jbig2-wasm.js", "js/vendor/zxing-embedded.js"]
+html = html.replace('<script src="js/app.js', "".join('<script src="%s"></script>\n    ' % v for v in vendor) + '<script src="js/app.js', 1)
 html = re.sub(r'<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>',
               lambda m: "<style>\n" + read(m.group(1)) + "</style>", html)
 html = re.sub(r'<script\s+src="([^"]+)"\s*></script>',

@@ -21,7 +21,8 @@
  *   Activity log ................................. audit
  *   Summary ...................................... renderSummary
  *
- * Globals from other files: BASE, PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z.
+ * Globals from other files: BASE (loaded with the page); PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z
+ * (js/vendor/, loaded by needVendor the first time a PDF or the camera scanner is used).
  */
 (function () {
   "use strict";
@@ -5136,8 +5137,28 @@
   });
 
   /* ---------- Inspection sheets ---------- */
-  /* PDFJS_Z lives in a separate file (see index.html) */
-  /* PDFW_Z lives in a separate file (see index.html) */
+  /* PDFJS_Z and PDFW_Z live in js/vendor/pdfjs-embedded.js, JBIG2_Z in jbig2-wasm.js, ZXING_Z in
+     zxing-embedded.js. They are about 1 MB together, so each loads the first time it's needed
+     (dist/inventory.html has them inline, so the globals already exist there). */
+  var VER = ((document.currentScript && document.currentScript.src.match(/[?&]v=([^&]+)/)) || [])[1] || "",
+    vendorP = {};
+  function needVendor(file, glob, what) {
+    if (window[glob]) return Promise.resolve();
+    return (
+      vendorP[file] ||
+      (vendorP[file] = new Promise(function (res, rej) {
+        var s = document.createElement("script");
+        s.src = "js/vendor/" + file + (VER ? "?v=" + VER : "");
+        s.onload = res;
+        s.onerror = function () {
+          delete vendorP[file];
+          s.remove();
+          rej(new Error("Couldn't load the " + what + ". Check your signal and try again."));
+        };
+        document.head.appendChild(s);
+      }))
+    );
+  }
   var INSC = 2,
     ins = null,
     inMenuOn = false,
@@ -5178,6 +5199,8 @@
     if (pdfjsP) return pdfjsP;
     pdfjsP = (async function () {
       installWasmShim();
+      await needVendor("pdfjs-embedded.js", "PDFJS_Z", "PDF reader");
+      await needVendor("jbig2-wasm.js", "JBIG2_Z", "PDF reader");
       var lib = await gunzipB64(PDFJS_Z),
         wk = await gunzipB64(PDFW_Z);
       var m = await import(URL.createObjectURL(new Blob([lib], { type: "text/javascript" })));
@@ -9012,7 +9035,10 @@
   function loadZxing() {
     if (window.ZXing) return Promise.resolve(window.ZXing);
     if (zxingP) return zxingP;
-    zxingP = gunzipB64(ZXING_Z)
+    zxingP = needVendor("zxing-embedded.js", "ZXING_Z", "barcode reader")
+      .then(function () {
+        return gunzipB64(ZXING_Z);
+      })
       .then(function (buf) {
         return new Promise(function (res, rej) {
           var s = document.createElement("script");
