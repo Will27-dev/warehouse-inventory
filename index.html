@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261118l" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118m" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -44,6 +44,35 @@
           <button class="primary lgsubmit">Sign in</button>
           <button type="button" class="ldguest" id="ldGuest">Look up items without signing in</button>
         </form>
+      </div>
+    </section>
+    <!-- Guest look-up: items and where they are, nothing else -->
+    <section class="guest" id="guest" aria-labelledby="gH" hidden>
+      <header class="gtop">
+        <div class="gbrand"><b>Granite City Steel Storeroom</b><span>The Department of Getting It Done!</span></div>
+        <button class="gsign" id="gSign">Sign in</button>
+      </header>
+      <div class="gpage">
+        <div class="ghead">
+          <div>
+            <h1 id="gH">Find an item</h1>
+            <p>Search by item number, description or locator to see where it's stored.</p>
+          </div>
+          <span class="gn" id="gN"></span>
+        </div>
+        <label class="gsearch"
+          ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg
+          ><input id="gq" type="search" placeholder="Search items" aria-label="Search items" autocomplete="off"
+        /></label>
+        <div class="gframe">
+          <table class="gtab">
+            <thead>
+              <tr><th>Item</th><th>Description</th><th>Location</th><th>Locator</th></tr>
+            </thead>
+            <tbody id="gRows"></tbody>
+          </table>
+          <p class="gmore" id="gMore" role="status"></p>
+        </div>
       </div>
     </section>
     <header class="gcw"><p>Granite City Works, Department of Getting It Done!</p></header>
@@ -898,6 +927,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261118l"></script>
+    <script src="js/app.js?v=20261118m"></script>
   </body>
 </html>

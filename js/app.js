@@ -435,6 +435,7 @@
      Warehouse Item/Locations page: item table, search, quantities, transfers
      ===================================================================== */
   function render() {
+    if (!$("guest").hidden) renderGuest(); // item data can arrive after the guest page opens
     var m = matches();
     renderTabs(m);
     renderMasters(m);
@@ -4048,22 +4049,79 @@
       '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button></form>';
   }
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
+  // Guests get their own page (items and locations only) instead of the app.
+  function cover() {
+    var up = !$("landing").hidden || !$("guest").hidden;
+    document.querySelector(".app").inert = up;
+    document.querySelector(".gcw").inert = up;
+    document.body.classList.toggle("onland", up);
+  }
   function landing(on) {
     $("landing").hidden = !on;
-    document.querySelector(".app").inert = on;
-    document.querySelector(".gcw").inert = on;
-    document.body.classList.toggle("onland", on);
+    cover();
   }
-  $("ldGuest").onclick = function () {
+  function guestPage(on) {
     try {
-      sessionStorage.setItem("wh-guest", "1");
+      if (on) sessionStorage.setItem("wh-guest", "1");
+      else sessionStorage.removeItem("wh-guest");
     } catch (e) {}
+    $("guest").hidden = !on;
+    cover();
+    if (on) renderGuest();
+  }
+  var GMAX = 100;
+  function gloc(i) {
+    if (i.t < 0) return "";
+    var t = tname(i.t),
+      g = gname(TABS[i.t].g);
+    return t.indexOf(g) === 0 ? t : g + ", " + t;
+  }
+  function renderGuest() {
+    var raw = $("gq").value.trim(),
+      terms = raw.toLowerCase().split(/\s+/).filter(Boolean),
+      list = [],
+      n = 0;
+    items.forEach(function (i) {
+      var h = (i.n + " " + i.d + " " + i.l).toLowerCase(); // not i.h: that includes private notes
+      for (var k = 0; k < terms.length; k++) if (h.indexOf(terms[k]) < 0) return;
+      n++;
+      if (list.length < GMAX) list.push(i);
+    });
+    $("gN").textContent = n.toLocaleString() + (n === 1 ? " item" : " items");
+    $("gRows").innerHTML = list
+      .map(function (i) {
+        return (
+          '<tr><td class="gnum">' + esc(i.n) + "</td><td>" + esc(i.d) + "</td><td>" + esc(gloc(i)) +
+          '</td><td class="glc">' + esc(i.l) + "</td></tr>"
+        );
+      })
+      .join("");
+    $("gMore").textContent = !n
+      ? terms.length
+        ? "No items match “" + raw + "”. Try fewer words, or just the item number."
+        : "No items to show yet."
+      : n > GMAX
+        ? "Showing the first " + GMAX + " of " + n.toLocaleString() + ". Add words to narrow the search."
+        : "";
+  }
+  $("gq").addEventListener("input", renderGuest);
+  $("ldGuest").onclick = function () {
     landing(false);
+    guestPage(true);
+    $("gq").focus();
   };
-  try {
-    if (!sess && !sessionStorage.getItem("wh-guest")) landing(true);
-  } catch (e) {
-    if (!sess) landing(true);
+  $("gSign").onclick = function () {
+    guestPage(false);
+    landing(true);
+    $("ldForm").elements.em.focus();
+  };
+  if (!sess) {
+    var wasGuest = false;
+    try {
+      wasGuest = !!sessionStorage.getItem("wh-guest");
+    } catch (e) {}
+    if (wasGuest) guestPage(true);
+    else landing(true);
   }
   // Same sign-in for the Log in panel and the landing form.
   async function signInSubmit(e) {
