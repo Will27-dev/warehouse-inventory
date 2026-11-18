@@ -466,6 +466,7 @@
     document.body.classList.toggle("onsum", onSide || onMg);
     document.body.classList.toggle("onside", onSide || onMg);
     document.body.classList.toggle("ontop", onTop);
+    document.body.classList.toggle("onmg", onMg); // Back up / Restore / Export CSV show only here
     renderTop();
     renderAuth();
     if (onSide) {

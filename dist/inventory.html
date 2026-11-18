@@ -4063,6 +4063,12 @@ html.dark .mgnav:not(.picked) .warn .mgst b { color: #F08A66; }
 /* Secondary buttons on the dark scan bar (Scan QR code, Cancel) need light ink to show. */
 .dvscan button:not(.primary) { color: #fff; box-shadow: inset 0 0 0 2px #fff; }
 .dvscan button:not(.primary):hover { background: #fff; color: var(--char); }
+
+/* Header buttons by screen: Add item only on Items/Locations; Back up, Restore, Export CSV only on Manage. */
+body.ontop #add, body.onside #add { display: none; }
+body:not(.onmg) #exportJson, body:not(.onmg) #importBtn, body:not(.onmg) #exportCsv { display: none; }
+/* Other screens leave the bar with nothing in it, so drop it. */
+body.ontop:not(.onmg) .bar, body.onside:not(.onmg) .bar { display: none; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4196,7 +4202,7 @@ html.dark .mgnav:not(.picked) .warn .mgst b { color: #F08A66; }
             <button class="primary" id="add">Add item</button>
             <button id="exportJson">Back up</button>
             <button id="importBtn">Restore</button>
-            <button id="exportCsv" class="invonly">Export CSV</button>
+            <button id="exportCsv">Export CSV</button>
             <input id="file" type="file" accept=".json,application/json" hidden />
           </header>
         </div>
@@ -44136,6 +44142,7 @@ var ZXING_Z = [
     document.body.classList.toggle("onsum", onSide || onMg);
     document.body.classList.toggle("onside", onSide || onMg);
     document.body.classList.toggle("ontop", onTop);
+    document.body.classList.toggle("onmg", onMg); // Back up / Restore / Export CSV show only here
     renderTop();
     renderAuth();
     if (onSide) {

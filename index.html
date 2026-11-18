@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261118u" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118v" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -143,7 +143,7 @@
             <button class="primary" id="add">Add item</button>
             <button id="exportJson">Back up</button>
             <button id="importBtn">Restore</button>
-            <button id="exportCsv" class="invonly">Export CSV</button>
+            <button id="exportCsv">Export CSV</button>
             <input id="file" type="file" accept=".json,application/json" hidden />
           </header>
         </div>
@@ -927,6 +927,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261118u"></script>
+    <script src="js/app.js?v=20261118v"></script>
   </body>
 </html>
