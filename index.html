@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261119a" />
+    <link rel="stylesheet" href="css/styles.css?v=20261119d" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -378,9 +378,24 @@
                   <div class="mbtns" id="grBtns">
                     <button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
-                    ><button class="mbtn" aria-pressed="false">GO4</button>
+                    ><button class="mbtn" aria-pressed="false">GO4</button
+                    ><button type="button" class="primary grnew" id="grNew">Create Greens Count</button>
                   </div>
-                  <div class="anlsoon">
+                  <div id="grCount" hidden>
+                    <div class="grhead"><h3 id="grCountH"></h3><span id="grCountN"></span></div>
+                    <div class="dvscan">
+                      <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8"/></svg><input id="grScan" autocomplete="off" placeholder="Scan a barcode, or type an item # and press Enter" aria-label="Scan a barcode, or type an item # and press Enter" /></label
+                      ><button type="button" class="primary" data-gr="add">Enter</button
+                      ><button type="button" data-gr="cam">Scan barcode</button>
+                    </div>
+                    <p class="dvflash" id="grFlash" hidden></p>
+                    <div id="grList"></div>
+                    <div class="pksub">
+                      <button type="button" data-gr="cancel">Cancel count</button
+                      ><button type="button" class="primary" data-gr="done">Done</button>
+                    </div>
+                  </div>
+                  <div class="anlsoon" id="grSoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
                     <h3 id="grH">Greens Management</h3>
                     <p id="grP">Greens management tools will live here. Coming soon.</p>
@@ -883,6 +898,16 @@
         </div>
       </form>
     </dialog>
+    <dialog id="grDlg" aria-labelledby="grDlgH">
+      <h2 id="grDlgH">Create Greens Count</h2>
+      <p>Pick the location you're counting.</p>
+      <div class="grsites" id="grSites">
+        <button type="button" data-site="Main Warehouse">Main Warehouse</button
+        ><button type="button" data-site="Greens Trailer">Greens Trailer</button
+        ><button type="button" data-site="GO4">GO4</button>
+      </div>
+      <div class="actions"><span class="sp"></span><button type="button" id="grDlgX">Cancel</button></div>
+    </dialog>
     <dialog id="pkOkDlg" aria-labelledby="pkOkTitle">
       <h2 id="pkOkTitle">Submit pick list?</h2>
       <div id="pkOkBody"></div>
@@ -927,6 +952,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261119a"></script>
+    <script src="js/app.js?v=20261119d"></script>
   </body>
 </html>

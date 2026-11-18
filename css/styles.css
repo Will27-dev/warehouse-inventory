@@ -3311,12 +3311,12 @@ html.dark .dlfolder button[data-dlf="reconnect"] { background:var(--acc1); color
 .dvfields { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:14px; }
 .dvfields label { display:block; font-size:12.5px; font-weight:700; color:var(--mute); }
 .dvfields input, .dvlines input { display:block; width:100%; margin-top:5px; padding:10px 12px; border:0; border-radius:12px; background:var(--head); color:var(--ink); font:inherit; }
-.dvfields input:focus, .dvlines input:focus, #dvScan:focus { outline:2px solid var(--acc1); }
+.dvfields input:focus, .dvlines input:focus, #dvScan:focus, #grScan:focus { outline:2px solid var(--acc1); }
 .dvfields input[readonly] { background:transparent; padding-left:0; color:var(--ink); }
 .dvscan { display:flex; flex-wrap:wrap; gap:10px; align-items:center; padding:12px; border-radius:18px; background:var(--char); }
 .dvscan .search { flex:1 1 280px; max-width:none; }
-#dvScan { width:100%; padding:12px 14px 12px 40px; border:0; border-radius:999px; background:var(--tile); color:var(--on-dark); font:inherit; font-size:16px; }
-#dvScan::placeholder { color:var(--on-dark-mute); }
+#dvScan, #grScan { width:100%; padding:12px 14px 12px 40px; border:0; border-radius:999px; background:var(--tile); color:var(--on-dark); font:inherit; font-size:16px; }
+#dvScan::placeholder, #grScan::placeholder { color:var(--on-dark-mute); }
 .dvscan .search svg { color:var(--acc1); }
 .dvscan button { padding:11px 18px; border:0; border-radius:999px; font-weight:800; background:var(--tile); color:var(--on-dark); }
 .dvscan button.primary { background:var(--acc1); color:var(--char); }
@@ -3799,9 +3799,9 @@ h1, h2, h3, h4, .brand b, .topnav button, dialog h2, .stat b, .pkname { font-fam
 
 /* Search and tool buttons */
 .bar { padding: 22px 40px 6px; }
-#q, .search input, #dvScan { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); border: 0; }
-#q:focus, .search input:focus, #dvScan:focus { background: var(--panel); box-shadow: inset 0 0 0 2px var(--acc1); }
-#q::placeholder, .search input::placeholder, #dvScan::placeholder { color: var(--mute); }
+#q, .search input, #dvScan, #grScan { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); border: 0; }
+#q:focus, .search input:focus, #dvScan:focus, #grScan:focus { background: var(--panel); box-shadow: inset 0 0 0 2px var(--acc1); }
+#q::placeholder, .search input::placeholder, #dvScan::placeholder, #grScan::placeholder { color: var(--mute); }
 .search svg, .search kbd { color: var(--mute); border-color: var(--line); }
 .bar button, .dvscan button, .mgcact button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
 .bar button:hover, .dvscan button:hover, .mgcact button:hover { background: var(--panel); }
@@ -4063,3 +4063,21 @@ main { margin: 0; }
 /* Pick list: Cancel pick list sits beside Submit as the outlined secondary button. */
 .pksub button:not(.primary) { min-height: 44px; padding: 0 22px; border: 0; background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); font: inherit; font-weight: 700; cursor: pointer; }
 .pksub button:not(.primary):hover { background: var(--panel); }
+
+/* ---------- Greens Management: Create Greens Count ---------- */
+#grBtns { flex-wrap: wrap; gap: 8px; align-items: center; }
+#grBtns .grnew { margin-left: auto; min-height: 44px; padding: 0 20px; }
+#grCount { display: flex; flex-direction: column; gap: 16px; }
+#grCount[hidden] { display: none; }
+.grhead { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 16px; }
+.grhead h3 { margin: 0; font-family: var(--disp); font-size: 24px; }
+.grhead span { color: var(--mute); font-size: 15px; }
+.grtab td:last-child { text-align: right; }
+.grtab td button[data-grrm] { min-height: 44px; padding: 0 12px; border: 0; background: none; color: var(--acc2); font: inherit; font-weight: 700; cursor: pointer; }
+#grCount .pksub { margin-top: 0; }
+.grsites { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
+dialog .grsites button { min-height: 52px; justify-content: flex-start; text-align: left; font-size: 17px; }
+@media (max-width: 560px) {
+  #grBtns .grnew { margin-left: 0; width: 100%; }
+}
+#grSoon[hidden] { display: none; }

@@ -4330,6 +4330,7 @@
       if (!tpCloud && !tpCloudErr) tpCloudScan();
     }
     if (mgOpt === 3) renderMaterial();
+    if (mgOpt === 6) renderGr();
     if (mgOpt === 4) {
       renderFinished();
       fdRender();
@@ -5187,13 +5188,225 @@
   $("grBtns").onclick = function (e) {
     var b = e.target.closest(".mbtn");
     if (!b) return;
-    [].forEach.call(this.children, function (x) {
+    [].forEach.call(this.querySelectorAll(".mbtn"), function (x) {
       x.classList.toggle("on", x === b);
       x.setAttribute("aria-pressed", String(x === b));
     });
     $("grH").textContent = b.textContent;
     $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
   };
+
+  /* ---------- Greens Management: Create Greens Count ----------
+     Pick a site, scan each item's barcode (one scan = 1), then Done writes each count onto the
+     GCW.GREENS template beside its item # and downloads the filled PDF.
+     st.grCount: { site, ts, counts: { code: n }, order: [code] }, kept on this device until Done or Cancel. */
+  var grMsg = "";
+  function renderGr() {
+    var c = st.grCount;
+    $("grCount").hidden = !c;
+    $("grSoon").hidden = !!c;
+    $("grNew").hidden = !!c;
+    if (!c) return;
+    var tot = c.order.reduce(function (s, k) {
+      return s + c.counts[k];
+    }, 0);
+    $("grCountH").textContent = "Greens count: " + c.site;
+    $("grCountN").textContent = c.order.length + (c.order.length === 1 ? " item, " : " items, ") + tot + " counted";
+    $("grFlash").innerHTML = grMsg;
+    $("grFlash").hidden = !grMsg;
+    $("grList").innerHTML = c.order.length
+      ? '<table class="pktab grtab"><thead><tr><th>Item #</th><th>Count</th><th></th></tr></thead><tbody>' +
+        c.order
+          .slice()
+          .reverse()
+          .map(function (k) {
+            return (
+              '<tr data-code="' +
+              esc(k) +
+              '"><td data-l="Item #"><b>' +
+              esc(k) +
+              '</b></td><td data-l="Count"><span class="qty"><button type="button" data-grq="-1" aria-label="One less">−</button><b>' +
+              c.counts[k] +
+              '</b><button type="button" data-grq="1" aria-label="One more">+</button></span></td><td><button type="button" data-grrm>Remove</button></td></tr>'
+            );
+          })
+          .join("") +
+        "</tbody></table>"
+      : '<p class="pknote">Nothing counted yet. Select Scan barcode, or type an item # above.</p>';
+  }
+  function grAdd(raw) {
+    var c = st.grCount,
+      code = String(raw || "").trim();
+    if (!c || !code) return "";
+    if (!(code in c.counts)) {
+      c.counts[code] = 0;
+      c.order.push(code);
+    }
+    c.counts[code]++;
+    grMsg = "Counted <b>" + esc(code) + "</b> (now " + c.counts[code] + ").";
+    dvBeep();
+    save();
+    renderGr();
+    return grMsg;
+  }
+  $("grNew").onclick = function () {
+    $("grDlg").showModal();
+  };
+  $("grDlgX").onclick = function () {
+    $("grDlg").close();
+  };
+  $("grSites").onclick = function (e) {
+    var b = e.target.closest("[data-site]");
+    if (!b) return;
+    $("grDlg").close();
+    st.grCount = { site: b.dataset.site, ts: Date.now(), counts: {}, order: [] };
+    grMsg = "";
+    save();
+    renderGr();
+    camOpen(grAdd, true);
+  };
+  $("grScan").addEventListener("keydown", function (e) {
+    if (e.key !== "Enter") return;
+    e.preventDefault();
+    grAdd(this.value);
+    $("grScan").value = "";
+  });
+  $("grCount").addEventListener("click", function (e) {
+    var c = st.grCount,
+      b = e.target.closest("button");
+    if (!c || !b) return;
+    var row = b.closest("[data-code]"),
+      k = row && row.dataset.code,
+      act = b.dataset.gr;
+    if (act === "add") {
+      grAdd($("grScan").value);
+      $("grScan").value = "";
+    } else if (act === "cam") camOpen(grAdd, true);
+    else if (act === "cancel") {
+      if (c.order.length && !confirm("Cancel the " + c.site + " count? The " + c.order.length + " counted items are thrown away.")) return;
+      st.grCount = null;
+      grMsg = "";
+      save();
+      renderGr();
+    } else if (act === "done") grFill(c);
+    else if (k && b.dataset.grq) {
+      c.counts[k] = Math.max(0, c.counts[k] + +b.dataset.grq);
+      save();
+      renderGr();
+    } else if (k && "grrm" in b.dataset) {
+      delete c.counts[k];
+      c.order = c.order.filter(function (x) {
+        return x !== k;
+      });
+      save();
+      renderGr();
+    }
+  });
+  // GCW.GREENS Quantity cells, measured on the upright scan at 3 px per pt:
+  // [item # prefix, Quantity column center x, row lines top to bottom, item # endings in row order].
+  // shortcut: fits this one scan of the form; re-measure if the template is rescanned or reordered.
+  var GR_MAP = [
+    ["1001313", 612, [290,343,396,449,502,555,608,661,712,766,820,874,928,982,1036,1090,1144,1198,1253,1307,1360,1414,1468,1521,1576,1630,1683,1737,1791,1846,1901,1955,2009,2064,2120,2176],
+      "194 412 436 163 196 414 438 166 215 202 416 439 169 217 206 421 440 171 219 207 422 441 172 223 208 423 443 174 225 406 209 424 444 176 228"],
+    ["1001313", 1167, [293,345,398,451,504,557,611,664,715,769,823,877,931,985,1039,1093,1147,1202,1256,1310,1364,1418,1472,1526,1580,1634,1688,1741,1796,1851,1905,1959,2014,2068,2123],
+      "216 425 445 178 230 408 220 426 121 180 236 221 427 126 181 238 224 428 127 183 227 429 128 430 129 185 232 431 130 132 187 234 433 435"],
+    ["1001661", 1709, [295,348,401,454,507,560,614,667,718,772], "450 448 446 452 454 456 458 460 462"],
+    ["1001661", 1709, [880,934,988,1043,1097,1151,1205,1260,1314,1368], "451 449 447 453 455 457 459 461 463"],
+  ];
+  // Done: open GCW.GREENS, write each count in its item's Quantity cell, download the filled PDF.
+  async function grFill(c) {
+    if (!c.order.length) return toast("Scan at least one barcode first.");
+    if (cloudOn() && !tpCloud) await tpCloudScan();
+    var isGr = function (t) {
+        return /^gcw\.?\s*greens$/i.test(String(t.name).trim());
+      },
+      ref = (tpCloud || []).map(tpCloudRef).find(isGr) || st.tpl.find(isGr);
+    if (!ref) return toast("Upload the GCW.GREENS template under Manage → Templates first.");
+    toast("Filling in GCW.GREENS…");
+    try {
+      var blob = ref.file ? await sbDownload("inspection-pdfs", TP_DIR + ref.file) : await tpBlob(ref.id);
+      if (!blob) throw new Error("The GCW.GREENS file could not be found. Upload it again under Manage → Templates.");
+      var lib = await loadPdfJs(),
+        doc = await lib.getDocument({
+          data: new Uint8Array(await blob.arrayBuffer()),
+          isEvalSupported: false,
+          verbosity: 0,
+          wasmUrl: WASM_BASE,
+        }).promise,
+        S = 2,
+        k = S / 3,
+        placed = {},
+        want = {},
+        pg = await doc.getPage(1),
+        // The scan is stored upside down; turn it upright.
+        rot = (pg.rotate + 180) % 360,
+        v1 = pg.getViewport({ scale: 1, rotation: rot }),
+        vp = pg.getViewport({ scale: S, rotation: rot }),
+        cv = document.createElement("canvas");
+      c.order.forEach(function (n) {
+        if (c.counts[n] > 0) want[n] = 1;
+      });
+      cv.width = Math.round(vp.width);
+      cv.height = Math.round(vp.height);
+      var cx = cv.getContext("2d");
+      cx.fillStyle = "#fff";
+      cx.fillRect(0, 0, cv.width, cv.height);
+      // "print" renders without requestAnimationFrame, so it finishes in a background tab too.
+      await pg.render({ canvasContext: cx, viewport: vp, intent: "print" }).promise;
+      cx.font = "bold " + Math.round(13 * S) + "px Helvetica, Arial, sans-serif";
+      cx.fillStyle = "#1d3fbf";
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      GR_MAP.forEach(function (t) {
+        t[3].split(" ").forEach(function (end, i) {
+          var n = t[0] + end;
+          if (!want[n]) return;
+          cx.fillText(String(c.counts[n]), t[1] * k, ((t[2][i] + t[2][i + 1]) / 2) * k);
+          placed[n] = 1;
+        });
+      });
+      var jb = await new Promise(function (res) {
+          cv.toBlob(res, "image/jpeg", 0.9);
+        }),
+        imgs = [
+          {
+            w: cv.width,
+            h: cv.height,
+            pw: Math.round(v1.width * 100) / 100,
+            ph: Math.round(v1.height * 100) / 100,
+            jpg: new Uint8Array(await jb.arrayBuffer()),
+          },
+        ];
+      var miss = Object.keys(want).filter(function (n) {
+        return !placed[n];
+      });
+      download(
+        "GCW.GREENS-" + c.site.replace(/[^\w]+/g, "_") + "-" + stamp() + ".pdf",
+        imgPdfBytes(imgs),
+        "application/pdf"
+      );
+      audit(
+        "Greens",
+        "Greens count at " + c.site + ": " + c.order.length + " items" + (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
+      );
+      st.grCount = null;
+      grMsg = "";
+      save();
+      renderGr();
+      if (miss.length)
+        alert(
+          "GCW.GREENS is filled in and downloaded. These item #s aren't on the template, so their counts weren't placed:\n\n" +
+            miss
+              .map(function (k) {
+                return k + ": " + c.counts[k];
+              })
+              .join("\n")
+        );
+      else toast("GCW.GREENS filled in and downloaded.");
+    } catch (x) {
+      toast(x.message || "GCW.GREENS could not be filled in.");
+    }
+  }
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };
@@ -7338,6 +7551,10 @@
         jpg: jpg,
       });
     }
+    return imgPdfBytes(imgs);
+  }
+  // A PDF with one JPEG per page: imgs = [{ w, h (pixels), pw, ph (page size in pt), jpg: Uint8Array }].
+  function imgPdfBytes(imgs) {
     var parts = [],
       len = 0,
       offs = [],
@@ -9285,12 +9502,22 @@
     return zxingP;
   }
   // Returns an object with detect(source) -> Promise<string|null> for a video or canvas.
-  async function camReader() {
+  // any: also read 1D barcodes (Greens counts); otherwise QR only (delivery labels).
+  var CAM_1D = ["code_128", "code_39", "ean_13", "ean_8", "upc_a", "upc_e", "itf"];
+  async function camReader(any) {
     if ("BarcodeDetector" in window) {
       try {
         var fm = await BarcodeDetector.getSupportedFormats();
         if (fm && fm.indexOf("qr_code") >= 0) {
-          var det = new BarcodeDetector({ formats: ["qr_code"] });
+          var det = new BarcodeDetector({
+            formats: ["qr_code"].concat(
+              any
+                ? CAM_1D.filter(function (f) {
+                    return fm.indexOf(f) >= 0;
+                  })
+                : []
+            ),
+          });
           return {
             kind: "built-in",
             detect: function (src) {
@@ -9307,7 +9534,10 @@
       hints = new Map(),
       reader = new Z.MultiFormatReader();
     // Delivery labels are QR codes (receipt #, location, box count); reading only QR is faster and avoids misreads.
-    hints.set(Z.DecodeHintType.POSSIBLE_FORMATS, [F.QR_CODE]);
+    hints.set(
+      Z.DecodeHintType.POSSIBLE_FORMATS,
+      any ? [F.QR_CODE, F.CODE_128, F.CODE_39, F.EAN_13, F.EAN_8, F.UPC_A, F.UPC_E, F.ITF] : [F.QR_CODE]
+    );
     hints.set(Z.DecodeHintType.TRY_HARDER, true);
     reader.setHints(hints);
     camCanvas = camCanvas || document.createElement("canvas");
@@ -9336,7 +9566,17 @@
       },
     };
   }
-  async function camOpen() {
+  // add(code) handles each accepted scan and returns the message to show; any: read 1D barcodes too.
+  var camHint = "";
+  async function camOpen(add, any) {
+    add =
+      add ||
+      function (c) {
+        dvAddCode(c);
+        return dvFlash;
+      };
+    camHint = any ? "Point the camera at a barcode." : "Point the camera at a QR code.";
+    $("camDlg").querySelector("h2").textContent = any ? "Scan barcode" : "Scan QR code";
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast(
         window.isSecureContext === false
@@ -9367,14 +9607,14 @@
     $("camDlg").showModal();
     await v.play().catch(function () {});
     try {
-      rd = await camReader();
+      rd = await camReader(any);
     } catch (x) {
       camStop();
       $("camDlg").close();
       toast("The barcode reader could not start. Use a handheld scanner or type the number.");
       return;
     }
-    $("camLast").textContent = "Point the camera at a QR code.";
+    $("camLast").textContent = camHint;
     camTimer = setInterval(async function () {
       if (camBusy || v.readyState < 2) return;
       camBusy = true;
@@ -9386,7 +9626,7 @@
         if (camHold && (!code || code !== camHold) && now - camHoldSeen > 400) {
           camHold = "";
           $("camDlg").classList.remove("hold");
-          $("camLast").textContent = "Point the camera at a QR code.";
+          $("camLast").textContent = camHint;
         }
         if (code) {
           // The same label still in view counts once; it counts again only after it has
@@ -9402,8 +9642,7 @@
             $("camDlg").classList.remove("hold");
             camLastCode = code;
             camLastAt = now;
-            dvAddCode(code);
-            $("camLast").innerHTML = dvFlash || "Scanned <b>" + esc(code) + "</b>.";
+            $("camLast").innerHTML = add(code) || "Scanned <b>" + esc(code) + "</b>.";
             var dg = $("camDlg");
             dg.classList.remove("hit");
             void dg.offsetWidth;
