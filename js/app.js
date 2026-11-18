@@ -4987,6 +4987,17 @@
     }
     tpCloudScan();
   }
+  // Greens Management: pick a site; its tools aren't built yet, so the panel names it.
+  $("grBtns").onclick = function (e) {
+    var b = e.target.closest(".mbtn");
+    if (!b) return;
+    [].forEach.call(this.children, function (x) {
+      x.classList.toggle("on", x === b);
+      x.setAttribute("aria-pressed", String(x === b));
+    });
+    $("grH").textContent = b.textContent;
+    $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
+  };
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };

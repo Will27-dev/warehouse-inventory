@@ -4,7 +4,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Warehouse inventory</title>
-    <link rel="stylesheet" href="css/styles.css?v=20261118e" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118f" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -308,10 +308,15 @@
               </div>
               <div id="mgOpt6" hidden>
                 <div class="mgpad">
+                  <div class="mbtns" id="grBtns">
+                    <button class="mbtn" aria-pressed="false">Main Warehouse</button
+                    ><button class="mbtn" aria-pressed="false">Greens Trailer</button
+                    ><button class="mbtn" aria-pressed="false">GO4</button>
+                  </div>
                   <div class="anlsoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
-                    <h3>Greens Management</h3>
-                    <p>Greens management tools will live here. Coming soon.</p>
+                    <h3 id="grH">Greens Management</h3>
+                    <p id="grP">Greens management tools will live here. Coming soon.</p>
                   </div>
                 </div>
               </div>
@@ -855,6 +860,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261118e"></script>
+    <script src="js/app.js?v=20261118f"></script>
   </body>
 </html>

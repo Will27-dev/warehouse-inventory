@@ -3752,6 +3752,9 @@ html.dark { color-scheme: dark; }
 @media (max-width: 640px) {
   .profilebtn, .manage, .side .ghost { min-height: 44px; }
 }
+
+/* Greens Management sites: three buttons wrap instead of scrolling off the edge on phones */
+#grBtns { flex-wrap: wrap; overflow: visible; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4056,10 +4059,15 @@ html.dark { color-scheme: dark; }
               </div>
               <div id="mgOpt6" hidden>
                 <div class="mgpad">
+                  <div class="mbtns" id="grBtns">
+                    <button class="mbtn" aria-pressed="false">Main Warehouse</button
+                    ><button class="mbtn" aria-pressed="false">Greens Trailer</button
+                    ><button class="mbtn" aria-pressed="false">GO4</button>
+                  </div>
                   <div class="anlsoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
-                    <h3>Greens Management</h3>
-                    <p>Greens management tools will live here. Coming soon.</p>
+                    <h3 id="grH">Greens Management</h3>
+                    <p id="grP">Greens management tools will live here. Coming soon.</p>
                   </div>
                 </div>
               </div>
@@ -48280,6 +48288,17 @@ var ZXING_Z = [
     }
     tpCloudScan();
   }
+  // Greens Management: pick a site; its tools aren't built yet, so the panel names it.
+  $("grBtns").onclick = function (e) {
+    var b = e.target.closest(".mbtn");
+    if (!b) return;
+    [].forEach.call(this.children, function (x) {
+      x.classList.toggle("on", x === b);
+      x.setAttribute("aria-pressed", String(x === b));
+    });
+    $("grH").textContent = b.textContent;
+    $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
+  };
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };

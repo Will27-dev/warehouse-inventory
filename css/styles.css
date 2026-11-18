@@ -3745,3 +3745,6 @@ html.dark { color-scheme: dark; }
 @media (max-width: 640px) {
   .profilebtn, .manage, .side .ghost { min-height: 44px; }
 }
+
+/* Greens Management sites: three buttons wrap instead of scrolling off the edge on phones */
+#grBtns { flex-wrap: wrap; overflow: visible; }
