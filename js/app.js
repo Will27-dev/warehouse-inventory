@@ -3902,10 +3902,14 @@
       return (st.audit || []).filter(function (e) {
         return e.pick && !e.pick.of && e.by === me;
       });
+    if (i === 5) return grSheets(me);
     return null; // Put Away isn't built yet, so nobody has records there.
   }
+  function pfName(i) {
+    return i === 5 ? "Green Count" : oname(i);
+  }
   function renderPfWork() {
-    $("pfActs").innerHTML = [1, 2, 3, 4]
+    $("pfActs").innerHTML = [1, 2, 3, 4, 5]
       .map(function (i) {
         var l = pfMine(i);
         return (
@@ -3914,7 +3918,7 @@
           '" aria-selected="' +
           (pfWorkSel === i) +
           '">' +
-          esc(oname(i)) +
+          esc(pfName(i)) +
           '<span class="c">' +
           (l ? l.length : "–") +
           "</span></button>"
@@ -3924,10 +3928,12 @@
     var box = $("pfWork");
     box.hidden = !pfWorkSel;
     if (!pfWorkSel) return;
-    var name = esc(oname(pfWorkSel)),
+    var name = esc(pfName(pfWorkSel)),
       l = (pfMine(pfWorkSel) || []).slice().reverse();
     if (pfWorkSel === 3) {
       box.innerHTML = '<div class="empty">' + name + " isn't set up yet, so there's nothing to show.</div>";
+    } else if (pfWorkSel === 5) {
+      box.innerHTML = grSheetsHtml(l, true);
     } else if (!l.length) {
       box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
     } else if (pfWorkSel === 1) {
@@ -4276,7 +4282,10 @@
         }).length;
       return no ? [no, (no === 1 ? "sheet" : "sheets") + " with a No today", true] : [td.length, "finished today"];
     }
-    if (i === 6) return [$("grBtns").children.length, "sites"];
+    if (i === 6) {
+      var ns = grSheets().length;
+      return [ns, ns === 1 ? "count sheet" : "count sheets"];
+    }
     return ["", "Coming soon"];
   }
   function renderManage() {
@@ -5184,27 +5193,35 @@
     }
     tpCloudScan();
   }
-  // Greens Management: pick a site; its tools aren't built yet, so the panel names it.
-  $("grBtns").onclick = function (e) {
-    var b = e.target.closest(".mbtn");
-    if (!b) return;
-    [].forEach.call(this.querySelectorAll(".mbtn"), function (x) {
+  // Greens Management: View Count Sheets lists saved counts; a site's own tools aren't built yet, so the panel names it.
+  var grView = null;
+  function grPick(b) {
+    [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
       x.classList.toggle("on", x === b);
       x.setAttribute("aria-pressed", String(x === b));
     });
+    grView = b.id === "grSheetsBtn" ? "sheets" : null;
     $("grH").textContent = b.textContent;
     $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
+    renderGr();
+  }
+  $("grBtns").onclick = function (e) {
+    var b = e.target.closest(".mbtn");
+    if (b) grPick(b);
   };
 
   /* ---------- Greens Management: Create Greens Count ----------
-     Pick a site, scan each item's barcode (one scan = 1), then Done writes each count onto the
-     GCW.GREENS template beside its item # and downloads the filled PDF.
+     Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
+     View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
      st.grCount: { site, ts, counts: { code: n }, order: [code] }, kept on this device until Done or Cancel. */
   var grMsg = "";
   function renderGr() {
-    var c = st.grCount;
+    var c = st.grCount,
+      sh = grView === "sheets" && !c;
     $("grCount").hidden = !c;
-    $("grSoon").hidden = !!c;
+    $("grSoon").hidden = !!c || sh;
+    $("grSheets").hidden = !sh;
+    if (sh) $("grSheets").innerHTML = grSheetsHtml(grSheets().reverse(), false);
     $("grNew").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
@@ -5288,7 +5305,7 @@
       grMsg = "";
       save();
       renderGr();
-    } else if (act === "done") grFill(c);
+    } else if (act === "done") grDone(c);
     else if (k && b.dataset.grq) {
       c.counts[k] = Math.max(0, c.counts[k] + +b.dataset.grq);
       save();
@@ -5313,9 +5330,95 @@
     ["1001661", 1709, [295,348,401,454,507,560,614,667,718,772], "450 448 446 452 454 456 458 460 462"],
     ["1001661", 1709, [880,934,988,1043,1097,1151,1205,1260,1314,1368], "451 449 447 453 455 457 459 461 463"],
   ];
-  // Done: open GCW.GREENS, write each count in its item's Quantity cell, download the filled PDF.
-  async function grFill(c) {
-    if (!c.order.length) return toast("Scan at least one barcode first.");
+  function grOnForm(n) {
+    return GR_MAP.some(function (t) {
+      return n.indexOf(t[0]) === 0 && t[3].split(" ").indexOf(n.slice(t[0].length)) >= 0;
+    });
+  }
+  // Saved count sheets live in the activity log (st.audit entries with .gr), which syncs to every device.
+  function grSheets(me) {
+    return (st.audit || []).filter(function (e) {
+      return e.gr && (!me || e.by === me);
+    });
+  }
+  // Done: save the count as a count sheet and show it under View Count Sheets.
+  function grDone(c) {
+    var order = c.order.filter(function (n) {
+      return c.counts[n] > 0;
+    });
+    if (!order.length) return toast("Scan at least one barcode first.");
+    var counts = {},
+      tot = 0,
+      miss = order.filter(function (n) {
+        return !grOnForm(n);
+      });
+    order.forEach(function (n) {
+      counts[n] = c.counts[n];
+      tot += c.counts[n];
+    });
+    audit(
+      "Greens",
+      "Greens count at " + c.site + ": " + order.length + (order.length === 1 ? " item, " : " items, ") + tot + " counted" +
+        (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
+    );
+    st.audit[st.audit.length - 1].gr = { site: c.site, counts: counts, order: order };
+    st.grCount = null;
+    grMsg = "";
+    grPick($("grSheetsBtn"));
+    save();
+    if (miss.length)
+      alert(
+        "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
+          miss
+            .map(function (n) {
+              return n + ": " + counts[n];
+            })
+            .join("\n")
+      );
+    else toast("Count sheet saved under View Count Sheets.");
+  }
+  function grSheetsHtml(l, mine) {
+    if (!l.length)
+      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create Greens Count to make one.") + "</div>";
+    return (
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Location</th>' +
+      (mine ? "" : "<th>Counted by</th>") +
+      "<th>Items</th><th>Saved</th><th></th></tr></thead><tbody>" +
+      l
+        .map(function (e) {
+          var g = e.gr,
+            tot = g.order.reduce(function (s2, n) {
+              return s2 + g.counts[n];
+            }, 0);
+          return (
+            '<tr><td class="cname">' +
+            esc(g.site) +
+            "</td>" +
+            (mine ? "" : "<td>" + esc(whoName(e.by)) + "</td>") +
+            '<td class="ph">' +
+            g.order.length +
+            (g.order.length === 1 ? " item, " : " items, ") +
+            tot +
+            " counted</td><td>" +
+            dvWhen(e.ts) +
+            '</td><td class="act"><button type="button" data-grview="' +
+            esc(e.k) +
+            '">View</button><button type="button" data-grview="' +
+            esc(e.k) +
+            '" data-grdl="1">Download</button></td></tr>'
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  // View/Download: open GCW.GREENS and write each count in its item's Quantity cell.
+  async function grOpen(key, dl) {
+    var e = grSheets().find(function (x) {
+      return x.k === key;
+    });
+    if (!e) return toast("That count sheet could not be found.");
+    var g = e.gr;
     if (cloudOn() && !tpCloud) await tpCloudScan();
     var isGr = function (t) {
         return /^gcw\.?\s*greens$/i.test(String(t.name).trim());
@@ -5335,17 +5438,12 @@
         }).promise,
         S = 2,
         k = S / 3,
-        placed = {},
-        want = {},
         pg = await doc.getPage(1),
         // The scan is stored upside down; turn it upright.
         rot = (pg.rotate + 180) % 360,
         v1 = pg.getViewport({ scale: 1, rotation: rot }),
         vp = pg.getViewport({ scale: S, rotation: rot }),
         cv = document.createElement("canvas");
-      c.order.forEach(function (n) {
-        if (c.counts[n] > 0) want[n] = 1;
-      });
       cv.width = Math.round(vp.width);
       cv.height = Math.round(vp.height);
       var cx = cv.getContext("2d");
@@ -5360,15 +5458,14 @@
       GR_MAP.forEach(function (t) {
         t[3].split(" ").forEach(function (end, i) {
           var n = t[0] + end;
-          if (!want[n]) return;
-          cx.fillText(String(c.counts[n]), t[1] * k, ((t[2][i] + t[2][i + 1]) / 2) * k);
-          placed[n] = 1;
+          if (g.counts[n] > 0) cx.fillText(String(g.counts[n]), t[1] * k, ((t[2][i] + t[2][i + 1]) / 2) * k);
         });
       });
       var jb = await new Promise(function (res) {
-          cv.toBlob(res, "image/jpeg", 0.9);
-        }),
-        imgs = [
+        cv.toBlob(res, "image/jpeg", 0.9);
+      });
+      tpShow(
+        imgPdfBytes([
           {
             w: cv.width,
             h: cv.height,
@@ -5376,37 +5473,18 @@
             ph: Math.round(v1.height * 100) / 100,
             jpg: new Uint8Array(await jb.arrayBuffer()),
           },
-        ];
-      var miss = Object.keys(want).filter(function (n) {
-        return !placed[n];
-      });
-      download(
-        "GCW.GREENS-" + c.site.replace(/[^\w]+/g, "_") + "-" + stamp() + ".pdf",
-        imgPdfBytes(imgs),
-        "application/pdf"
+        ]),
+        "GCW.GREENS-" + g.site.replace(/[^\w]+/g, "_") + "-" + dayOf(e.ts),
+        dl
       );
-      audit(
-        "Greens",
-        "Greens count at " + c.site + ": " + c.order.length + " items" + (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
-      );
-      st.grCount = null;
-      grMsg = "";
-      save();
-      renderGr();
-      if (miss.length)
-        alert(
-          "GCW.GREENS is filled in and downloaded. These item #s aren't on the template, so their counts weren't placed:\n\n" +
-            miss
-              .map(function (k) {
-                return k + ": " + c.counts[k];
-              })
-              .join("\n")
-        );
-      else toast("GCW.GREENS filled in and downloaded.");
     } catch (x) {
       toast(x.message || "GCW.GREENS could not be filled in.");
     }
   }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-grview]");
+    if (b) grOpen(b.dataset.grview, !!b.dataset.grdl);
+  });
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };

@@ -3439,7 +3439,7 @@ html.dark .dvcloud button { background:var(--acc1); color:var(--char); }
 .pfwho b { font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
 .pfwho span { font-size:12.5px; color:var(--mute); }
 .pfright label { margin-bottom:10px; }
-.pfacts { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin:4px 0 12px; }
+.pfacts { display:grid; grid-template-columns:repeat(auto-fit, minmax(112px, 1fr)); gap:8px; margin:4px 0 12px; }
 .pfacts button { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 8px; border:0; border-radius:14px; background:var(--head); color:var(--ink); font-weight:800; font-size:14px; }
 .pfacts button .c { padding:1px 8px; border-radius:999px; background:var(--panel); color:var(--mute); font-size:12px; font-weight:700; }
 .pfacts button:hover { box-shadow:0 0 0 2px var(--acc2); }
@@ -3816,8 +3816,8 @@ h1, h2, h3, h4, .brand b, .topnav button, dialog h2, .stat b, .pkname { font-fam
 #q:focus, .search input:focus, #dvScan:focus, #grScan:focus { background: var(--panel); box-shadow: inset 0 0 0 2px var(--acc1); }
 #q::placeholder, .search input::placeholder, #dvScan::placeholder, #grScan::placeholder { color: var(--mute); }
 .search svg, .search kbd { color: var(--mute); border-color: var(--line); }
-.bar button, .dvscan button, .mgcact button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
-.bar button:hover, .dvscan button:hover, .mgcact button:hover { background: var(--panel); }
+.bar button, .dvscan button, .mgcact button, #grSheets td.act button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.bar button:hover, .dvscan button:hover, .mgcact button:hover, #grSheets td.act button:hover { background: var(--panel); }
 .primary, .bar .primary, .bar button.primary, .dvscan button.primary, .mgcact button.primary { background: var(--acc1); color: var(--on-acc); border-color: var(--acc1); box-shadow: none; }
 .primary:hover, .bar .primary:hover, .bar button.primary:hover, .dvscan button.primary:hover, .mgcact button.primary:hover { background: var(--acc1-hover); border-color: var(--acc1-hover); color: var(--on-acc); }
 
@@ -4094,6 +4094,15 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
   #grBtns .grnew { margin-left: 0; width: 100%; }
 }
 #grSoon[hidden] { display: none; }
+
+/* Count sheets on a phone: one card per sheet so View and Download stay on screen. */
+@media (max-width: 640px) {
+  .grsheets, .pfwork .grsheets { min-width: 0; }
+  .grsheets thead { display: none; }
+  .grsheets tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+  .grsheets td { display: block; padding: 0; border: 0; }
+  .grsheets td.act { grid-column: 1 / -1; padding-top: 8px; }
+}
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4463,6 +4472,7 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
                     <button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
                     ><button class="mbtn" aria-pressed="false">GO4</button
+                    ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View Count Sheets</button
                     ><button type="button" class="primary grnew" id="grNew">Create Greens Count</button>
                   </div>
                   <div id="grCount" hidden>
@@ -4479,6 +4489,7 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
                       ><button type="button" class="primary" data-gr="done">Done</button>
                     </div>
                   </div>
+                  <div id="grSheets" hidden></div>
                   <div class="anlsoon" id="grSoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
                     <h3 id="grH">Greens Management</h3>
@@ -47628,10 +47639,14 @@ var ZXING_Z = [
       return (st.audit || []).filter(function (e) {
         return e.pick && !e.pick.of && e.by === me;
       });
+    if (i === 5) return grSheets(me);
     return null; // Put Away isn't built yet, so nobody has records there.
   }
+  function pfName(i) {
+    return i === 5 ? "Green Count" : oname(i);
+  }
   function renderPfWork() {
-    $("pfActs").innerHTML = [1, 2, 3, 4]
+    $("pfActs").innerHTML = [1, 2, 3, 4, 5]
       .map(function (i) {
         var l = pfMine(i);
         return (
@@ -47640,7 +47655,7 @@ var ZXING_Z = [
           '" aria-selected="' +
           (pfWorkSel === i) +
           '">' +
-          esc(oname(i)) +
+          esc(pfName(i)) +
           '<span class="c">' +
           (l ? l.length : "–") +
           "</span></button>"
@@ -47650,10 +47665,12 @@ var ZXING_Z = [
     var box = $("pfWork");
     box.hidden = !pfWorkSel;
     if (!pfWorkSel) return;
-    var name = esc(oname(pfWorkSel)),
+    var name = esc(pfName(pfWorkSel)),
       l = (pfMine(pfWorkSel) || []).slice().reverse();
     if (pfWorkSel === 3) {
       box.innerHTML = '<div class="empty">' + name + " isn't set up yet, so there's nothing to show.</div>";
+    } else if (pfWorkSel === 5) {
+      box.innerHTML = grSheetsHtml(l, true);
     } else if (!l.length) {
       box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
     } else if (pfWorkSel === 1) {
@@ -48002,7 +48019,10 @@ var ZXING_Z = [
         }).length;
       return no ? [no, (no === 1 ? "sheet" : "sheets") + " with a No today", true] : [td.length, "finished today"];
     }
-    if (i === 6) return [$("grBtns").children.length, "sites"];
+    if (i === 6) {
+      var ns = grSheets().length;
+      return [ns, ns === 1 ? "count sheet" : "count sheets"];
+    }
     return ["", "Coming soon"];
   }
   function renderManage() {
@@ -48910,27 +48930,35 @@ var ZXING_Z = [
     }
     tpCloudScan();
   }
-  // Greens Management: pick a site; its tools aren't built yet, so the panel names it.
-  $("grBtns").onclick = function (e) {
-    var b = e.target.closest(".mbtn");
-    if (!b) return;
-    [].forEach.call(this.querySelectorAll(".mbtn"), function (x) {
+  // Greens Management: View Count Sheets lists saved counts; a site's own tools aren't built yet, so the panel names it.
+  var grView = null;
+  function grPick(b) {
+    [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
       x.classList.toggle("on", x === b);
       x.setAttribute("aria-pressed", String(x === b));
     });
+    grView = b.id === "grSheetsBtn" ? "sheets" : null;
     $("grH").textContent = b.textContent;
     $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
+    renderGr();
+  }
+  $("grBtns").onclick = function (e) {
+    var b = e.target.closest(".mbtn");
+    if (b) grPick(b);
   };
 
   /* ---------- Greens Management: Create Greens Count ----------
-     Pick a site, scan each item's barcode (one scan = 1), then Done writes each count onto the
-     GCW.GREENS template beside its item # and downloads the filled PDF.
+     Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
+     View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
      st.grCount: { site, ts, counts: { code: n }, order: [code] }, kept on this device until Done or Cancel. */
   var grMsg = "";
   function renderGr() {
-    var c = st.grCount;
+    var c = st.grCount,
+      sh = grView === "sheets" && !c;
     $("grCount").hidden = !c;
-    $("grSoon").hidden = !!c;
+    $("grSoon").hidden = !!c || sh;
+    $("grSheets").hidden = !sh;
+    if (sh) $("grSheets").innerHTML = grSheetsHtml(grSheets().reverse(), false);
     $("grNew").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
@@ -49014,7 +49042,7 @@ var ZXING_Z = [
       grMsg = "";
       save();
       renderGr();
-    } else if (act === "done") grFill(c);
+    } else if (act === "done") grDone(c);
     else if (k && b.dataset.grq) {
       c.counts[k] = Math.max(0, c.counts[k] + +b.dataset.grq);
       save();
@@ -49039,9 +49067,95 @@ var ZXING_Z = [
     ["1001661", 1709, [295,348,401,454,507,560,614,667,718,772], "450 448 446 452 454 456 458 460 462"],
     ["1001661", 1709, [880,934,988,1043,1097,1151,1205,1260,1314,1368], "451 449 447 453 455 457 459 461 463"],
   ];
-  // Done: open GCW.GREENS, write each count in its item's Quantity cell, download the filled PDF.
-  async function grFill(c) {
-    if (!c.order.length) return toast("Scan at least one barcode first.");
+  function grOnForm(n) {
+    return GR_MAP.some(function (t) {
+      return n.indexOf(t[0]) === 0 && t[3].split(" ").indexOf(n.slice(t[0].length)) >= 0;
+    });
+  }
+  // Saved count sheets live in the activity log (st.audit entries with .gr), which syncs to every device.
+  function grSheets(me) {
+    return (st.audit || []).filter(function (e) {
+      return e.gr && (!me || e.by === me);
+    });
+  }
+  // Done: save the count as a count sheet and show it under View Count Sheets.
+  function grDone(c) {
+    var order = c.order.filter(function (n) {
+      return c.counts[n] > 0;
+    });
+    if (!order.length) return toast("Scan at least one barcode first.");
+    var counts = {},
+      tot = 0,
+      miss = order.filter(function (n) {
+        return !grOnForm(n);
+      });
+    order.forEach(function (n) {
+      counts[n] = c.counts[n];
+      tot += c.counts[n];
+    });
+    audit(
+      "Greens",
+      "Greens count at " + c.site + ": " + order.length + (order.length === 1 ? " item, " : " items, ") + tot + " counted" +
+        (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
+    );
+    st.audit[st.audit.length - 1].gr = { site: c.site, counts: counts, order: order };
+    st.grCount = null;
+    grMsg = "";
+    grPick($("grSheetsBtn"));
+    save();
+    if (miss.length)
+      alert(
+        "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
+          miss
+            .map(function (n) {
+              return n + ": " + counts[n];
+            })
+            .join("\n")
+      );
+    else toast("Count sheet saved under View Count Sheets.");
+  }
+  function grSheetsHtml(l, mine) {
+    if (!l.length)
+      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create Greens Count to make one.") + "</div>";
+    return (
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Location</th>' +
+      (mine ? "" : "<th>Counted by</th>") +
+      "<th>Items</th><th>Saved</th><th></th></tr></thead><tbody>" +
+      l
+        .map(function (e) {
+          var g = e.gr,
+            tot = g.order.reduce(function (s2, n) {
+              return s2 + g.counts[n];
+            }, 0);
+          return (
+            '<tr><td class="cname">' +
+            esc(g.site) +
+            "</td>" +
+            (mine ? "" : "<td>" + esc(whoName(e.by)) + "</td>") +
+            '<td class="ph">' +
+            g.order.length +
+            (g.order.length === 1 ? " item, " : " items, ") +
+            tot +
+            " counted</td><td>" +
+            dvWhen(e.ts) +
+            '</td><td class="act"><button type="button" data-grview="' +
+            esc(e.k) +
+            '">View</button><button type="button" data-grview="' +
+            esc(e.k) +
+            '" data-grdl="1">Download</button></td></tr>'
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  // View/Download: open GCW.GREENS and write each count in its item's Quantity cell.
+  async function grOpen(key, dl) {
+    var e = grSheets().find(function (x) {
+      return x.k === key;
+    });
+    if (!e) return toast("That count sheet could not be found.");
+    var g = e.gr;
     if (cloudOn() && !tpCloud) await tpCloudScan();
     var isGr = function (t) {
         return /^gcw\.?\s*greens$/i.test(String(t.name).trim());
@@ -49061,17 +49175,12 @@ var ZXING_Z = [
         }).promise,
         S = 2,
         k = S / 3,
-        placed = {},
-        want = {},
         pg = await doc.getPage(1),
         // The scan is stored upside down; turn it upright.
         rot = (pg.rotate + 180) % 360,
         v1 = pg.getViewport({ scale: 1, rotation: rot }),
         vp = pg.getViewport({ scale: S, rotation: rot }),
         cv = document.createElement("canvas");
-      c.order.forEach(function (n) {
-        if (c.counts[n] > 0) want[n] = 1;
-      });
       cv.width = Math.round(vp.width);
       cv.height = Math.round(vp.height);
       var cx = cv.getContext("2d");
@@ -49086,15 +49195,14 @@ var ZXING_Z = [
       GR_MAP.forEach(function (t) {
         t[3].split(" ").forEach(function (end, i) {
           var n = t[0] + end;
-          if (!want[n]) return;
-          cx.fillText(String(c.counts[n]), t[1] * k, ((t[2][i] + t[2][i + 1]) / 2) * k);
-          placed[n] = 1;
+          if (g.counts[n] > 0) cx.fillText(String(g.counts[n]), t[1] * k, ((t[2][i] + t[2][i + 1]) / 2) * k);
         });
       });
       var jb = await new Promise(function (res) {
-          cv.toBlob(res, "image/jpeg", 0.9);
-        }),
-        imgs = [
+        cv.toBlob(res, "image/jpeg", 0.9);
+      });
+      tpShow(
+        imgPdfBytes([
           {
             w: cv.width,
             h: cv.height,
@@ -49102,37 +49210,18 @@ var ZXING_Z = [
             ph: Math.round(v1.height * 100) / 100,
             jpg: new Uint8Array(await jb.arrayBuffer()),
           },
-        ];
-      var miss = Object.keys(want).filter(function (n) {
-        return !placed[n];
-      });
-      download(
-        "GCW.GREENS-" + c.site.replace(/[^\w]+/g, "_") + "-" + stamp() + ".pdf",
-        imgPdfBytes(imgs),
-        "application/pdf"
+        ]),
+        "GCW.GREENS-" + g.site.replace(/[^\w]+/g, "_") + "-" + dayOf(e.ts),
+        dl
       );
-      audit(
-        "Greens",
-        "Greens count at " + c.site + ": " + c.order.length + " items" + (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
-      );
-      st.grCount = null;
-      grMsg = "";
-      save();
-      renderGr();
-      if (miss.length)
-        alert(
-          "GCW.GREENS is filled in and downloaded. These item #s aren't on the template, so their counts weren't placed:\n\n" +
-            miss
-              .map(function (k) {
-                return k + ": " + c.counts[k];
-              })
-              .join("\n")
-        );
-      else toast("GCW.GREENS filled in and downloaded.");
     } catch (x) {
       toast(x.message || "GCW.GREENS could not be filled in.");
     }
   }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-grview]");
+    if (b) grOpen(b.dataset.grview, !!b.dataset.grdl);
+  });
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };

@@ -3426,7 +3426,7 @@ html.dark .dvcloud button { background:var(--acc1); color:var(--char); }
 .pfwho b { font-size:20px; font-weight:800; color:var(--ink); letter-spacing:-.01em; }
 .pfwho span { font-size:12.5px; color:var(--mute); }
 .pfright label { margin-bottom:10px; }
-.pfacts { display:grid; grid-template-columns:repeat(4, minmax(0, 1fr)); gap:8px; margin:4px 0 12px; }
+.pfacts { display:grid; grid-template-columns:repeat(auto-fit, minmax(112px, 1fr)); gap:8px; margin:4px 0 12px; }
 .pfacts button { display:flex; align-items:center; justify-content:center; gap:8px; padding:11px 8px; border:0; border-radius:14px; background:var(--head); color:var(--ink); font-weight:800; font-size:14px; }
 .pfacts button .c { padding:1px 8px; border-radius:999px; background:var(--panel); color:var(--mute); font-size:12px; font-weight:700; }
 .pfacts button:hover { box-shadow:0 0 0 2px var(--acc2); }
@@ -3803,8 +3803,8 @@ h1, h2, h3, h4, .brand b, .topnav button, dialog h2, .stat b, .pkname { font-fam
 #q:focus, .search input:focus, #dvScan:focus, #grScan:focus { background: var(--panel); box-shadow: inset 0 0 0 2px var(--acc1); }
 #q::placeholder, .search input::placeholder, #dvScan::placeholder, #grScan::placeholder { color: var(--mute); }
 .search svg, .search kbd { color: var(--mute); border-color: var(--line); }
-.bar button, .dvscan button, .mgcact button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
-.bar button:hover, .dvscan button:hover, .mgcact button:hover { background: var(--panel); }
+.bar button, .dvscan button, .mgcact button, #grSheets td.act button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.bar button:hover, .dvscan button:hover, .mgcact button:hover, #grSheets td.act button:hover { background: var(--panel); }
 .primary, .bar .primary, .bar button.primary, .dvscan button.primary, .mgcact button.primary { background: var(--acc1); color: var(--on-acc); border-color: var(--acc1); box-shadow: none; }
 .primary:hover, .bar .primary:hover, .bar button.primary:hover, .dvscan button.primary:hover, .mgcact button.primary:hover { background: var(--acc1-hover); border-color: var(--acc1-hover); color: var(--on-acc); }
 
@@ -4081,3 +4081,12 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
   #grBtns .grnew { margin-left: 0; width: 100%; }
 }
 #grSoon[hidden] { display: none; }
+
+/* Count sheets on a phone: one card per sheet so View and Download stay on screen. */
+@media (max-width: 640px) {
+  .grsheets, .pfwork .grsheets { min-width: 0; }
+  .grsheets thead { display: none; }
+  .grsheets tr { display: grid; grid-template-columns: 1fr auto; gap: 4px 16px; padding: 12px 8px; border-bottom: 1px solid var(--line); }
+  .grsheets td { display: block; padding: 0; border: 0; }
+  .grsheets td.act { grid-column: 1 / -1; padding-top: 8px; }
+}
