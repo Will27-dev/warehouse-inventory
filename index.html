@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261118k" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118l" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -24,6 +24,28 @@
     </script>
   </head>
   <body>
+    <!-- Landing: first screen for anyone not signed in on this device -->
+    <section class="landing" id="landing" aria-labelledby="ldH" hidden>
+      <div class="ldside">
+        <div class="ldbrand">Warehouse inventory</div>
+        <div class="ldtitle">
+          <h1 id="ldH">Granite City Steel Storeroom</h1>
+          <p>The Department of Getting It Done!</p>
+        </div>
+        <p class="ldnote">No account yet? Ask a manager to add you.</p>
+      </div>
+      <div class="ldmain">
+        <form class="lgcard ldform" id="ldForm">
+          <h2>Sign in</h2>
+          <p class="ldhint">Use the email and password your manager set up for you.</p>
+          <label>Email<input name="em" type="email" required autocomplete="username" /></label>
+          <label>Password<input name="pw" type="password" required autocomplete="current-password" /></label>
+          <p class="lgerr" role="alert"></p>
+          <button class="primary lgsubmit">Sign in</button>
+          <button type="button" class="ldguest" id="ldGuest">Look up items without signing in</button>
+        </form>
+      </div>
+    </section>
     <header class="gcw"><p>Granite City Works, Department of Getting It Done!</p></header>
     <div class="app">
       <nav class="side" aria-label="Locations">
@@ -876,6 +898,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261118k"></script>
+    <script src="js/app.js?v=20261118l"></script>
   </body>
 </html>

@@ -3938,6 +3938,42 @@ main { grid-area: main; width: 100%; }
   .side { flex-direction: column; align-items: flex-start; padding: 14px 16px 16px; gap: 10px; }
   .sidemenu { width: calc(100vw - 32px); left: 16px; }
 }
+
+/* =====================================================================
+   Landing (Form: auth): the first screen for people who aren't signed in.
+   Navy title side, sign-in form on the paper side. One load moment.
+   ===================================================================== */
+.landing { position: fixed; inset: 0; z-index: 60; overflow: auto; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); background: var(--canvas); color: var(--ink); }
+.landing[hidden] { display: none; }
+body.onland { overflow: hidden; }
+.ldside { background: var(--char); color: #F7F9FA; padding: 48px 56px 40px; display: flex; flex-direction: column; justify-content: space-between; gap: 40px; }
+.ldbrand { font-family: var(--disp); font-weight: 700; font-size: 17px; color: #C9D3DC; }
+.ldtitle::before { content: ""; display: block; width: 72px; height: 6px; margin-bottom: 26px; background: #7C9BF5; transform-origin: left; animation: gcwRule .8s cubic-bezier(.16,1,.3,1) both; }
+.ldtitle h1 { margin: 0; max-width: 10ch; font-family: var(--disp); font-size: clamp(44px, 5.6vw, 76px); line-height: .95; letter-spacing: -.035em; font-weight: 700; animation: ldUp .6s cubic-bezier(.16,1,.3,1) .05s both; }
+.ldtitle p { margin: 18px 0 0; font-size: 19px; color: #C9D3DC; animation: ldUp .6s cubic-bezier(.16,1,.3,1) .18s both; }
+.ldnote { margin: 0; padding-top: 18px; border-top: 1px solid #2E4366; font-size: 15px; color: #9FB0C4; }
+.ldmain { display: flex; align-items: center; justify-content: center; padding: 48px 32px; }
+.ldform { width: min(420px, 100%); padding: 0; display: flex; flex-direction: column; animation: ldUp .6s cubic-bezier(.16,1,.3,1) .28s both; }
+.ldform h2 { margin: 0; font-family: var(--disp); font-size: 44px; line-height: 1; letter-spacing: -.03em; font-weight: 700; color: var(--ink); }
+.ldhint { margin: 10px 0 28px; font-size: 17px; color: var(--mute); }
+.ldform label { margin-bottom: 18px; font-size: 15px; font-weight: 700; color: var(--ink); }
+.ldform input { min-height: 52px; margin-top: 6px; padding: 0 14px; font-size: 17px; background: var(--head); border: 2px solid var(--ink); color: var(--ink); }
+.ldform input:focus { border-color: var(--acc1); box-shadow: none; }
+.ldform .lgerr { min-height: 22px; font-size: 15px; color: var(--warn); }
+.ldform .lgsubmit { min-height: 54px; border: 0; font-size: 17px; background: var(--acc1); color: var(--on-acc); }
+.ldform .lgsubmit:hover { background: var(--acc1-hover); }
+.ldguest { margin-top: 14px; min-height: 48px; background: none; border: 0; font: inherit; font-size: 16px; font-weight: 700; color: var(--acc1); text-decoration: underline; text-underline-offset: 4px; cursor: pointer; }
+.ldguest:hover { color: var(--ink); }
+@keyframes ldUp { from { opacity: 0; transform: translateY(14px); } }
+@media (max-width: 760px) {
+  .landing { grid-template-columns: minmax(0, 1fr); align-content: start; }
+  .ldside { padding: 24px 20px 26px; gap: 22px; }
+  .ldtitle::before { margin-bottom: 18px; }
+  .ldtitle h1 { max-width: none; font-size: 42px; }
+  .ldtitle p { margin-top: 12px; font-size: 17px; }
+  .ldmain { align-items: flex-start; padding: 28px 20px 40px; }
+  .ldform h2 { font-size: 32px; }
+}
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -3952,6 +3988,28 @@ main { grid-area: main; width: 100%; }
     </script>
   </head>
   <body>
+    <!-- Landing: first screen for anyone not signed in on this device -->
+    <section class="landing" id="landing" aria-labelledby="ldH" hidden>
+      <div class="ldside">
+        <div class="ldbrand">Warehouse inventory</div>
+        <div class="ldtitle">
+          <h1 id="ldH">Granite City Steel Storeroom</h1>
+          <p>The Department of Getting It Done!</p>
+        </div>
+        <p class="ldnote">No account yet? Ask a manager to add you.</p>
+      </div>
+      <div class="ldmain">
+        <form class="lgcard ldform" id="ldForm">
+          <h2>Sign in</h2>
+          <p class="ldhint">Use the email and password your manager set up for you.</p>
+          <label>Email<input name="em" type="email" required autocomplete="username" /></label>
+          <label>Password<input name="pw" type="password" required autocomplete="current-password" /></label>
+          <p class="lgerr" role="alert"></p>
+          <button class="primary lgsubmit">Sign in</button>
+          <button type="button" class="ldguest" id="ldGuest">Look up items without signing in</button>
+        </form>
+      </div>
+    </section>
     <header class="gcw"><p>Granite City Works, Department of Getting It Done!</p></header>
     <div class="app">
       <nav class="side" aria-label="Locations">
@@ -47541,10 +47599,29 @@ var ZXING_Z = [
     b.innerHTML =
       '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button></form>';
   }
-  $("lgBody").addEventListener("submit", async function (e) {
+  // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
+  function landing(on) {
+    $("landing").hidden = !on;
+    document.querySelector(".app").inert = on;
+    document.querySelector(".gcw").inert = on;
+    document.body.classList.toggle("onland", on);
+  }
+  $("ldGuest").onclick = function () {
+    try {
+      sessionStorage.setItem("wh-guest", "1");
+    } catch (e) {}
+    landing(false);
+  };
+  try {
+    if (!sess && !sessionStorage.getItem("wh-guest")) landing(true);
+  } catch (e) {
+    if (!sess) landing(true);
+  }
+  // Same sign-in for the Log in panel and the landing form.
+  async function signInSubmit(e) {
     e.preventDefault();
     var f = e.target.elements,
-      err = $("lgErr"),
+      err = e.target.querySelector(".lgerr"),
       btn = e.target.querySelector("button");
     err.textContent = "Signing in…";
     btn.disabled = true;
@@ -47562,9 +47639,15 @@ var ZXING_Z = [
       f.pw.focus();
       return;
     }
+    btn.disabled = false;
+    err.textContent = "";
+    f.pw.value = "";
+    landing(false);
     render();
     toast("Signed in as " + sess.email + ".");
-  });
+  }
+  $("lgBody").addEventListener("submit", signInSubmit);
+  $("ldForm").addEventListener("submit", signInSubmit);
   $("lgBody").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;

@@ -4047,10 +4047,29 @@
     b.innerHTML =
       '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button></form>';
   }
-  $("lgBody").addEventListener("submit", async function (e) {
+  // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
+  function landing(on) {
+    $("landing").hidden = !on;
+    document.querySelector(".app").inert = on;
+    document.querySelector(".gcw").inert = on;
+    document.body.classList.toggle("onland", on);
+  }
+  $("ldGuest").onclick = function () {
+    try {
+      sessionStorage.setItem("wh-guest", "1");
+    } catch (e) {}
+    landing(false);
+  };
+  try {
+    if (!sess && !sessionStorage.getItem("wh-guest")) landing(true);
+  } catch (e) {
+    if (!sess) landing(true);
+  }
+  // Same sign-in for the Log in panel and the landing form.
+  async function signInSubmit(e) {
     e.preventDefault();
     var f = e.target.elements,
-      err = $("lgErr"),
+      err = e.target.querySelector(".lgerr"),
       btn = e.target.querySelector("button");
     err.textContent = "Signing in…";
     btn.disabled = true;
@@ -4068,9 +4087,15 @@
       f.pw.focus();
       return;
     }
+    btn.disabled = false;
+    err.textContent = "";
+    f.pw.value = "";
+    landing(false);
     render();
     toast("Signed in as " + sess.email + ".");
-  });
+  }
+  $("lgBody").addEventListener("submit", signInSubmit);
+  $("ldForm").addEventListener("submit", signInSubmit);
   $("lgBody").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
