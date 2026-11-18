@@ -3868,7 +3868,7 @@ html body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.loc { border-left
   .topnav { gap: 22px; }
   .topnav button { font-size: 15px; padding: 10px 0 12px; min-width: 0; }
   .bar { padding: 10px 16px; background: var(--canvas); }
-  main { padding: 8px 12px 26px; }
+  main { padding: 8px 16px 26px; }
   .panel > .head { padding: 18px 16px 8px; }
   .panel > .head h2 { font-size: 30px; }
 }
@@ -4069,6 +4069,9 @@ body.ontop #add, body.onside #add { display: none; }
 body:not(.onmg) #exportJson, body:not(.onmg) #importBtn, body:not(.onmg) #exportCsv { display: none; }
 /* Other screens leave the bar with nothing in it, so drop it. */
 body.ontop:not(.onmg) .bar, body.onside:not(.onmg) .bar { display: none; }
+
+/* Content boxes start under the search bar: keep the width cap, drop the centering. */
+main { margin: 0; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
