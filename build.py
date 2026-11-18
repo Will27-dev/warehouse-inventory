@@ -9,7 +9,8 @@ html = read("index.html")
 # The live site loads these on first use; the single file needs them inline.
 vendor = ["js/vendor/pdfjs-embedded.js", "js/vendor/jbig2-wasm.js", "js/vendor/zxing-embedded.js"]
 html = html.replace('<script src="js/app.js', "".join('<script src="%s"></script>\n    ' % v for v in vendor) + '<script src="js/app.js', 1)
-html = re.sub(r'<link\s+rel="stylesheet"\s+href="([^"]+)"\s*/?>',
+# Web-font links stay as links; offline, the single file falls back to system fonts.
+html = re.sub(r'<link\s+rel="stylesheet"\s+href="(?!https?:)([^"]+)"\s*/?>',
               lambda m: "<style>\n" + read(m.group(1)) + "</style>", html)
 html = re.sub(r'<script\s+src="([^"]+)"\s*></script>',
               lambda m: "<script>\n" + read(m.group(1)) + "\n</script>", html)

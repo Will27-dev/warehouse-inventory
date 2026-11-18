@@ -3061,23 +3061,25 @@ main > section:not([hidden]),
    To change colors, edit only the six palette values just below.
    ===================================================================== */
 :root, :root * {
-  /* palette: Mint & Coral */
-  --page:#c8efdd;   /* page behind the app frame */
-  --char:#121817;   /* frame, sidebar, dark cards */
-  --canvas:#1e2928; /* main page background (dark) */
-  --tile:#2a3736;   /* tab tiles / pills on the dark canvas */
-  --acc1:#5ee6b0;   /* main accent */
-  --acc2:#ff8a7a;   /* second accent */
+  /* palette: Ledger (navy, cobalt, rust on blue-grey paper) */
+  --page:#E6ECEF;   /* page behind the app */
+  --char:#13233F;   /* sidebar, dark tags and buttons */
+  --canvas:#E6ECEF; /* main page background */
+  --tile:#F7F9FA;   /* controls on the canvas */
+  --acc1:#2546B8;   /* main accent: actions, selected tab */
+  --acc2:#B33D17;   /* second accent: attention */
+  --on-acc:#fff;    /* text on acc1 / acc2 */
+  --sel:#DCE4FA;    /* selected row / chip tint */
 
   --acc1-hover: color-mix(in srgb, var(--acc1) 82%, #000);
-  --acc1-soft: color-mix(in srgb, var(--acc1) 28%, #fff);
-  --on-dark:#f2f2f3; --on-dark-mute:#a5a6ad;
-  --bg:var(--canvas); --panel:#fff; --ink:#151517; --mute:#65656c; --line:#e6e6e3; --head:#f4f4f2;
+  --acc1-soft: color-mix(in srgb, var(--acc1) 16%, #fff);
+  --on-dark:#F7F9FA; --on-dark-mute:#9FB0C4;
+  --bg:var(--canvas); --panel:#F7F9FA; --ink:#13233F; --mute:#4A5A72; --line:#C9D3DC; --head:#fff;
   --side:var(--char); --side2:var(--char); --side-ink:var(--on-dark); --side-mute:var(--on-dark-mute);
-  --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#d92d20; --shadow:none;
-  --r-lg: 22px;  /* frame, panels, dialogs */
-  --r-md: 14px;  /* cards, tiles, inputs */
-  --hair: rgba(255, 255, 255, .07);
+  --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#B33D17; --shadow:none;
+  --r-lg: 0;  /* Ledger is square */
+  --r-md: 0;
+  --hair: rgba(19, 35, 63, .14);
 }
 
 /* App frame on the tinted page */
@@ -3148,9 +3150,10 @@ dialog input, dialog textarea, dialog select { border:0; border-radius: 10px; mi
    ===================================================================== */
 html.dark,
 html.dark * {
-  --panel:#16201f; --ink:#e6efed; --mute:#8fa3a0; --line:#2b3a38; --head:#1d2928;
-  --page:#0f1615;
-  --warn: #ff8a80; /* readable red on dark cards (7:1) */
+  --panel:#16243C; --ink:#E6ECEF; --mute:#9FB0C4; --line:#2E4366; --head:#1C3157;
+  --page:#0B1526; --canvas:#0B1526; --char:#101D33; --tile:#16243C;
+  --acc1:#7C9BF5; --on-acc:#0B1526; --sel:#24407A; --hair: rgba(255, 255, 255, .1);
+  --warn: #FF9B80; /* readable on dark cards */
 }
 html.dark th { background:var(--head); color:var(--mute); }
 html.dark body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) { color:var(--mute); }
@@ -3748,3 +3751,116 @@ html.dark { color-scheme: dark; }
 
 /* Greens Management sites: three buttons wrap instead of scrolling off the edge on phones */
 #grBtns { flex-wrap: wrap; overflow: visible; }
+
+/* =====================================================================
+   Ledger theme: navy sidebar, blue-grey canvas, cobalt actions, square
+   corners, 2px navy rules. Overrides the Soft Bento rules above; colours
+   live in the token block ("palette: Ledger").
+   ===================================================================== */
+:root, :root * { --disp: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif; }
+body { font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif; letter-spacing: 0; padding: 0; }
+h1, h2, h3, h4, .brand b, .topnav button, dialog h2, .stat b, .pkname { font-family: var(--disp); }
+
+/* Square corners everywhere; pick-slip marks stay round */
+*, *::before, *::after { border-radius: 0 !important; }
+.pkmark { border-radius: 50% !important; }
+
+/* Full-bleed shell */
+.app { box-shadow: none; min-height: 100vh; grid-template-columns: 280px minmax(0, 1fr); }
+.side { top: 0; height: 100vh; padding: 36px 20px 24px; gap: 30px; }
+.content { margin: 0; }
+.logo { display: none; }
+.brand { padding: 0 12px; }
+.brand b { font-size: 22px; line-height: 1.15; letter-spacing: -.01em; }
+
+/* Sidebar list: plain rows, active row in cobalt */
+.tabs .dot { display: none; }
+.tabs button { color: #C9D3DC; }
+.tabs button:hover { background: rgba(255, 255, 255, .08); padding-left: 14px; }
+.tabs button[aria-selected="true"], .tabs button[aria-selected="true"]:hover { background: #2546B8; color: #fff; }
+.tabs button[aria-selected="true"] .c { color: #fff; }
+.sidefoot { background: transparent; box-shadow: none; border-top: 1px solid #2E4366; padding: 18px 12px 0; }
+.side .ghost { background: transparent; color: #F7F9FA; border: 1.5px dashed #6F84A3; }
+.side .ghost:hover { background: rgba(255, 255, 255, .08); }
+
+/* Section tabs: text with a cobalt underline on a navy rule */
+.topbar { padding: 28px 40px 0; align-items: end; gap: 16px; }
+.topnav { display: flex; gap: 24px; background: none; box-shadow: inset 0 -2px 0 var(--ink); padding: 0; overflow-x: auto; scrollbar-width: none; }
+.topnav button, .topnav button:hover, .topnav button.on { flex: none; min-width: 0; max-width: none; background: none; box-shadow: none; transform: none; }
+.topnav button { color: var(--mute); font-size: 16px; font-weight: 500; padding: 12px 0 14px; min-height: 44px; white-space: nowrap; }
+.topnav button::before { display: none; }
+.topnav button:hover { color: var(--ink); }
+.topnav button.on { color: var(--ink); font-weight: 700; box-shadow: inset 0 -5px 0 var(--acc1); }
+.profilebtn { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.profilebtn, .manage { align-self: center; min-height: 44px; }
+.avatar { background: var(--acc1); color: var(--on-acc); }
+.manage { background: var(--ink); color: var(--panel); box-shadow: none; padding: 0 22px; }
+.manage:hover { background: var(--acc1); color: var(--on-acc); }
+
+/* Search and tool buttons */
+.bar { padding: 22px 40px 6px; }
+#q, .search input, #dvScan { background: var(--panel); color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); border: 0; }
+#q:focus, .search input:focus, #dvScan:focus { background: var(--panel); box-shadow: inset 0 0 0 2px var(--acc1); }
+#q::placeholder, .search input::placeholder, #dvScan::placeholder { color: var(--mute); }
+.search svg, .search kbd { color: var(--mute); border-color: var(--line); }
+.bar button, .dvscan button, .mgcact button { background: transparent; color: var(--ink); box-shadow: inset 0 0 0 2px var(--ink); }
+.bar button:hover, .dvscan button:hover, .mgcact button:hover { background: var(--panel); }
+.primary, .bar .primary, .bar button.primary, .dvscan button.primary, .mgcact button.primary { background: var(--acc1); color: var(--on-acc); border-color: var(--acc1); box-shadow: none; }
+.primary:hover, .bar .primary:hover, .bar button.primary:hover, .dvscan button.primary:hover, .mgcact button.primary:hover { background: var(--acc1-hover); border-color: var(--acc1-hover); color: var(--on-acc); }
+
+/* Location buttons and sub-tabs: outlined, selected one filled */
+.mbtn, .schip { background: transparent; color: var(--ink); box-shadow: none; }
+.mbtn { border: 2px solid var(--ink); }
+.schip { border: 1px solid var(--mute); }
+.mbtn:hover, .schip:hover { transform: none; box-shadow: none; background: var(--panel); }
+.mbtn.on, .mbtn.on:hover { background: var(--ink); color: var(--panel); border-color: var(--ink); }
+.schip.on, .schip.on:hover { background: var(--sel); color: var(--ink); border: 2px solid var(--acc1); }
+.schip.on .c { color: inherit; }
+.schip.add { border: 1.5px dashed var(--mute); color: var(--mute); }
+
+/* Content panel: paper sheet under a navy rule */
+main { padding: 16px 40px 40px; }
+.panel { border-top: 2px solid var(--ink); }
+.panel > .head { margin: 0; padding: 26px 28px 12px; }
+.panel > .head h2 { font-size: 40px; line-height: 1; letter-spacing: -.03em; }
+.panel > .head code { background: var(--sel); color: var(--ink); }
+th { text-transform: uppercase !important; letter-spacing: .08em !important; font-size: 13px; color: var(--mute); background: var(--panel); border-bottom: 2px solid var(--ink); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { box-shadow: inset 0 0 0 1px var(--line); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr:hover { box-shadow: inset 0 0 0 2px var(--acc1); }
+body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked { background: var(--sel); box-shadow: inset 0 0 0 2px var(--acc1); }
+html body:not(.ontop):not(.onside):not(.onsum) #panel tbody td.loc { border-left-color: #2546B8; }
+.xbtn { background: transparent; color: var(--ink); border: 2px solid var(--ink); }
+
+/* Quantity stepper: square outlined buttons */
+.qty { background: transparent; box-shadow: none; gap: 0; }
+.qty button { background: var(--head); color: var(--ink); border: 2px solid var(--ink); }
+.qty button:hover { background: var(--sel); color: var(--ink); }
+.qty b { color: var(--ink); }
+.qty span { color: var(--mute); }
+
+/* Text on cobalt / rust stays readable */
+.side :focus-visible { outline-color: #fff !important; }
+.dvic, .dvchip.submitted, .dvcard.on, .dvcard.on .dvloc, .pfacts button[aria-selected="true"] .c, .lgcan li.yes svg { color: var(--on-acc); }
+.dvopt:nth-child(4) .dvic, .dvchip.draft, .dvchip.loading, .lgbtns .lgmg { color: #fff; }
+.mgnav button.on .mgic { background: var(--acc1); color: var(--on-acc); border-color: var(--acc1); }
+.dvopt:hover, .dvcard:hover, .pfacts button:hover { box-shadow: 0 0 0 2px var(--acc1); }
+.pktab tr.pkprob { background: color-mix(in srgb, var(--acc2) 10%, transparent); }
+
+@media (max-width: 640px) {
+  .app { grid-template-columns: minmax(0, 1fr); }
+  .side { height: auto; padding: 14px 16px; gap: 10px 12px; }
+  .brand b { font-size: 18px; }
+  .sidefoot { border-top: 0; padding: 0; }
+  .topbar { padding: 12px 16px 0; }
+  .topnav { gap: 22px; }
+  .topnav button { font-size: 15px; padding: 10px 0 12px; min-width: 0; }
+  .bar { padding: 10px 16px; background: var(--canvas); }
+  main { padding: 8px 12px 26px; }
+  .panel > .head { padding: 18px 16px 8px; }
+  .panel > .head h2 { font-size: 30px; }
+}
+
+/* Ledger: form fields get the 2px navy edge so they read on the paper panel */
+dialog input:not([type="checkbox"]):not([type="radio"]):not([type="file"]), dialog textarea, dialog select { border: 2px solid var(--ink); background: var(--head); }
+dialog input:focus, dialog textarea:focus, dialog select:focus { border-color: var(--acc1); box-shadow: none; }
+dialog button:not(.primary):not(.redbtn):not(.dmswitch) { border: 2px solid var(--ink); }
