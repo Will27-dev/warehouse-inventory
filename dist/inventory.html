@@ -48507,10 +48507,28 @@ var ZXING_Z = [
       return of.apply(this, arguments);
     };
   }
+  // iPhone Safari can't `for await` over a ReadableStream, and pdf.js does (getTextContent), which
+  // failed there with "undefined is not a function". (The worker's own loop is in a try with a fallback.)
+  function rsIter() {
+    if (typeof ReadableStream != "undefined" && !ReadableStream.prototype[Symbol.asyncIterator])
+      ReadableStream.prototype[Symbol.asyncIterator] = async function* () {
+        var r = this.getReader();
+        try {
+          for (;;) {
+            var x = await r.read();
+            if (x.done) return;
+            yield x.value;
+          }
+        } finally {
+          r.releaseLock();
+        }
+      };
+  }
   function loadPdfJs() {
     if (pdfjsP) return pdfjsP;
     pdfjsP = (async function () {
       installWasmShim();
+      rsIter();
       await needVendor("pdfjs-embedded.js", "PDFJS_Z", "PDF reader");
       await needVendor("jbig2-wasm.js", "JBIG2_Z", "PDF reader");
       var lib = await gunzipB64(PDFJS_Z),
