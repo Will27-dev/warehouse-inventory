@@ -4028,8 +4028,8 @@ body.onland { overflow: hidden; }
 
 /* ---------- Manage launcher: one square tile per tool, with a live count ---------- */
 .mgst { display: none; }
-.mgnav:not(.picked) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 6px 24px 22px; }
-.mgnav:not(.picked) button[data-opt] { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 184px; padding: 18px 20px; background: var(--page); color: var(--ink); border: 0; border-top: 6px solid var(--char); text-align: left; transition: border-color .15s ease; }
+.mgnav:not(.picked) { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 16px; padding: 8px 24px 24px; }
+.mgnav:not(.picked) button[data-opt] { display: flex; flex-direction: column; align-items: flex-start; justify-content: space-between; gap: 16px; min-height: 184px; padding: 16px 24px; background: var(--page); color: var(--ink); border: 0; border-top: 6px solid var(--char); text-align: left; transition: border-color .15s ease; }
 .mgnav:not(.picked) button[data-opt]:hover { background: var(--page); border-top-color: var(--acc1); }
 .mgnav:not(.picked) button[data-opt].warn { border-top-color: var(--acc2); }
 .mgnav:not(.picked) button[data-opt="5"] { background: transparent; color: var(--mute); border: 2px dashed var(--line); }
@@ -4037,7 +4037,7 @@ body.onland { overflow: hidden; }
 .mgnav:not(.picked) button[data-opt] .mgtip,
 .mgnav:not(.picked) button[data-opt]::after { display: none; }
 .mgnav:not(.picked) button[data-opt] .mgl { align-self: auto; font-family: var(--disp); font-size: 22px; font-weight: 700; line-height: 1.15; }
-.mgnav:not(.picked) .mgst { display: flex; flex-direction: column; gap: 2px; }
+.mgnav:not(.picked) .mgst { display: flex; flex-direction: column; gap: 4px; }
 .mgnav:not(.picked) .mgst b { font-family: var(--disp); font-size: 38px; line-height: 1; font-variant-numeric: tabular-nums; }
 .mgnav:not(.picked) .mgst b:empty { display: none; }
 .mgnav:not(.picked) .warn .mgst b { color: var(--acc2); }
@@ -4047,8 +4047,8 @@ html.dark .mgnav:not(.picked) .warn .mgst b { color: #F08A66; }
   .mgnav:not(.picked) { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 @media (max-width: 560px) {
-  .mgnav:not(.picked) { gap: 10px; padding: 4px 12px 16px; }
-  .mgnav:not(.picked) button[data-opt] { min-height: 150px; padding: 14px 14px 16px; }
+  .mgnav:not(.picked) { gap: 8px; padding: 4px 12px 16px; }
+  .mgnav:not(.picked) button[data-opt] { min-height: 152px; padding: 16px; }
   .mgnav:not(.picked) .mgl { font-size: 18px; }
   .mgnav:not(.picked) .mgst b { font-size: 32px; }
 }
