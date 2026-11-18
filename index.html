@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261118i" />
+    <link rel="stylesheet" href="css/styles.css?v=20261118j" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -24,6 +24,7 @@
     </script>
   </head>
   <body>
+    <header class="gcw"><p>Granite City Works, Department of Getting It Done!</p></header>
     <div class="app">
       <nav class="side" aria-label="Locations">
         <div class="brand">
@@ -42,12 +43,21 @@
               <rect x="8" y="3" width="8" height="8" />
             </svg>
           </div>
-          <div><b role="heading" aria-level="1">Warehouse inventory</b><span>Location look-up</span></div>
+          <div>
+            <b role="heading" aria-level="1"
+              ><button class="homebtn" id="homeBtn" title="Back to items">Warehouse inventory</button></b
+            ><span>Location look-up</span>
+          </div>
         </div>
-        <div>
-          <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
+        <button class="menubtn" id="menuBtn" aria-expanded="false" aria-controls="sideMenu" aria-label="Menu">
+          <span></span><span></span><span></span>
+        </button>
+        <div class="sidemenu" id="sideMenu">
+          <div>
+            <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
+          </div>
+          <div class="sidefoot"><button class="ghost" id="editNames">Edit tab names</button></div>
         </div>
-        <div class="sidefoot"><button class="ghost" id="editNames">Edit tab names</button></div>
       </nav>
       <div class="content">
         <div class="topwrap">
@@ -866,6 +876,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261118i"></script>
+    <script src="js/app.js?v=20261118j"></script>
   </body>
 </html>

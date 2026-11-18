@@ -670,9 +670,32 @@
       $("q").focus();
     }
   });
+  // Left menu: the 3-line box under the wordmark opens and closes the side list.
+  function sideMenu(open) {
+    document.querySelector(".side").classList.toggle("open", open);
+    $("menuBtn").setAttribute("aria-expanded", String(open));
+  }
+  $("menuBtn").onclick = function () {
+    sideMenu(this.getAttribute("aria-expanded") !== "true");
+  };
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest(".side")) sideMenu(false);
+  });
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && $("menuBtn").getAttribute("aria-expanded") === "true") {
+      sideMenu(false);
+      $("menuBtn").focus();
+    }
+  });
+  // Wordmark goes back to the items screen (same as the first section tab).
+  $("homeBtn").onclick = function () {
+    sideMenu(false);
+    $("topnav").children[0].click();
+  };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b || b.dataset.side === undefined) return;
+    sideMenu(false);
     st.side = +b.dataset.side;
     st.top = null;
     st.manage = false;
