@@ -1649,7 +1649,7 @@
       return '<p class="pknote">No pick lines were found. This reader knows the USS Pick Slip Report layout; check that this PDF is one.</p>';
     return (
       '<table class="pktab"><thead><tr><th>Item #</th><th>Allocated</th><th>UOM</th><th>Deliver to</th>' +
-      "<th>Picked</th><th>On hand (slip)</th><th>On hand now</th><th>Check</th></tr></thead><tbody>" +
+      "<th>Picked</th><th>On hand (slip)</th><th>On hand now</th><th>Left after pick</th><th>Check</th></tr></thead><tbody>" +
       p.rows
         .map(function (r, j) {
           var now = "now" in r ? r.now : pkNow(r),
@@ -1676,7 +1676,9 @@
               (off ? ' class="pkoff"' : "") +
               ">" +
               (now == null ? '<span class="m">Not in list</span>' : now + (off ? "<small>Differs</small>" : "")) +
-              '</td><td data-l="Check">' +
+              "</td>" +
+              pkLeftTd(now, pkNum(p.picked[j])) +
+              '<td data-l="Check">' +
               esc([p.upd[j] ? "Qty updated" : "", p.prob[j] != null ? "Problem" : ""].filter(Boolean).join(", ") || "–") +
               "</td></tr>"
             );
@@ -1703,7 +1705,9 @@
             (off ? ' class="pkoff"' : "") +
             ">" +
             (now == null ? '<span class="m">Not in list</span>' : now + (off ? "<small>Differs</small>" : "")) +
-            '</td><td data-l="Check" class="pkchk">' +
+            "</td>" +
+            pkLeftTd(now, pkNum(p.picked[j])) +
+            '<td data-l="Check" class="pkchk">' +
             (ed
               ? '<span class="m">' + (p.upd[j] ? "Qty updated" : "") + "</span>"
               : "<label" +
@@ -1731,8 +1735,42 @@
         ? ""
         : '<div class="pksub">' +
           pkProgHtml(p) +
-          '<button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
+          '<button type="button" id="pkDiscard">Cancel pick list</button><button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
     );
+  }
+  // What stays in stock once this line's Picked comes off (On hand now − Picked); below 0 is short.
+  function pkLeftTd(now, got) {
+    var left = now == null || got == null ? null : now - got;
+    return (
+      '<td data-l="Left after pick"' +
+      (left < 0 ? ' class="pkoff"' : "") +
+      ">" +
+      (left == null ? "–" : left + (left < 0 ? "<small>Short</small>" : "")) +
+      "</td>"
+    );
+  }
+  // Cancel before submitting: drop the PDF and put back any quantity Update qty changed.
+  function pkDiscard(p) {
+    var n = Object.keys(p.upd).length;
+    if (
+      !confirm(
+        "Cancel " +
+          (p.meta && p.meta.no ? "pick slip " + p.meta.no : p.name) +
+          "? Nothing is submitted" +
+          (n ? (n === 1 ? ", and the quantity changed with Update qty goes back." : ", and the " + n + " quantities changed with Update qty go back.") : ".")
+      )
+    )
+      return;
+    Object.keys(p.upd).forEach(function (j) {
+      var cur = items.find(function (i) {
+        return i.id === p.upd[j].id;
+      });
+      if (cur) adjustQty(cur.id, p.upd[j].old - (Number(cur.q) || 0), "Cancelled pick slip " + ((p.meta && p.meta.no) || p.name));
+    });
+    if (n) save();
+    pkPdfs.splice(pkPdfs.indexOf(p), 1);
+    pkShow(-1);
+    toast("Pick list cancelled.");
   }
   function pkProgHtml(p) {
     var n = p.rows.length,
@@ -1861,6 +1899,10 @@
     });
     save();
     p.sent = ts;
+    // Show on-hand as it was before the pick, so Left after pick isn't counted twice.
+    p.rows.forEach(function (r, j) {
+      r.now = nowAt[j];
+    });
     renderPk();
     var nt = Object.keys(taken).length;
     toast(nt ? "Pick list submitted. Picked amounts taken off " + nt + (nt === 1 ? " item." : " items.") : "Pick list submitted.");
@@ -1967,7 +2009,11 @@
     toast("Changes saved.");
   };
   $("pkSubBody").addEventListener("input", function (e) {
-    if (pkSub && pkSub.editing && e.target.dataset.pk) pkSub.p.picked[e.target.dataset.pk] = e.target.value;
+    if (!(pkSub && pkSub.editing && e.target.dataset.pk)) return;
+    pkSub.p.picked[e.target.dataset.pk] = e.target.value;
+    var r = pkSub.p.rows[e.target.dataset.pk],
+      td = e.target.closest("tr").querySelector('[data-l="Left after pick"]');
+    if (td) td.outerHTML = pkLeftTd("now" in r ? r.now : pkNow(r), pkNum(e.target.value));
   });
   $("pkSubBody").addEventListener("change", function (e) {
     var el = e.target;
@@ -2078,12 +2124,16 @@
   };
   $("pkRows").addEventListener("click", function (e) {
     if (e.target.closest("#pkSubmit") && pkPdfs[pkOpen]) pkSubmit(pkPdfs[pkOpen]);
+    if (e.target.closest("#pkDiscard") && pkPdfs[pkOpen]) pkDiscard(pkPdfs[pkOpen]);
   });
   $("pkRows").addEventListener("input", function (e) {
     var p = pkPdfs[pkOpen];
     if (p && e.target.dataset.pk) {
       p.picked[e.target.dataset.pk] = e.target.value;
       if ($("pkProg")) $("pkProg").outerHTML = pkProgHtml(p);
+      var r = p.rows[e.target.dataset.pk],
+        td = e.target.closest("tr").querySelector('[data-l="Left after pick"]');
+      if (td) td.outerHTML = pkLeftTd("now" in r ? r.now : pkNow(r), pkNum(e.target.value));
     }
   });
   var pkProbRow = -1,
