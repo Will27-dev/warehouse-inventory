@@ -5426,6 +5426,10 @@
       return { k: k, e: by[k] };
     });
   }
+  // One tinted card per list in View Count Sheets, so Transferable and Count sheets read apart.
+  function grSec(t, title, n, desc, body) {
+    return '<section class="grsec grsec-' + t + '"><h3>' + title + ' <span class="grn">' + n + "</span></h3><p>" + desc + "</p>" + body + "</section>";
+  }
   function grXHtml() {
     var l = grXfers()
       .filter(function (x) {
@@ -5551,7 +5555,8 @@
     if (pan)
       $("grSheets").innerHTML =
         grView === "sheets"
-          ? '<div class="sumsec">Transferable</div>' + grXHtml() + '<div class="sumsec">Count sheets</div>' + grSheetsHtml(grSheets().reverse(), false)
+          ? grSec("x", "Transferable", grXfers().filter(function (x) { return !x.e.gt.done; }).length + " waiting", "Transfers saved for later. Review one to approve it.", grXHtml()) +
+            grSec("c", "Count sheets", grSheets().length + " saved", "Finished counts for each location.", grSheetsHtml(grSheets().reverse(), false))
           : '<div class="grhead"><h3>' +
             esc(grView) +
             '</h3><button type="button" class="gredit" data-gredit>Edit counts</button></div>' +
