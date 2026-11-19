@@ -4109,3 +4109,4 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
 #grSheets > .sumsec { padding-left: 0; padding-right: 0; }
 .grxerr { margin: 0; color: var(--warn); font-weight: 700; }
 .grsz { margin-left: 8px; color: var(--mute); font-size: 14px; }
+#grSheets td.act button.danger { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }

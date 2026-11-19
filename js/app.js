@@ -5306,10 +5306,12 @@
      activity log as entries with .gt. The log is add-only, so approving or editing a saved transfer
      adds a new entry pointing at the first one (gt.of); the newest entry for a transfer is the one that counts. */
   function grXfers() {
-    var by = {};
+    var by = {},
+      gone = grGone();
     (st.audit || []).forEach(function (e) {
       if (!e.gt) return;
       var k = e.gt.of || e.k;
+      if (gone[k]) return;
       if (!by[k] || e.ts > by[k].ts) by[k] = e;
     });
     return Object.keys(by).map(function (k) {
@@ -5348,7 +5350,9 @@
             dvWhen(x.e.ts) +
             '</td><td class="act"><button type="button" data-grxopen="' +
             esc(x.k) +
-            '">Review</button></td></tr>'
+            '">Review</button><button type="button" class="danger" data-grdel="' +
+            esc(x.k) +
+            '">Delete</button></td></tr>'
           );
         })
         .join("") +
@@ -5567,10 +5571,43 @@
   }
   // Saved count sheets live in the activity log (st.audit entries with .gr), which syncs to every device.
   function grSheets(me) {
+    var gone = grGone();
     return (st.audit || []).filter(function (e) {
-      return e.gr && (!me || e.by === me);
+      return e.gr && !gone[e.k] && (!me || e.by === me);
     });
   }
+  // Deleting a count sheet or transfer adds an entry naming it (.grdel), because the shared log is add-only.
+  function grGone() {
+    var g = {};
+    (st.audit || []).forEach(function (e) {
+      if (e.grdel) g[e.grdel] = 1;
+    });
+    return g;
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-grdel]");
+    if (!b) return;
+    var k = b.dataset.grdel,
+      sh = grSheets().find(function (e) {
+        return e.k === k;
+      }),
+      x = !sh &&
+        grXfers().find(function (y) {
+          return y.k === k;
+        }),
+      what = sh
+        ? "the " + sh.gr.site + " count sheet from " + dvWhen(sh.ts)
+        : x
+        ? "the transfer from " + x.e.gt.from + " to " + x.e.gt.to + " saved " + dvWhen(x.e.ts)
+        : "";
+    if (!what) return toast("That was already deleted.");
+    if (!confirm("Delete " + what + "? This can't be undone.")) return;
+    audit("Greens", "Deleted " + what);
+    st.audit[st.audit.length - 1].grdel = k;
+    save();
+    renderGr();
+    toast("Deleted " + what + ".");
+  });
   // Done: save the count as a count sheet and show it under View Count Sheets.
   function grDone(c) {
     var order = c.order.filter(function (n) {
@@ -5635,7 +5672,9 @@
             esc(e.k) +
             '">View</button><button type="button" data-grview="' +
             esc(e.k) +
-            '" data-grdl="1">Download</button></td></tr>'
+            '" data-grdl="1">Download</button>' +
+            (mine ? "" : '<button type="button" class="danger" data-grdel="' + esc(e.k) + '">Delete</button>') +
+            "</td></tr>"
           );
         })
         .join("") +
