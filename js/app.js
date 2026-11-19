@@ -5263,14 +5263,41 @@
     });
     return { q: q, last: last };
   }
-  // Most popular sizes at a location: the 4 with the most pieces moved in or out by approved transfers.
+  // Edit counts: the location's current count opens in the count screen; Save counts saves it as a new count sheet.
+  document.addEventListener("click", function (e) {
+    if (!e.target.closest("button[data-gredit]")) return;
+    var q = grStock(grView).q,
+      order = Object.keys(q).filter(function (n) {
+        return q[n] > 0;
+      }),
+      counts = {};
+    order.forEach(function (n) {
+      counts[n] = q[n];
+    });
+    st.grCount = { site: grView, edit: true, ts: Date.now(), counts: counts, order: order };
+    grMsg = "Change any count, scan to add an item, then select <b>Save counts</b>.";
+    save();
+    renderGr();
+  });
+  $("grCount").addEventListener("change", function (e) {
+    var c = st.grCount,
+      row = e.target.closest(".grqin") && e.target.closest("[data-code]");
+    if (!c || !row) return;
+    c.counts[row.dataset.code] = Math.max(0, Math.floor(+e.target.value || 0));
+    save();
+    renderGr();
+  });
+  // Most popular sizes at a location: the 4 with the most pieces moved in or out by approved transfers,
+  // as a pie (everything else folds into "Other sizes") beside a ranked list that doubles as its legend.
   function grPopHtml(site) {
-    var mv = {};
+    var mv = {},
+      all = 0;
     grXfers().forEach(function (x) {
       var g = x.e.gt;
       if (g.done && (g.from === site || g.to === site))
         g.order.forEach(function (n) {
           mv[n] = (mv[n] || 0) + g.counts[n];
+          all += g.counts[n];
         });
     });
     var top = Object.keys(mv)
@@ -5278,18 +5305,54 @@
         return mv[b] - mv[a];
       })
       .slice(0, 4);
+    if (!top.length) return '<div class="sumsec">Most popular sizes</div><p class="grnone">No transfers in or out of here yet.</p>';
+    var sl = top.map(function (n, i) {
+        var z = grSize(n);
+        return { name: (z[0] === "Other" ? "" : z[0] + " ") + z[1], v: mv[n], c: i + 1 };
+      }),
+      rest = all - sl.reduce(function (s, x) {
+        return s + x.v;
+      }, 0),
+      a0 = 0,
+      pct = function (v) {
+        return Math.round((v / all) * 100) + "%";
+      };
+    if (rest > 0) sl.push({ name: "Other sizes", v: rest, c: 0 });
+    var paths = sl
+      .map(function (x) {
+        var a1 = a0 + (x.v / all) * 2 * Math.PI,
+          p = function (a) {
+            return (50 + 48 * Math.sin(a)).toFixed(2) + " " + (50 - 48 * Math.cos(a)).toFixed(2);
+          },
+          d = sl.length === 1 ? "M50 2a48 48 0 1 1 0 96a48 48 0 1 1 0-96z" : "M50 50L" + p(a0) + "A48 48 0 " + (a1 - a0 > Math.PI ? 1 : 0) + " 1 " + p(a1) + "z";
+        a0 = a1;
+        return '<path class="grpie' + x.c + '" d="' + d + '"><title>' + esc(x.name) + ": " + x.v + " moved, " + pct(x.v) + "</title></path>";
+      })
+      .join("");
     return (
-      '<div class="sumsec">Most popular sizes</div>' +
-      (top.length
-        ? '<ol class="grpop">' +
-          top
-            .map(function (n) {
-              var z = grSize(n);
-              return "<li><span>" + (z[0] === "Other" ? "" : z[0] + " ") + esc(z[1]) + "</span><b>" + mv[n] + " moved</b></li>";
-            })
-            .join("") +
-          "</ol>"
-        : '<p class="grnone">No transfers in or out of here yet.</p>')
+      '<div class="sumsec">Most popular sizes</div><div class="grpopw"><svg class="grpiesvg" viewBox="0 0 100 100" role="img" aria-label="Pie chart of pieces moved in and out of ' +
+      esc(site) +
+      ' by size">' +
+      paths +
+      '</svg><ol class="grpop">' +
+      sl
+        .map(function (x) {
+          return (
+            '<li class="' +
+            (x.c ? "" : "groth") +
+            '"><i class="grpie' +
+            x.c +
+            '"></i><span>' +
+            esc(x.name) +
+            "</span><b>" +
+            x.v +
+            " moved</b><em>" +
+            pct(x.v) +
+            "</em></li>"
+          );
+        })
+        .join("") +
+      "</ol></div>"
     );
   }
   function grStockHtml(site) {
@@ -5473,7 +5536,11 @@
       $("grSheets").innerHTML =
         grView === "sheets"
           ? '<div class="sumsec">Transferable</div>' + grXHtml() + '<div class="sumsec">Count sheets</div>' + grSheetsHtml(grSheets().reverse(), false)
-          : '<div class="grhead"><h3>' + esc(grView) + "</h3></div>" + grStockHtml(grView) + grPopHtml(grView);
+          : '<div class="grhead"><h3>' +
+            esc(grView) +
+            '</h3><button type="button" class="gredit" data-gredit>Edit counts</button></div>' +
+            grStockHtml(grView) +
+            grPopHtml(grView);
     $("grNew").hidden = $("grXBtn").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
@@ -5482,11 +5549,11 @@
       q = function (a) {
         return $("grCount").querySelector('[data-gr="' + a + '"]');
       };
-    $("grCountH").textContent = c.to ? "Transfer from " + c.site + " to " + c.to : "Greens count: " + c.site;
+    $("grCountH").textContent = c.to ? "Transfer from " + c.site + " to " + c.to : (c.edit ? "Edit counts: " : "Greens count: ") + c.site;
     $("grCountN").textContent = c.order.length + (c.order.length === 1 ? " item, " : " items, ") + tot + (c.to ? " total" : " counted");
-    q("cancel").textContent = c.of ? "Close without saving" : c.to ? "Cancel transfer" : "Cancel count";
+    q("cancel").textContent = c.of ? "Close without saving" : c.to ? "Cancel transfer" : c.edit ? "Cancel edit" : "Cancel count";
     q("later").hidden = !c.to;
-    q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : "Done";
+    q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : c.edit ? "Save counts" : "Done";
     $("grFlash").innerHTML = grMsg;
     $("grFlash").hidden = !grMsg;
     $("grList").innerHTML = c.order.length
@@ -5503,9 +5570,11 @@
               esc(k) +
               "</b>" +
               (z[0] === "Other" ? "" : ' <span class="grsz">' + z[0] + " " + esc(z[1]) + "</span>") +
-              '</td><td data-l="Count"><span class="qty"><button type="button" data-grq="-1" aria-label="One less">−</button><b>' +
+              '</td><td data-l="Count"><span class="qty"><button type="button" data-grq="-1" aria-label="One less">−</button><input class="grqin" type="number" min="0" inputmode="numeric" value="' +
               c.counts[k] +
-              '</b><button type="button" data-grq="1" aria-label="One more">+</button></span></td><td><button type="button" data-grrm>Remove</button></td></tr>'
+              '" aria-label="Count for ' +
+              esc(k) +
+              '" /><button type="button" data-grq="1" aria-label="One more">+</button></span></td><td><button type="button" data-grrm>Remove</button></td></tr>'
             );
           })
           .join("") +
@@ -5642,7 +5711,7 @@
     var order = c.order.filter(function (n) {
       return c.counts[n] > 0;
     });
-    if (!order.length) return toast("Scan at least one barcode first.");
+    if (!order.length && !c.edit) return toast("Scan at least one barcode first.");
     var counts = {},
       tot = 0,
       miss = order.filter(function (n) {
@@ -5654,15 +5723,23 @@
     });
     audit(
       "Greens",
-      "Greens count at " + c.site + ": " + order.length + (order.length === 1 ? " item, " : " items, ") + tot + " counted" +
+      (c.edit ? "Edited Greens counts at " : "Greens count at ") + c.site + ": " + order.length + (order.length === 1 ? " item, " : " items, ") + tot + " counted" +
         (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
     );
     st.audit[st.audit.length - 1].gr = { site: c.site, counts: counts, order: order };
     st.grCount = null;
     grMsg = "";
-    grPick($("grSheetsBtn"));
+    // An edit is saved as a new count sheet, so it becomes the location's current count.
+    grPick(
+      c.edit
+        ? [].find.call($("grBtns").querySelectorAll(".mbtn"), function (b) {
+            return b.textContent === c.site;
+          }) || $("grSheetsBtn")
+        : $("grSheetsBtn")
+    );
     save();
-    if (miss.length)
+    if (c.edit) toast("Counts saved for " + c.site + ".");
+    else if (miss.length)
       alert(
         "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
           miss
