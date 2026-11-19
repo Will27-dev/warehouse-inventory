@@ -3715,7 +3715,7 @@
       "Submitted pick lists, plus who added, removed or moved stock on a chosen day, with a 7-day view per person.",
       "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
       "Charts and trends for your inventory. Coming soon.",
-      "Greens management tools. Coming soon.",
+      "See what each location holds, count greens, and transfer them between locations.",
     ],
     MGICONS = [
       '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
@@ -5193,42 +5193,267 @@
     }
     tpCloudScan();
   }
-  // Greens Management: View Count Sheets lists saved counts; a site's own tools aren't built yet, so the panel names it.
-  var grView = null;
+  // Greens Management: View Count Sheets lists transfers waiting and saved counts; a location shows its greens by size.
+  var grView = null; // "sheets", a location name, or null
   function grPick(b) {
     [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
       x.classList.toggle("on", x === b);
       x.setAttribute("aria-pressed", String(x === b));
     });
-    grView = b.id === "grSheetsBtn" ? "sheets" : null;
-    $("grH").textContent = b.textContent;
-    $("grP").textContent = b.textContent + " tools will live here. Coming soon.";
+    grView = b.id === "grSheetsBtn" ? "sheets" : b.textContent;
     renderGr();
   }
   $("grBtns").onclick = function (e) {
     var b = e.target.closest(".mbtn");
+    $("grTip").hidden = true;
     if (b) grPick(b);
   };
+  // Pointing at a location (mouse only) shows its greens in a small card under the button.
+  [].forEach.call($("grBtns").querySelectorAll(".mbtn:not(#grSheetsBtn)"), function (b) {
+    b.onmouseenter = function () {
+      if (!matchMedia("(hover: hover)").matches) return;
+      var t = $("grTip"),
+        r = b.getBoundingClientRect();
+      t.innerHTML = "<h4>" + esc(b.textContent) + "</h4>" + grStockHtml(b.textContent);
+      t.hidden = false;
+      t.style.left = Math.max(8, Math.min(r.left, innerWidth - t.offsetWidth - 8)) + "px";
+      t.style.top = r.bottom + 8 + "px";
+    };
+    b.onmouseleave = function () {
+      $("grTip").hidden = true;
+    };
+  });
+
+  // Size label for a greens item from its description: [group, size, sort key].
+  var GR_JK = ["S", "M", "L", "XL", "2XL", "3XL", "4XL", "5XL", "6XL"];
+  function grSize(n) {
+    var it = items.find(function (x) {
+        return x.n === n;
+      }),
+      p = it ? it.d.toUpperCase().split("|") : [],
+      s = p[2] || "",
+      m = s.match(/(\d+)\D*WAIST\D*(\d+)/),
+      z = s.match(/(\d?X-)?LARGE|MEDIUM|SMALL/);
+    if (/PANTS/.test(p[1]) && m) return ["Pants", m[1] + " x " + m[2], m[1] * 100 + +m[2]];
+    if (/JACKET/.test(p[1]) && z) {
+      var k = z[0] === "SMALL" ? "S" : z[0] === "MEDIUM" ? "M" : z[0].replace("X-LARGE", "XL").replace("LARGE", "L"),
+        t = /TALL/.test(s) ? " Tall" : /LONG/.test(s) ? " Long" : "";
+      return ["Jackets", k + t, GR_JK.indexOf(k) + (t ? 0.5 : 0)];
+    }
+    return ["Other", n, 0];
+  }
+  // What's at a location now: its newest count sheet, plus transfers approved after it.
+  function grStock(site) {
+    var last = null,
+      q = {};
+    grSheets().forEach(function (e) {
+      if (e.gr.site === site && (!last || e.ts > last.ts)) last = e;
+    });
+    if (last)
+      Object.keys(last.gr.counts).forEach(function (n) {
+        q[n] = last.gr.counts[n];
+      });
+    grXfers().forEach(function (x) {
+      var g = x.e.gt,
+        sg = g.from === site ? -1 : g.to === site ? 1 : 0;
+      if (g.done && sg && (!last || x.e.ts > last.ts))
+        g.order.forEach(function (n) {
+          q[n] = (q[n] || 0) + sg * g.counts[n];
+        });
+    });
+    return { q: q, last: last };
+  }
+  function grStockHtml(site) {
+    var s = grStock(site),
+      gs = {};
+    Object.keys(s.q).forEach(function (n) {
+      if (!s.q[n]) return;
+      var z = grSize(n);
+      (gs[z[0]] = gs[z[0]] || []).push([z[1], s.q[n], z[2]]);
+    });
+    var names = ["Pants", "Jackets", "Other"].filter(function (g) {
+      return gs[g];
+    });
+    if (!names.length)
+      return '<p class="grnone">' + (s.last ? "Nothing here at the last count." : "No count here yet. Select Create Greens Count to make one.") + "</p>";
+    return (
+      '<div class="grstock">' +
+      names
+        .map(function (g) {
+          return (
+            "<div><h5>" +
+            g +
+            "</h5><ul>" +
+            gs[g]
+              .sort(function (a, b) {
+                return a[2] - b[2] || (a[0] < b[0] ? -1 : 1);
+              })
+              .map(function (r) {
+                return "<li><span>" + esc(r[0]) + "</span><b>" + r[1] + "</b></li>";
+              })
+              .join("") +
+            "</ul></div>"
+          );
+        })
+        .join("") +
+      "</div>" +
+      (s.last ? '<p class="grnone">Last count ' + dvWhen(s.last.ts) + "</p>" : "")
+    );
+  }
+
+  /* ---------- Greens Management: Transfer ----------
+     Pick From and To, scan what moves, then Transfer now or Transfer later. Transfers live in the
+     activity log as entries with .gt. The log is add-only, so approving or editing a saved transfer
+     adds a new entry pointing at the first one (gt.of); the newest entry for a transfer is the one that counts. */
+  function grXfers() {
+    var by = {};
+    (st.audit || []).forEach(function (e) {
+      if (!e.gt) return;
+      var k = e.gt.of || e.k;
+      if (!by[k] || e.ts > by[k].ts) by[k] = e;
+    });
+    return Object.keys(by).map(function (k) {
+      return { k: k, e: by[k] };
+    });
+  }
+  function grXHtml() {
+    var l = grXfers()
+      .filter(function (x) {
+        return !x.e.gt.done;
+      })
+      .sort(function (a, b) {
+        return b.e.ts - a.e.ts;
+      });
+    if (!l.length) return '<div class="empty">No transfers waiting. Select Transfer, then Transfer later, to save one here.</div>';
+    return (
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Transfer</th><th>Items</th><th>Saved by</th><th>Saved</th><th></th></tr></thead><tbody>' +
+      l
+        .map(function (x) {
+          var g = x.e.gt,
+            tot = g.order.reduce(function (s2, n) {
+              return s2 + g.counts[n];
+            }, 0);
+          return (
+            '<tr><td class="cname">' +
+            esc(g.from) +
+            " to " +
+            esc(g.to) +
+            '</td><td class="ph">' +
+            g.order.length +
+            (g.order.length === 1 ? " item, " : " items, ") +
+            tot +
+            " total</td><td>" +
+            esc(whoName(x.e.by)) +
+            "</td><td>" +
+            dvWhen(x.e.ts) +
+            '</td><td class="act"><button type="button" data-grxopen="' +
+            esc(x.k) +
+            '">Review</button></td></tr>'
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  function grXSave(c, now) {
+    var order = c.order.filter(function (n) {
+      return c.counts[n] > 0;
+    });
+    if (!order.length) return toast("Scan at least one barcode first.");
+    var counts = {},
+      tot = 0;
+    order.forEach(function (n) {
+      counts[n] = c.counts[n];
+      tot += c.counts[n];
+    });
+    var what = tot + (tot === 1 ? " item" : " items") + " from " + c.site + " to " + c.to;
+    if (now && c.of && !confirm("Approve the transfer of " + what + "?")) return;
+    audit("Greens", (now ? "Transferred " : "Transfer saved for later: ") + what);
+    st.audit[st.audit.length - 1].gt = { from: c.site, to: c.to, counts: counts, order: order, done: now, of: c.of || null };
+    st.grCount = null;
+    grMsg = "";
+    grPick($("grSheetsBtn"));
+    save();
+    toast(now ? "Transferred " + what + "." : "Saved under View Count Sheets, Transferable.");
+  }
+  $("grXBtn").onclick = function () {
+    var o =
+      '<option value="">Pick a location</option>' +
+      [].map
+        .call($("grSites").children, function (b) {
+          return "<option>" + esc(b.dataset.site) + "</option>";
+        })
+        .join("");
+    $("grXFrom").innerHTML = $("grXTo").innerHTML = o;
+    $("grXErr").hidden = true;
+    $("grXDlg").showModal();
+  };
+  $("grXFrom").onchange = $("grXTo").onchange = function () {
+    $("grXErr").hidden = true;
+  };
+  $("grXX").onclick = function () {
+    $("grXDlg").close();
+  };
+  $("grXGo").onclick = function () {
+    var f = $("grXFrom").value,
+      t = $("grXTo").value,
+      err = !f || !t ? "Pick both locations." : f === t ? "Pick two different locations." : "";
+    $("grXErr").textContent = err;
+    $("grXErr").hidden = !err;
+    if (err) return;
+    $("grXDlg").close();
+    st.grCount = { site: f, to: t, ts: Date.now(), counts: {}, order: [] };
+    grMsg = "";
+    save();
+    renderGr();
+    camOpen(grAdd, true);
+  };
+  // Review a saved transfer: its items come back into scan mode to add or remove, then Approve transfer.
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-grxopen]");
+    if (!b) return;
+    var x = grXfers().find(function (y) {
+      return y.k === b.dataset.grxopen;
+    });
+    if (!x || x.e.gt.done) return toast("That transfer was already approved.");
+    var g = x.e.gt;
+    st.grCount = { site: g.from, to: g.to, of: x.k, ts: Date.now(), counts: Object.assign({}, g.counts), order: g.order.slice() };
+    grMsg = "Add or remove any items, then select <b>Approve transfer</b>.";
+    save();
+    renderGr();
+  });
 
   /* ---------- Greens Management: Create Greens Count ----------
      Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
      View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
-     st.grCount: { site, ts, counts: { code: n }, order: [code] }, kept on this device until Done or Cancel. */
+     st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept on this device until Done or Cancel.
+     A transfer sets to (and of when reviewing a saved one); see Transfer above. */
   var grMsg = "";
   function renderGr() {
     var c = st.grCount,
-      sh = grView === "sheets" && !c;
+      pan = !c && grView;
     $("grCount").hidden = !c;
-    $("grSoon").hidden = !!c || sh;
-    $("grSheets").hidden = !sh;
-    if (sh) $("grSheets").innerHTML = grSheetsHtml(grSheets().reverse(), false);
-    $("grNew").hidden = !!c;
+    $("grSoon").hidden = !!c || !!grView;
+    // #grSheets holds the panel for the picked button: transfers and count sheets, or a location's greens.
+    $("grSheets").hidden = !pan;
+    if (pan)
+      $("grSheets").innerHTML =
+        grView === "sheets"
+          ? '<div class="sumsec">Transferable</div>' + grXHtml() + '<div class="sumsec">Count sheets</div>' + grSheetsHtml(grSheets().reverse(), false)
+          : '<div class="grhead"><h3>' + esc(grView) + "</h3></div>" + grStockHtml(grView);
+    $("grNew").hidden = $("grXBtn").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
-      return s + c.counts[k];
-    }, 0);
-    $("grCountH").textContent = "Greens count: " + c.site;
-    $("grCountN").textContent = c.order.length + (c.order.length === 1 ? " item, " : " items, ") + tot + " counted";
+        return s + c.counts[k];
+      }, 0),
+      q = function (a) {
+        return $("grCount").querySelector('[data-gr="' + a + '"]');
+      };
+    $("grCountH").textContent = c.to ? "Transfer from " + c.site + " to " + c.to : "Greens count: " + c.site;
+    $("grCountN").textContent = c.order.length + (c.order.length === 1 ? " item, " : " items, ") + tot + (c.to ? " total" : " counted");
+    q("cancel").textContent = c.of ? "Close without saving" : c.to ? "Cancel transfer" : "Cancel count";
+    q("later").hidden = !c.to;
+    q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : "Done";
     $("grFlash").innerHTML = grMsg;
     $("grFlash").hidden = !grMsg;
     $("grList").innerHTML = c.order.length
@@ -5237,12 +5462,15 @@
           .slice()
           .reverse()
           .map(function (k) {
+            var z = grSize(k);
             return (
               '<tr data-code="' +
               esc(k) +
               '"><td data-l="Item #"><b>' +
               esc(k) +
-              '</b></td><td data-l="Count"><span class="qty"><button type="button" data-grq="-1" aria-label="One less">−</button><b>' +
+              "</b>" +
+              (z[0] === "Other" ? "" : ' <span class="grsz">' + z[0] + " " + esc(z[1]) + "</span>") +
+              '</td><td data-l="Count"><span class="qty"><button type="button" data-grq="-1" aria-label="One less">−</button><b>' +
               c.counts[k] +
               '</b><button type="button" data-grq="1" aria-label="One more">+</button></span></td><td><button type="button" data-grrm>Remove</button></td></tr>'
             );
@@ -5260,7 +5488,7 @@
       c.order.push(code);
     }
     c.counts[code]++;
-    grMsg = "Counted <b>" + esc(code) + "</b> (now " + c.counts[code] + ").";
+    grMsg = (c.to ? "Added <b>" : "Counted <b>") + esc(code) + "</b> (now " + c.counts[code] + ").";
     dvBeep();
     save();
     renderGr();
@@ -5300,12 +5528,14 @@
       $("grScan").value = "";
     } else if (act === "cam") camOpen(grAdd, true);
     else if (act === "cancel") {
-      if (c.order.length && !confirm("Cancel the " + c.site + " count? The " + c.order.length + " counted items are thrown away.")) return;
+      if (!c.of && c.order.length && !confirm("Cancel the " + (c.to ? "transfer" : c.site + " count") + "? The " + c.order.length + " scanned items are thrown away."))
+        return;
       st.grCount = null;
       grMsg = "";
       save();
       renderGr();
-    } else if (act === "done") grDone(c);
+    } else if (act === "done") c.to ? grXSave(c, true) : grDone(c);
+    else if (act === "later") grXSave(c, false);
     else if (k && b.dataset.grq) {
       c.counts[k] = Math.max(0, c.counts[k] + +b.dataset.grq);
       save();
