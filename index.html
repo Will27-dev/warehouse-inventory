@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261119q" />
+    <link rel="stylesheet" href="css/styles.css?v=20261119r" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -374,7 +374,7 @@
                 </div>
               </div>
               <div id="mgOpt6" hidden>
-                <div class="mgpad">
+                <div class="mgpad" id="grBox">
                   <div class="mbtns" id="grBtns">
                     <button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
@@ -596,6 +596,15 @@
               <div class="stat"><b id="ewosN"></b><span>EWOs</span></div>
             </div>
             <div id="ewosBody"></div>
+          </section>
+          <section class="panel" id="grPanel" hidden>
+            <div class="head">
+              <div>
+                <h2>Greens</h2>
+                <p>See what each location holds, count greens, and transfer them between locations.</p>
+              </div>
+            </div>
+            <div id="grHome"></div>
           </section>
           <section class="panel" id="sumPanel" hidden>
             <div class="head">
@@ -967,6 +976,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261119q"></script>
+    <script src="js/app.js?v=20261119r"></script>
   </body>
 </html>

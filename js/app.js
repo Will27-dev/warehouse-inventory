@@ -20,6 +20,7 @@
  *   Finished sheets ............................... renderFinished, sheetPdfBytes
  *   Activity log ................................. audit
  *   Summary ...................................... renderSummary
+ *   Greens (top tab, "greens" permission) ........ the Greens Management box, moved in (renderGr)
  *
  * Globals from other files: BASE (loaded with the page); PDFJS_Z, PDFW_Z, JBIG2_Z, ZXING_Z
  * (js/vendor/, loaded by needVendor the first time a PDF or the camera scanner is used).
@@ -436,6 +437,7 @@
      ===================================================================== */
   function render() {
     if (!$("guest").hidden) renderGuest(); // item data can arrive after the guest page opens
+    if (st.top === 6 && !can("greens")) st.top = null;
     var m = matches();
     renderTabs(m);
     renderMasters(m);
@@ -448,6 +450,11 @@
     $("panel").hidden = !onInv;
     $("mRow").hidden = !onInv;
     $("sumPanel").hidden = tp !== 5;
+    // The Greens tab and Manage's Greens Management share one box, moved to whichever is showing.
+    $("grPanel").hidden = tp !== 6;
+    var grHome = tp === 6 ? $("grHome") : $("mgOpt6");
+    if ($("grBox").parentNode !== grHome) grHome.appendChild($("grBox"));
+    if (tp === 6) renderGr();
     var ck = onSide ? "s" + st.side : tp >= 2 && tp <= 4 ? "p" + tp : null,
       onInsp = !!ck && ck === inspKey() && (!onSide || st.side > 2);
     var onDv = tp === 4 && !onInsp;
@@ -1381,7 +1388,7 @@
     toast("Transferred " + jobs.length + (jobs.length === 1 ? " item" : " items") + " to " + label);
   });
 
-  var TOPS = ["Warehouse Item/Locations", "EWO", "Pick List", "Put Away", "Delivery", "Summary"];
+  var TOPS = ["Warehouse Item/Locations", "EWO", "Pick List", "Put Away", "Delivery", "Summary", "Greens"];
   function oname(i) {
     return st.names["p" + i] || TOPS[i];
   }
@@ -3687,6 +3694,7 @@
     ["tabs", "Add or remove master/sub tabs"],
     ["summary", "Create summaries"],
     ["contacts", "Add or edit important contacts"],
+    ["greens", "Use Greens Management"],
   ];
   var ROLE_LABEL = { owner: "Owner", admin: "Admin", user: "User" };
   /* =====================================================================
@@ -3792,6 +3800,7 @@
     cl.toggle("notabs", !can("tabs"));
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
+    cl.toggle("nogreens", !can("greens"));
     cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
     applyDark();
     updateProfileBtn();
@@ -4984,6 +4993,13 @@
       return;
     }
     await cloudPullProfiles().catch(function () {});
+    // shortcut: admin-users only stores the permissions it knows (not "greens"), so set them all here; add "greens" to its PERMS on its next deploy.
+    var nu = st.users.find(function (u) {
+      return u.email === em.toLowerCase();
+    });
+    if (nu) await cloudPatchProfile(nu.id, { perms: perms }).then(function () {
+      nu.perms = perms;
+    }).catch(function () {});
     audit("User management", "Added " + ROLE_LABEL[role] + " " + em);
     save();
     this.reset();
