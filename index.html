@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261119s" />
+    <link rel="stylesheet" href="css/styles.css?v=20261119t" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -85,13 +85,14 @@
               height="24"
               viewBox="0 0 24 24"
               fill="none"
-              stroke="#1a1405"
+              stroke="currentColor"
               stroke-width="2"
+              stroke-linecap="round"
               stroke-linejoin="round"
+              aria-hidden="true"
             >
-              <rect x="3" y="13" width="8" height="8" />
-              <rect x="13" y="13" width="8" height="8" />
-              <rect x="8" y="3" width="8" height="8" />
+              <path d="M2 21h20M4 21V9l8-5 8 5v12" />
+              <path d="M8 21v-8h8v8M8 16h8M8 19h8" />
             </svg>
           </div>
           <div>
@@ -976,6 +977,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261119s"></script>
+    <script src="js/app.js?v=20261119t"></script>
   </body>
 </html>
