@@ -9892,33 +9892,35 @@
       cx.fillStyle = "#1d3fbf";
       cx.textBaseline = "alphabetic";
       // Text at x (left, or centred when mid), shrunk to fit maxW; too long even at 8 px → two lines.
+      // y is the baseline for 10 px text; bigger text sits a little lower so it stays centred in the row.
       var fit = function (s, maxW, size, min) {
           for (var z = size; z > min; z -= 0.5) {
             cx.font = "bold " + z + "px Helvetica, Arial, sans-serif";
-            if (cx.measureText(s).width <= maxW) return true;
+            if (cx.measureText(s).width <= maxW) return z;
           }
-          return false;
+          return 0;
         },
         put = function (s, x, y, maxW, size, mid) {
           s = String(s || "");
           if (!s) return;
           cx.textAlign = mid ? "center" : "left";
-          var sp = s.lastIndexOf(" ", Math.ceil(s.length / 2) + 4);
-          if (fit(s, maxW, size, 8) || sp < 1) return cx.fillText(s, x, y);
+          var sp = s.lastIndexOf(" ", Math.ceil(s.length / 2) + 4),
+            z = fit(s, maxW, size, 8);
+          if (z || sp < 1) return cx.fillText(s, x, y + ((z || 8) - 10) * 0.36);
           var a = s.slice(0, sp),
             b = s.slice(sp + 1);
-          fit(a.length > b.length ? a : b, maxW, 8, 5.5);
-          cx.fillText(a, x, y - 5.5);
-          cx.fillText(b, x, y + 3.5);
+          fit(a.length > b.length ? a : b, maxW, 9.5, 5.5);
+          cx.fillText(a, x, y - 6);
+          cx.fillText(b, x, y + 4);
         };
       put(new Date(m.loadedTs || m.ts).toLocaleDateString(), 606, 56, 116, 12);
       put(whoName(m.by), 599, 86, 122, 12);
       lines.slice(p, p + T.rows).forEach(function (l, i) {
         var y = T.top + (i + 0.5) * T.rowH + 4,
           c = T.cols;
-        put(l.loc, c[1] + 4, y, c[2] - c[1] - 8, 10);
+        put(l.loc, c[1] + 4, y, c[2] - c[1] - 8, 13);
         put(l.boxes, (c[2] + c[3]) / 2, y, c[3] - c[2] - 8, 10, true);
-        put(l.rc + (l.dept ? "    Dept " + l.dept : ""), c[3] + 4, y, c[4] - c[3] - 8, 10);
+        put(l.rc + (l.dept ? "    Dept " + l.dept : ""), c[3] + 4, y, c[4] - c[3] - 8, 14);
       });
       var jb = await new Promise(function (res) {
         cv.toBlob(res, "image/jpeg", 0.9);
