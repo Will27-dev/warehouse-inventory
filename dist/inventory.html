@@ -4123,6 +4123,10 @@ dialog .grsites button { min-height: 52px; justify-content: flex-start; text-ali
 .grxerr { margin: 0; color: var(--warn); font-weight: 700; }
 .grsz { margin-left: 8px; color: var(--mute); font-size: 14px; }
 #grSheets td.act button.danger { color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); }
+.grpop { margin: 0; padding-left: 24px; max-width: 360px; }
+.grpop li { padding: 4px 0; font-size: 15px; }
+.grpop li span { display: inline-block; min-width: 160px; }
+.grpop li b { font-variant-numeric: tabular-nums; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -49033,6 +49037,35 @@ var ZXING_Z = [
     });
     return { q: q, last: last };
   }
+  // Most popular sizes at a location: the 4 with the most pieces moved in or out by approved transfers.
+  function grPopHtml(site) {
+    var mv = {};
+    grXfers().forEach(function (x) {
+      var g = x.e.gt;
+      if (g.done && (g.from === site || g.to === site))
+        g.order.forEach(function (n) {
+          mv[n] = (mv[n] || 0) + g.counts[n];
+        });
+    });
+    var top = Object.keys(mv)
+      .sort(function (a, b) {
+        return mv[b] - mv[a];
+      })
+      .slice(0, 4);
+    return (
+      '<div class="sumsec">Most popular sizes</div>' +
+      (top.length
+        ? '<ol class="grpop">' +
+          top
+            .map(function (n) {
+              var z = grSize(n);
+              return "<li><span>" + (z[0] === "Other" ? "" : z[0] + " ") + esc(z[1]) + "</span><b>" + mv[n] + " moved</b></li>";
+            })
+            .join("") +
+          "</ol>"
+        : '<p class="grnone">No transfers in or out of here yet.</p>')
+    );
+  }
   function grStockHtml(site) {
     var s = grStock(site),
       gs = {};
@@ -49214,7 +49247,7 @@ var ZXING_Z = [
       $("grSheets").innerHTML =
         grView === "sheets"
           ? '<div class="sumsec">Transferable</div>' + grXHtml() + '<div class="sumsec">Count sheets</div>' + grSheetsHtml(grSheets().reverse(), false)
-          : '<div class="grhead"><h3>' + esc(grView) + "</h3></div>" + grStockHtml(grView);
+          : '<div class="grhead"><h3>' + esc(grView) + "</h3></div>" + grStockHtml(grView) + grPopHtml(grView);
     $("grNew").hidden = $("grXBtn").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
