@@ -5826,44 +5826,54 @@
     );
   }
   // View/Download: open GCW.GREENS and write each count in its item's Quantity cell.
+  // Finds an uploaded template (Manage → Templates) by name and renders page 1 on a white canvas,
+  // turned by `turn` degrees. Returns null when it isn't uploaded.
+  async function tplRender(re, nm, turn) {
+    if (cloudOn() && !tpCloud) await tpCloudScan();
+    var isT = function (t) {
+        return re.test(String(t.name).trim());
+      },
+      ref = (tpCloud || []).map(tpCloudRef).find(isT) || st.tpl.find(isT);
+    if (!ref) return null;
+    var blob = ref.file ? await sbDownload("inspection-pdfs", TP_DIR + ref.file) : await tpBlob(ref.id);
+    if (!blob) throw new Error("The " + nm + " file could not be found. Upload it again under Manage → Templates.");
+    var lib = await loadPdfJs(),
+      doc = await lib.getDocument({
+        data: new Uint8Array(await blob.arrayBuffer()),
+        isEvalSupported: false,
+        verbosity: 0,
+        wasmUrl: WASM_BASE,
+      }).promise,
+      S = 2,
+      pg = await doc.getPage(1),
+      rot = (pg.rotate + turn) % 360,
+      v1 = pg.getViewport({ scale: 1, rotation: rot }),
+      vp = pg.getViewport({ scale: S, rotation: rot }),
+      cv = document.createElement("canvas");
+    cv.width = Math.round(vp.width);
+    cv.height = Math.round(vp.height);
+    var cx = cv.getContext("2d");
+    cx.fillStyle = "#fff";
+    cx.fillRect(0, 0, cv.width, cv.height);
+    // "print" renders without requestAnimationFrame, so it finishes in a background tab too.
+    await pg.render({ canvasContext: cx, viewport: vp, intent: "print" }).promise;
+    return { cv: cv, S: S, pw: Math.round(v1.width * 100) / 100, ph: Math.round(v1.height * 100) / 100 };
+  }
   async function grOpen(key, dl) {
     var e = grSheets().find(function (x) {
       return x.k === key;
     });
     if (!e) return toast("That count sheet could not be found.");
     var g = e.gr;
-    if (cloudOn() && !tpCloud) await tpCloudScan();
-    var isGr = function (t) {
-        return /^gcw\.?\s*greens$/i.test(String(t.name).trim());
-      },
-      ref = (tpCloud || []).map(tpCloudRef).find(isGr) || st.tpl.find(isGr);
-    if (!ref) return toast("Upload the GCW.GREENS template under Manage → Templates first.");
     toast("Filling in GCW.GREENS…");
     try {
-      var blob = ref.file ? await sbDownload("inspection-pdfs", TP_DIR + ref.file) : await tpBlob(ref.id);
-      if (!blob) throw new Error("The GCW.GREENS file could not be found. Upload it again under Manage → Templates.");
-      var lib = await loadPdfJs(),
-        doc = await lib.getDocument({
-          data: new Uint8Array(await blob.arrayBuffer()),
-          isEvalSupported: false,
-          verbosity: 0,
-          wasmUrl: WASM_BASE,
-        }).promise,
-        S = 2,
+      // The scan is stored upside down; turn it upright.
+      var t = await tplRender(/^gcw\.?\s*greens$/i, "GCW.GREENS", 180);
+      if (!t) return toast("Upload the GCW.GREENS template under Manage → Templates first.");
+      var cv = t.cv,
+        S = t.S,
         k = S / 3,
-        pg = await doc.getPage(1),
-        // The scan is stored upside down; turn it upright.
-        rot = (pg.rotate + 180) % 360,
-        v1 = pg.getViewport({ scale: 1, rotation: rot }),
-        vp = pg.getViewport({ scale: S, rotation: rot }),
-        cv = document.createElement("canvas");
-      cv.width = Math.round(vp.width);
-      cv.height = Math.round(vp.height);
-      var cx = cv.getContext("2d");
-      cx.fillStyle = "#fff";
-      cx.fillRect(0, 0, cv.width, cv.height);
-      // "print" renders without requestAnimationFrame, so it finishes in a background tab too.
-      await pg.render({ canvasContext: cx, viewport: vp, intent: "print" }).promise;
+        cx = cv.getContext("2d");
       cx.font = "bold " + Math.round(13 * S) + "px Helvetica, Arial, sans-serif";
       cx.fillStyle = "#1d3fbf";
       cx.textAlign = "center";
@@ -5882,8 +5892,8 @@
           {
             w: cv.width,
             h: cv.height,
-            pw: Math.round(v1.width * 100) / 100,
-            ph: Math.round(v1.height * 100) / 100,
+            pw: t.pw,
+            ph: t.ph,
             jpg: new Uint8Array(await jb.arrayBuffer()),
           },
         ]),
@@ -9809,12 +9819,93 @@
     toast(dvTripName(m) + " submitted to Manage.");
     renderDv();
   }
-  function dvPrint(m) {
+  /* GCW.DELIVER (Manage → Templates) grid, in points on the upright page. The scan is tilted
+     about 0.21°, so text is drawn on a grid turned by `th` radians to sit inside the boxes. */
+  var DV_TPL = { th: 0.0037, cols: [55.2, 117.5, 194.8, 257.2, 511.4, 644.4, 723.8], top: 115.6, rowH: 22.665, rows: 20 };
+  // Print: fill GCW.DELIVER (20 receipts a page) in a new tab; without the template, print the plain list.
+  async function dvPrint(m) {
     var w = window.open("", "_blank");
     if (!w) {
       toast("Allow pop-ups to print the manifest.");
       return;
     }
+    w.document.write("<p style='font:16px system-ui,sans-serif;margin:24px'>Filling in GCW.DELIVER…</p>");
+    var t;
+    try {
+      t = await tplRender(/^gcw\.?\s*deliver(y)?$/i, "GCW.DELIVER", 270);
+    } catch (x) {
+      w.close();
+      return toast(x.message || "GCW.DELIVER could not be filled in.");
+    }
+    if (!t) {
+      toast("GCW.DELIVER isn't uploaded under Manage → Templates, so the plain manifest was printed.");
+      return dvPrintPlain(m, w);
+    }
+    var T = DV_TPL,
+      lines = [].concat.apply(
+        [],
+        dvByDept(m.lines).map(function (g) {
+          return g.lines;
+        })
+      ),
+      pages = [];
+    for (var p = 0; p === 0 || p < lines.length; p += T.rows) {
+      var cv = document.createElement("canvas");
+      cv.width = t.cv.width;
+      cv.height = t.cv.height;
+      var cx = cv.getContext("2d");
+      cx.drawImage(t.cv, 0, 0);
+      cx.scale(t.S, t.S);
+      cx.rotate(T.th);
+      cx.fillStyle = "#1d3fbf";
+      cx.textBaseline = "alphabetic";
+      // Text at x (left, or centred when mid), shrunk to fit maxW; too long even at 8 px → two lines.
+      var fit = function (s, maxW, size, min) {
+          for (var z = size; z > min; z -= 0.5) {
+            cx.font = "bold " + z + "px Helvetica, Arial, sans-serif";
+            if (cx.measureText(s).width <= maxW) return true;
+          }
+          return false;
+        },
+        put = function (s, x, y, maxW, size, mid) {
+          s = String(s || "");
+          if (!s) return;
+          cx.textAlign = mid ? "center" : "left";
+          var sp = s.lastIndexOf(" ", Math.ceil(s.length / 2) + 4);
+          if (fit(s, maxW, size, 8) || sp < 1) return cx.fillText(s, x, y);
+          var a = s.slice(0, sp),
+            b = s.slice(sp + 1);
+          fit(a.length > b.length ? a : b, maxW, 8, 5.5);
+          cx.fillText(a, x, y - 5.5);
+          cx.fillText(b, x, y + 3.5);
+        };
+      put(new Date(m.loadedTs || m.ts).toLocaleDateString(), 606, 56, 116, 12);
+      put(whoName(m.by), 599, 86, 122, 12);
+      lines.slice(p, p + T.rows).forEach(function (l, i) {
+        var y = T.top + (i + 0.5) * T.rowH + 4,
+          c = T.cols;
+        put(l.loc, c[1] + 4, y, c[2] - c[1] - 8, 10);
+        put(l.boxes, (c[2] + c[3]) / 2, y, c[3] - c[2] - 8, 10, true);
+        put(l.rc + (l.dept ? "    Dept " + l.dept : ""), c[3] + 4, y, c[4] - c[3] - 8, 10);
+      });
+      pages.push(cv.toDataURL("image/jpeg", 0.9));
+    }
+    w.document.open();
+    w.document.write(
+      "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(m.no) +
+        "</title><style>@page{size:letter landscape;margin:0}body{margin:0;background:#fff}img{display:block;width:100%;height:auto}" +
+        "@media print{img{width:11in;height:8.5in;break-after:page}}</style>" +
+        pages
+          .map(function (u, i) {
+            return "<img src='" + u + "' alt='" + esc(m.no) + " page " + (i + 1) + "'>";
+          })
+          .join("") +
+        "<script>onload=function(){print()}<\/script>"
+    );
+    w.document.close();
+  }
+  function dvPrintPlain(m, w) {
+    w.document.open();
     w.document.write(
       "<!doctype html><meta charset='utf-8'><title>" +
         esc(m.no) +
