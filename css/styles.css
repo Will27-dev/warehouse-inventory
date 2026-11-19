@@ -4140,3 +4140,14 @@ html.dark { --pie1: #3987e5; --pie2: #d95926; --pie3: #199e70; --pie4: #c98500; 
 .grsec .tw, .grsec .empty { margin-left: 8px; }
 /* Brand mark: warehouse icon on a cobalt tile, top left. */
 .logo { display: grid; background: #2546B8; color: #fff; box-shadow: none; }
+/* Delivery: Create master sheet. QR codes stay black on white so they scan in dark mode too. */
+.mssheet { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 16px; margin-top: 16px; }
+.msqr { display: flex; flex-direction: column; align-items: center; gap: 8px; margin: 0; padding: 12px; text-align: center; background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
+.msqr svg { display: block; width: 100%; max-width: 144px; }
+.msqr b { display: block; font-size: 15px; overflow-wrap: anywhere; }
+.msqr small { display: block; color: var(--mute); font-size: 13px; }
+.msqr button { margin-top: auto; min-height: 44px; padding: 0 16px; border: 0; background: transparent; color: var(--warn); box-shadow: inset 0 0 0 2px var(--warn); font: inherit; font-size: 14px; font-weight: 600; cursor: pointer; }
+.msload { display: grid; place-items: center; width: 100%; max-width: 144px; aspect-ratio: 1; color: var(--mute); font-size: 13px; background: var(--panel); }
+.msfoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); font-weight: 700; }
+.msfoot button { min-height: 44px; padding: 0 20px; }
+@media (max-width: 560px) { .mssheet { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .msfoot button { width: 100%; } }

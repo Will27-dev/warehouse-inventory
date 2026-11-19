@@ -3912,13 +3912,17 @@
         return e.pick && !e.pick.of && e.by === me;
       });
     if (i === 5) return grSheets(me);
+    if (i === 6)
+      return (st.audit || []).filter(function (e) {
+        return e.ms && e.by === me;
+      });
     return null; // Put Away isn't built yet, so nobody has records there.
   }
   function pfName(i) {
-    return i === 5 ? "Green Count" : oname(i);
+    return i === 5 ? "Green Count" : i === 6 ? "Master sheets" : oname(i);
   }
   function renderPfWork() {
-    $("pfActs").innerHTML = [1, 2, 3, 4, 5]
+    $("pfActs").innerHTML = [1, 2, 3, 4, 5, 6]
       .map(function (i) {
         var l = pfMine(i);
         return (
@@ -3945,6 +3949,19 @@
       box.innerHTML = grSheetsHtml(l, true);
     } else if (!l.length) {
       box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
+    } else if (pfWorkSel === 6) {
+      box.innerHTML =
+        '<div class="tw"><table class="sumtbl"><thead><tr><th>Master sheet</th><th>QR codes</th><th></th></tr></thead><tbody>' +
+        l
+          .map(function (e) {
+            return (
+              '<tr><td class="cname">' + dvWhen(e.ts) + '</td><td class="ph">' + e.ms.codes.length +
+              '</td><td class="act"><button type="button" data-msview="' + esc(e.k) + '">View</button><button type="button" data-msview="' + esc(e.k) +
+              '" data-msprint="1">Print</button></td></tr>'
+            );
+          })
+          .join("") +
+        "</tbody></table></div>";
     } else if (pfWorkSel === 1) {
       box.innerHTML = ewoTableHtml(l, true);
     } else if (pfWorkSel === 2) {
@@ -9172,6 +9189,12 @@
     { k: "edit", t: "Edit manifest", s: "Continue a trip that is loading or out for delivery.", ic: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M14 6l4 4"/>' },
     { k: "past", t: "View past manifests", s: "Look up or print trips that were submitted.", ic: '<circle cx="12" cy="12" r="8"/><path d="M12 8v4l3 2"/>' },
     { k: "submit", t: "Submit manifest", s: "Send a fully delivered trip to Manage.", ic: '<path d="M5 12l5 5L20 7"/>' },
+    {
+      k: "ms",
+      t: "Create master sheet",
+      s: "Scan QR codes onto one sheet you can view and print from your profile.",
+      ic: '<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><path d="M14 14h3v3h-3zM21 14v.01M14 21h.01M17 21h4v-3"/>',
+    },
   ];
   var DV_WORDS = ["zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine", "ten", "eleven", "twelve"];
   function dvTripName(m) {
@@ -9352,6 +9375,13 @@
           );
         }).join("") +
         "</div>";
+      return;
+    }
+    if (dvView === "ms") {
+      box.innerHTML = back + msHtml();
+      var si = $("dvScan");
+      if (si && !("ontouchstart" in window)) si.focus();
+      if (!window.ZXing) loadZxing().then(renderDv, function () {});
       return;
     }
     if (dvView === "edit-list" || dvView === "submit-list" || dvView === "past") {
@@ -9670,6 +9700,7 @@
   // A scanned/typed code: while loading it's added (QR box count, or again = one more box);
   // while delivering it adds a package that was missed at loading ("Add new item to trip?").
   function dvAddCode(raw) {
+    if (dvView === "ms") return msAdd(raw);
     var m = dvFind(dvId),
       p = dvParse(raw),
       code = p.rc;
@@ -9794,6 +9825,109 @@
     w.document.close();
   }
 
+  /* ---------- Master sheet: scanned QR codes redrawn on one printable sheet ----------
+     The draft lives in st.msDraft (this device); Finish and submit saves it to the activity log
+     (st.audit entry with .ms), which syncs, and it shows under Profile → Master sheets. */
+  function msQr(t) {
+    if (!window.ZXing) return '<div class="msload">Drawing QR code…</div>';
+    try {
+      var m = ZXing.QRCodeEncoder.encode(t, ZXing.QRCodeDecoderErrorCorrectionLevel.M).getMatrix(),
+        n = m.getWidth(),
+        d = "";
+      for (var y = 0; y < n; y++) for (var x = 0; x < n; x++) if (m.get(x, y) === 1) d += "M" + (x + 4) + " " + (y + 4) + "h1v1h-1z";
+      return (
+        '<svg viewBox="0 0 ' + (n + 8) + " " + (n + 8) + '" shape-rendering="crispEdges" role="img" aria-label="QR code for ' + esc(t) +
+        '"><rect width="100%" height="100%" fill="#fff"/><path fill="#000" d="' + d + '"/></svg>'
+      );
+    } catch (x) {
+      return '<div class="msload">This code is too long for a QR code.</div>';
+    }
+  }
+  // One QR code with its receipt #, location and box count underneath.
+  function msCard(raw, i) {
+    var p = dvParse(raw),
+      sub = [p.loc, p.boxes ? p.boxes + (p.boxes === 1 ? " box" : " boxes") : ""].filter(Boolean).join(", ");
+    return (
+      '<figure class="msqr">' + msQr(raw) + "<figcaption><b>" + esc(p.rc || raw) + "</b>" + (sub ? "<small>" + esc(sub) + "</small>" : "") + "</figcaption>" +
+      (i == null ? "" : '<button type="button" data-msrm="' + i + '" aria-label="Remove ' + esc(p.rc || raw) + '">Remove</button>') +
+      "</figure>"
+    );
+  }
+  function msHtml() {
+    var d = st.msDraft || [];
+    return (
+      '<h3 class="dvh">Create master sheet</h3><p class="dvp">Scan each QR code to add it to the sheet. Select Finish and submit when you\'re done.</p>' +
+      dvScanBar("Scan a QR code, or type one and press Enter") +
+      (d.length
+        ? '<div class="mssheet">' + d.map(msCard).join("") + "</div>"
+        : '<div class="empty dvempty">The sheet is empty. Scan the first QR code to add it.</div>') +
+      '<div class="msfoot"><span>' + d.length + (d.length === 1 ? " QR code" : " QR codes") +
+      '</span><button type="button" class="primary" data-dv="msdone">Finish and submit</button></div>'
+    );
+  }
+  function msAdd(raw) {
+    var s = String(raw || "").trim(),
+      d = st.msDraft || (st.msDraft = []);
+    if (!s) return;
+    var nm = esc(dvParse(s).rc || s);
+    if (d.indexOf(s) >= 0) dvFlash = "<b>" + nm + "</b> is already on the sheet.";
+    else {
+      d.push(s);
+      dvFlash = "Added <b>" + nm + "</b>.";
+      dvBeep();
+      save();
+    }
+    renderDv();
+    return s;
+  }
+  function msDone() {
+    var d = st.msDraft || [];
+    if (!d.length) return toast("Scan at least one QR code first.");
+    audit("Delivery", "Master sheet: " + d.length + (d.length === 1 ? " QR code" : " QR codes"));
+    st.audit[st.audit.length - 1].ms = { codes: d.slice() };
+    st.msDraft = [];
+    dvView = "home";
+    dvFlash = "";
+    save();
+    renderDv();
+    toast("Master sheet saved. Find it under Profile → Master sheets.");
+  }
+  // View or print a saved master sheet in a new tab.
+  async function msOpen(key, print) {
+    var e = (st.audit || []).find(function (x) {
+      return x.k === key && x.ms;
+    });
+    if (!e) return toast("That master sheet could not be found.");
+    var w = window.open("", "_blank");
+    if (!w) return toast("Allow pop-ups to view the master sheet.");
+    try {
+      await loadZxing();
+    } catch (x) {
+      w.close();
+      return toast("The QR code maker could not load. Check your signal and try again.");
+    }
+    var c = e.ms.codes;
+    w.document.write(
+      "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>Master sheet " + dayOf(e.ts) +
+        "</title><style>body{font:14px/1.4 system-ui,sans-serif;margin:24px;color:#111;background:#fff}h1{margin:0 0 4px;font-size:22px}p{margin:0;color:#444}" +
+        ".bar{margin:16px 0}.bar button{min-height:44px;padding:0 20px;font:inherit;font-weight:700;border:2px solid #111;background:#111;color:#fff;cursor:pointer}" +
+        ".mssheet{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:16px;margin-top:16px}.msqr{margin:0;padding:8px;text-align:center;border:1px solid #ccc;break-inside:avoid}" +
+        ".msqr svg{display:block;width:100%;max-width:160px;margin:0 auto}.msqr b{display:block;font-size:15px}.msqr small{display:block;color:#555}" +
+        "@media print{body{margin:0}.bar{display:none}.mssheet{grid-template-columns:repeat(4,1fr)}}</style><h1>Master sheet</h1><p>" +
+        esc(whoName(e.by)) + ", " + dvWhen(e.ts) + ", " + c.length + (c.length === 1 ? " QR code" : " QR codes") +
+        "</p><div class='bar'><button onclick='print()'>Print</button></div><div class='mssheet'>" +
+        c.map(function (r) {
+          return msCard(r);
+        }).join("") +
+        "</div>" + (print ? "<script>print()<\/script>" : "")
+    );
+    w.document.close();
+  }
+  document.addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-msview]");
+    if (b) msOpen(b.dataset.msview, !!b.dataset.msprint);
+  });
+
   $("dvBody").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
@@ -9839,6 +9973,16 @@
       dvView = "trip";
       dvFlash = "";
       dvSel = null;
+    } else if (act === "ms") {
+      dvView = "ms";
+      dvFlash = "";
+    } else if (act === "msdone") {
+      msDone();
+      return;
+    } else if (b.dataset.msrm && st.msDraft) {
+      st.msDraft.splice(+b.dataset.msrm, 1);
+      dvFlash = "";
+      save();
     } else if (act === "edit") dvView = "edit-list";
     else if (act === "submit") dvView = "submit-list";
     else if (act === "past") dvView = "past";
