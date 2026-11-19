@@ -9347,7 +9347,19 @@
     );
   }
 
+  // Redraws (e.g. a cloud sync every 30 s) keep what's half-typed in the scan box, and its focus.
   function renderDv() {
+    var o = $("dvScan"),
+      v = o ? o.value : "",
+      f = !!o && document.activeElement === o;
+    renderDvBody();
+    var n = $("dvScan");
+    if (n && v) {
+      n.value = v;
+      if (f) n.focus();
+    }
+  }
+  function renderDvBody() {
     var box = $("dvBody");
     $("dvTitle").textContent = oname(4);
     $("dvN").textContent = sess ? dvOpenTrips().length : "–";
@@ -9700,6 +9712,8 @@
   // A scanned/typed code: while loading it's added (QR box count, or again = one more box);
   // while delivering it adds a package that was missed at loading ("Add new item to trip?").
   function dvAddCode(raw) {
+    var si = $("dvScan");
+    if (si) si.value = ""; // entered, so the next redraw starts the box empty
     if (dvView === "ms") return msAdd(raw);
     var m = dvFind(dvId),
       p = dvParse(raw),
