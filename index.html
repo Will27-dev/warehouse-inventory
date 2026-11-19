@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261119w" />
+    <link rel="stylesheet" href="css/styles.css?v=20261119x" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -759,6 +759,10 @@
           <div class="pfright">
             <p class="pfwho" id="pfWho"></p>
             <label
+              >Full name <span id="pfNameNote"></span
+              ><input name="fullname" maxlength="80" autocomplete="name" placeholder="First and last name, filled in on forms"
+            /></label>
+            <label
               >Nickname<input
                 name="nick"
                 maxlength="40"
@@ -844,7 +848,8 @@
     <dialog id="pdfDlg">
       <div class="pdfhead">
         <h2 id="pdfTitle"></h2>
-        <span class="sp"></span><button type="button" id="pdfDl">Download</button
+        <span class="sp"></span><button type="button" id="pdfPrint">Print</button
+        ><button type="button" id="pdfDl">Download</button
         ><button type="button" id="pdfNew">Open in new tab</button
         ><button type="button" class="primary" id="pdfClose">Close</button>
       </div>
@@ -977,6 +982,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261119w"></script>
+    <script src="js/app.js?v=20261119x"></script>
   </body>
 </html>

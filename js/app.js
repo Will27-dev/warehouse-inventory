@@ -3881,6 +3881,10 @@
     var pr = profOf(sess.email),
       f = $("profForm");
     pfPic = pr.pic || "";
+    // Owners and admins set their own full name; a manager sets everyone else's (the cloud enforces this).
+    f.elements.fullname.value = sess.name && sess.name !== sess.email ? sess.name : "";
+    f.elements.fullname.disabled = !isMgr();
+    $("pfNameNote").textContent = isMgr() ? "" : "(a manager can change it)";
     f.elements.nick.value = pr.nick || "";
     f.elements.bio.value = pr.bio || "";
     $("pfWho").innerHTML =
@@ -4079,6 +4083,25 @@
       bio: f.bio.value.trim(),
       pic: pfPic,
     });
+    var nm = f.fullname.value.trim(),
+      setName = function () {
+        sess.name = nm;
+        setSess(sess);
+        var u = st.users.find(function (x) {
+          return x.id === sess.uid;
+        });
+        if (u) u.name = nm;
+        save();
+        updateProfileBtn();
+        renderLogin();
+      };
+    if (isMgr() && nm && nm !== sess.name) {
+      if (cloudOn())
+        cloudPatchProfile(sess.uid, { name: nm }).then(setName, function () {
+          toast("Couldn't save your name to the cloud. Check your signal and try again.");
+        });
+      else setName();
+    }
     save();
     cloudSavePrefs();
     updateProfileBtn();
@@ -5076,7 +5099,7 @@
     var u = st.users.find(function (x) {
       return x.email === em;
     });
-    return u ? u.name || u.email : em || "";
+    return u ? u.name || u.email : sess && em === sess.email ? sess.name || em : em || "";
   }
   function fmtSize(n) {
     return n >= 1048576
@@ -6026,6 +6049,17 @@
   $("pdfDlg").addEventListener("close", pdfClean);
   $("pdfNew").onclick = function () {
     if (pdfUrl) window.open(pdfUrl, "_blank");
+  };
+  // Print the PDF shown; phones can't print a framed PDF, so they open it in a tab to print from there.
+  $("pdfPrint").onclick = function () {
+    if (!pdfUrl) return;
+    try {
+      if ("ontouchstart" in window) throw 0;
+      $("pdfFrame").contentWindow.focus();
+      $("pdfFrame").contentWindow.print();
+    } catch (x) {
+      window.open(pdfUrl, "_blank");
+    }
   };
   $("pdfDl").onclick = function () {
     if (!pdfUrl) return;
@@ -7380,7 +7414,7 @@
             "</div>";
   }
   function opDefault() {
-    return sess ? (sess.role === "owner" ? sess.email.split("@")[0] : sess.name || sess.email) : "";
+    return sess ? sess.name || sess.email : "";
   }
   async function startInsp(id) {
     if (!sess) {
@@ -9823,21 +9857,19 @@
      about 0.21°, so text is drawn on a grid turned by `th` radians to sit inside the boxes. */
   var DV_TPL = { th: 0.0037, cols: [55.2, 117.5, 194.8, 257.2, 511.4, 644.4, 723.8], top: 115.6, rowH: 22.665, rows: 20 };
   // Print: fill GCW.DELIVER (20 receipts a page) in a new tab; without the template, print the plain list.
+  // Print: fill GCW.DELIVER (20 receipts a page) and show it as a PDF to view, print or download;
+  // without the template, print the plain list.
   async function dvPrint(m) {
-    var w = window.open("", "_blank");
-    if (!w) {
-      toast("Allow pop-ups to print the manifest.");
-      return;
-    }
-    w.document.write("<p style='font:16px system-ui,sans-serif;margin:24px'>Filling in GCW.DELIVER…</p>");
+    toast("Filling in GCW.DELIVER…");
     var t;
     try {
       t = await tplRender(/^gcw\.?\s*deliver(y)?$/i, "GCW.DELIVER", 270);
     } catch (x) {
-      w.close();
       return toast(x.message || "GCW.DELIVER could not be filled in.");
     }
     if (!t) {
+      var w = window.open("", "_blank");
+      if (!w) return toast("Allow pop-ups to print the manifest.");
       toast("GCW.DELIVER isn't uploaded under Manage → Templates, so the plain manifest was printed.");
       return dvPrintPlain(m, w);
     }
@@ -9888,21 +9920,12 @@
         put(l.boxes, (c[2] + c[3]) / 2, y, c[3] - c[2] - 8, 10, true);
         put(l.rc + (l.dept ? "    Dept " + l.dept : ""), c[3] + 4, y, c[4] - c[3] - 8, 10);
       });
-      pages.push(cv.toDataURL("image/jpeg", 0.9));
+      var jb = await new Promise(function (res) {
+        cv.toBlob(res, "image/jpeg", 0.9);
+      });
+      pages.push({ w: cv.width, h: cv.height, pw: t.pw, ph: t.ph, jpg: new Uint8Array(await jb.arrayBuffer()) });
     }
-    w.document.open();
-    w.document.write(
-      "<!doctype html><meta charset='utf-8'><meta name='viewport' content='width=device-width,initial-scale=1'><title>" + esc(m.no) +
-        "</title><style>@page{size:letter landscape;margin:0}body{margin:0;background:#fff}img{display:block;width:100%;height:auto}" +
-        "@media print{img{width:11in;height:8.5in;break-after:page}}</style>" +
-        pages
-          .map(function (u, i) {
-            return "<img src='" + u + "' alt='" + esc(m.no) + " page " + (i + 1) + "'>";
-          })
-          .join("") +
-        "<script>onload=function(){print()}<\/script>"
-    );
-    w.document.close();
+    tpShow(imgPdfBytes(pages), "GCW.DELIVER-" + m.no);
   }
   function dvPrintPlain(m, w) {
     w.document.open();
