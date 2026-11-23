@@ -4211,6 +4211,12 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .grsec .sumwho:first-of-type { margin-top: 4px; }
 @media (max-width: 640px) { [class*="grsec-sum"] .grsheets td[data-l]::before { content: attr(data-l) ": "; color: var(--mute); } }
 .grsec[class*="grsec-sum"] h3 { font-size: 22px; }
+
+/* Sub-tabs: when they run past the screen, a slide bar shows under them */
+.schips { scrollbar-width: thin; scrollbar-color: var(--acc1) var(--line); padding-bottom: 14px; }
+.schips::-webkit-scrollbar { display: block; height: 10px; }
+.schips::-webkit-scrollbar-track { background: var(--line); border-radius: 999px; }
+.schips::-webkit-scrollbar-thumb { background: var(--acc1); border-radius: 999px; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -44128,8 +44134,12 @@ var ZXING_Z = [
         '">All ' +
         esc(gname(gCur)) +
         "</button>";
+      // Inside a master tab, drop its name from the sub-tab chips ("Warehouse 1 Bin Floor 1" -> "Bin Floor 1").
+      var gl = gname(gCur).toLowerCase();
       TABS.forEach(function (t, i) {
         if (t.g !== gCur) return;
+        var nm = tname(i),
+          sh = nm.toLowerCase().indexOf(gl) === 0 ? nm.slice(gl.length).replace(/^[\s,.:–-]+/, "") : "";
         h +=
           '<button class="schip' +
           (sel === "t" + t.id ? " on" : "") +
@@ -44137,8 +44147,10 @@ var ZXING_Z = [
           t.id +
           '" style="--c:' +
           t.c +
+          '" title="' +
+          esc(nm) +
           '"><i class="dot"></i>' +
-          esc(tname(i)) +
+          esc(sh || nm) +
           '<span class="c">' +
           m.counts[i].toLocaleString() +
           "</span></button>";

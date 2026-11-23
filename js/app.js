@@ -244,8 +244,12 @@
         '">All ' +
         esc(gname(gCur)) +
         "</button>";
+      // Inside a master tab, drop its name from the sub-tab chips ("Warehouse 1 Bin Floor 1" -> "Bin Floor 1").
+      var gl = gname(gCur).toLowerCase();
       TABS.forEach(function (t, i) {
         if (t.g !== gCur) return;
+        var nm = tname(i),
+          sh = nm.toLowerCase().indexOf(gl) === 0 ? nm.slice(gl.length).replace(/^[\s,.:–-]+/, "") : "";
         h +=
           '<button class="schip' +
           (sel === "t" + t.id ? " on" : "") +
@@ -253,8 +257,10 @@
           t.id +
           '" style="--c:' +
           t.c +
+          '" title="' +
+          esc(nm) +
           '"><i class="dot"></i>' +
-          esc(tname(i)) +
+          esc(sh || nm) +
           '<span class="c">' +
           m.counts[i].toLocaleString() +
           "</span></button>";
