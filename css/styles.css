@@ -4204,3 +4204,20 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .schips::-webkit-scrollbar { display: block; height: 10px; }
 .schips::-webkit-scrollbar-track { background: var(--line); border-radius: 999px; }
 .schips::-webkit-scrollbar-thumb { background: var(--acc1); border-radius: 999px; }
+
+/* Greens location: Edit counts with Use count sheet under it; the pick-and-preview panel */
+.grhbtns { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; }
+.gruse { margin-top: 16px; }
+.gruse h4 { margin: 0 0 4px; font-family: var(--disp); font-size: 20px; }
+.gruse > p { margin: 0 0 12px; color: var(--mute); font-size: 14px; max-width: 70ch; }
+.grubtns { display: flex; flex-wrap: wrap; justify-content: flex-end; gap: 8px; margin-top: 16px; }
+.grubtns button { min-height: 44px; }
+@media (max-width: 640px) {
+  .grhbtns { align-items: stretch; width: 100%; }
+  .gruse .grsheets td[data-l]::before { content: attr(data-l) ": "; color: var(--mute); }
+}
+/* Hover card lists every Pants and Jackets size: wider and denser so it fits under the button */
+.grtip { width: min(760px, calc(100vw - 16px)); }
+.grtip .grstock { gap: 8px; }
+.grtip .grstock ul { columns: 5.5em; column-gap: 16px; }
+.grtip .grstock li { padding: 0; font-size: 13px; line-height: 1.4; }

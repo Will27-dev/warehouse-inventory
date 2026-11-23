@@ -362,6 +362,7 @@
     if (!ok) st.sel = "t0";
   }
   function save() {
+    grDraftOut();
     if (typeof cloudSoon === "function") cloudSoon(); // sync the change when signed in
     try {
       localStorage.setItem(KEY, JSON.stringify(st));
@@ -3867,6 +3868,25 @@
   function profOf(email) {
     return (st.profiles && st.profiles[email]) || {};
   }
+  // An open Greens count (new count, Edit counts or transfer) is kept on the person's profile as grDraft,
+  // so it can be finished on another device. This device's unsent change wins; otherwise the cloud's does.
+  function grDraftOut() {
+    if (!sess || !st.profiles) return;
+    var d = st.grCount || null;
+    if (JSON.stringify(d) === JSON.stringify(profOf(sess.email).grDraft || null)) return;
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { grDraft: d });
+    try {
+      localStorage.setItem("wh-prefs-dirty", "1");
+    } catch (x) {}
+  }
+  function grDraftIn() {
+    if (!sess || localStorage.getItem("wh-prefs-dirty")) return false;
+    var d = profOf(sess.email).grDraft || null;
+    if (JSON.stringify(d) === JSON.stringify(st.grCount || null)) return false;
+    st.grCount = d;
+    grMsg = "";
+    return true;
+  }
   function initialsOf(name) {
     var p = String(name || "?")
       .replace(/@.*$/, "")
@@ -5314,6 +5334,7 @@
       x.setAttribute("aria-pressed", String(x === b));
     });
     grView = b.id === "grSheetsBtn" ? "sheets" : b.textContent;
+    grUse = null;
     renderGr();
   }
   $("grBtns").onclick = function (e) {
@@ -5366,16 +5387,118 @@
       Object.keys(last.gr.counts).forEach(function (n) {
         q[n] = last.gr.counts[n];
       });
-    grXfers().forEach(function (x) {
-      var g = x.e.gt,
-        sg = g.from === site ? -1 : g.to === site ? 1 : 0;
-      if (g.done && sg && (!last || x.e.ts > last.ts))
-        g.order.forEach(function (n) {
-          q[n] = (q[n] || 0) + sg * g.counts[n];
-        });
-    });
+    grXfers()
+      .sort(function (a, b) {
+        return a.e.ts - b.e.ts;
+      })
+      .forEach(function (x) {
+        var g = x.e.gt,
+          sg = g.from === site ? -1 : g.to === site ? 1 : 0;
+        if (g.done && sg && (!last || x.e.ts > last.ts))
+          g.order.forEach(function (n) {
+            q[n] = Math.max(0, (q[n] || 0) + sg * g.counts[n]); // runs out at 0, never negative
+          });
+      });
     return { q: q, last: last };
   }
+  // Use count sheet for updated Qty: grUse = { k } while picking (k "") or previewing sheet k for the location shown.
+  // Confirming saves a new count sheet for the location: its current quantities, with every item on the chosen sheet replaced.
+  var grUse = null;
+  function grUseRows(site, e) {
+    var cur = grStock(site).q;
+    return e.gr.order.map(function (n) {
+      return { n: n, now: cur[n] || 0, nw: e.gr.counts[n] || 0 };
+    });
+  }
+  function grUseHtml(site) {
+    var e =
+      grUse.k &&
+      grSheets().find(function (x) {
+        return x.k === grUse.k;
+      });
+    if (!e) {
+      var l = grSheets().sort(function (a, b) {
+        return b.ts - a.ts; // newest first
+      });
+      return (
+        '<div class="gruse"><h4>Use a count sheet for ' + esc(site) + "</h4><p>Pick the count sheet to take quantities from. You'll see every change before anything is saved.</p>" +
+        (l.length
+          ? '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Count sheet</th><th>Counted by</th><th>Items</th><th>Saved</th><th></th></tr></thead><tbody>' +
+            l
+              .map(function (x) {
+                return (
+                  '<tr><td class="cname">' + esc(x.gr.site) + "</td><td>" + esc(whoName(x.by)) + '</td><td class="ph">' + x.gr.order.length +
+                  (x.gr.order.length === 1 ? " item" : " items") + "</td><td>" + dvWhen(x.ts) +
+                  '</td><td class="act"><button type="button" data-grusepick="' + esc(x.k) + '">Preview</button></td></tr>'
+                );
+              })
+              .join("") +
+            "</tbody></table></div>"
+          : '<div class="empty">No count sheets yet. Select Create Greens Count to make one.</div>') +
+        '<div class="grubtns"><button type="button" data-grusex>Cancel</button></div></div>'
+      );
+    }
+    var rows = grUseRows(site, e),
+      ch = rows.filter(function (r) {
+        return r.now !== r.nw;
+      }).length;
+    return (
+      '<div class="gruse"><h4>Changes to ' + esc(site) + "</h4><p>From the " + esc(e.gr.site) + " count sheet saved " + dvWhen(e.ts) + " by " + esc(whoName(e.by)) + ". " +
+      (ch ? ch + (ch === 1 ? " quantity changes." : " quantities change.") + " Items not on this sheet keep their quantity." : "Every quantity already matches this count sheet.") +
+      '</p><div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Item #</th><th>Now</th><th>New</th><th>Change</th></tr></thead><tbody>' +
+      rows
+        .map(function (r) {
+          var z = grSize(r.n),
+            d = r.nw - r.now;
+          return (
+            '<tr><td class="cname"><b>' + esc(r.n) + "</b>" + (z[0] === "Other" ? "" : ' <span class="grsz">' + z[0] + " " + esc(z[1]) + "</span>") +
+            '</td><td data-l="Now">' + r.now + '</td><td data-l="New">' + r.nw + '</td><td data-l="Change" class="' + (d > 0 ? "pos" : d < 0 ? "neg" : "") + '">' +
+            (d > 0 ? "+" + d : d < 0 ? "−" + -d : "No change") + "</td></tr>"
+          );
+        })
+        .join("") +
+      '</tbody></table></div><div class="grubtns"><button type="button" data-grusepick="">Pick another sheet</button><button type="button" data-grusex>Cancel</button><button type="button" class="primary" data-grusego' +
+      (ch ? "" : " disabled") + ">Update quantities</button></div></div>"
+    );
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-gruse], button[data-grusepick], button[data-grusex], button[data-grusego]");
+    if (!b) return;
+    if (b.hasAttribute("data-gruse")) grUse = { k: "" };
+    else if (b.hasAttribute("data-grusepick")) grUse = { k: b.dataset.grusepick };
+    else if (b.hasAttribute("data-grusex")) grUse = null;
+    else {
+      var e = grSheets().find(function (x) {
+        return grUse && x.k === grUse.k;
+      });
+      if (!e) return;
+      var cur = grStock(grView).q,
+        counts = {},
+        rows = grUseRows(grView, e);
+      Object.keys(cur).forEach(function (n) {
+        counts[n] = cur[n];
+      });
+      rows.forEach(function (r) {
+        counts[r.n] = r.nw;
+      });
+      var order = Object.keys(counts).filter(function (n) {
+          return counts[n] > 0;
+        }),
+        keep = {},
+        ch = rows.filter(function (r) {
+          return r.now !== r.nw;
+        }).length;
+      order.forEach(function (n) {
+        keep[n] = counts[n];
+      });
+      audit("Greens", "Updated Greens quantities at " + grView + " from the " + e.gr.site + " count sheet (" + dvWhen(e.ts) + "): " + ch + (ch === 1 ? " change" : " changes"));
+      st.audit[st.audit.length - 1].gr = { site: grView, counts: keep, order: order };
+      grUse = null;
+      save();
+      toast("Quantities updated for " + grView + ".");
+    }
+    renderGr();
+  });
   // Edit counts: the location's current count opens in the count screen; Save counts saves it as a new count sheet.
   document.addEventListener("click", function (e) {
     if (!e.target.closest("button[data-gredit]")) return;
@@ -5468,13 +5591,30 @@
       "</ol></div>"
     );
   }
+  // Every Pants and Jackets item # on the GCW.GREENS form.
+  function grAllSizes() {
+    var out = [];
+    GR_MAP.forEach(function (t) {
+      t[3].split(" ").forEach(function (end) {
+        var n = t[0] + end;
+        if (grSize(n)[0] !== "Other" && out.indexOf(n) < 0) out.push(n);
+      });
+    });
+    return out;
+  }
   function grStockHtml(site) {
     var s = grStock(site),
-      gs = {};
+      gs = {},
+      q = {};
+    grAllSizes().forEach(function (n) {
+      q[n] = 0; // every size shows, at 0 until a count says otherwise
+    });
     Object.keys(s.q).forEach(function (n) {
-      if (!s.q[n]) return;
+      q[n] = s.q[n];
+    });
+    Object.keys(q).forEach(function (n) {
       var z = grSize(n);
-      (gs[z[0]] = gs[z[0]] || []).push([z[1], s.q[n], z[2]]);
+      (gs[z[0]] = gs[z[0]] || []).push([z[1], q[n], z[2]]);
     });
     var names = ["Pants", "Jackets", "Other"].filter(function (g) {
       return gs[g];
@@ -5502,7 +5642,7 @@
         })
         .join("") +
       "</div>" +
-      (s.last ? '<p class="grnone">Last count ' + dvWhen(s.last.ts) + "</p>" : "")
+      '<p class="grnone">' + (s.last ? "Last count " + dvWhen(s.last.ts) : "No count here yet, so every size shows 0.") + "</p>"
     );
   }
 
@@ -5639,7 +5779,8 @@
   /* ---------- Greens Management: Create Greens Count ----------
      Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
      View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
-     st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept on this device until Done or Cancel.
+     st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept until Done or Cancel
+     (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
   var grMsg = "";
   function renderGr() {
@@ -5657,9 +5798,8 @@
             grDelHtml()
           : '<div class="grhead"><h3>' +
             esc(grView) +
-            '</h3><button type="button" class="gredit" data-gredit>Edit counts</button></div>' +
-            grStockHtml(grView) +
-            grPopHtml(grView);
+            '</h3><div class="grhbtns"><button type="button" class="gredit" data-gredit>Edit counts</button><button type="button" class="gredit" data-gruse>Use count sheet for updated Qty</button></div></div>' +
+            (grUse ? grUseHtml(grView) : grStockHtml(grView) + grPopHtml(grView));
     $("grNew").hidden = $("grXBtn").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
@@ -9222,6 +9362,7 @@
       await cloudPushTrips();
       if (force || Date.now() - cloudLastPull > 15000) {
         await cloudPullProfiles();
+        if (grDraftIn()) changed = true;
         if (await cloudPullData(snap)) changed = true;
         if (await cloudPullTrips()) changed = true;
         cloudLastPull = Date.now();
