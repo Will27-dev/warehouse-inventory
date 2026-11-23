@@ -4164,3 +4164,13 @@ html.dark { --pie1: #3987e5; --pie2: #d95926; --pie3: #199e70; --pie4: #c98500; 
 .cattri:focus-visible { outline: 2px solid #f5b335; outline-offset: -6px; border-radius: 8px; }
 td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--mute); }
 @media (prefers-reduced-motion: reduce) { .cattri::before { transition: none; } }
+
+/* Desktop: the side options sit in the navy column, always showing (no 3-line box).
+   Phones keep the box: there is no left column at that width. */
+@media (min-width: 641px) {
+  .side { align-self: stretch; }
+  .menubtn { display: none; }
+  .sidemenu { position: static; width: 100%; max-height: none; overflow: visible; visibility: visible; opacity: 1; transform: none; background: transparent; box-shadow: none; padding: 12px 0 0; gap: 28px; transition: none; }
+  .sidemenu .tabs { gap: 10px; }
+  .sidemenu .tabs button { min-height: 52px; padding: 0 14px; font-size: 16px; }
+}

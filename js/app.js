@@ -4299,6 +4299,11 @@
     }
     btn.disabled = false;
     err.textContent = "";
+    // Offer to save the log-in in the browser's password manager (Chrome, Edge, Android). Safari offers on its own from the form.
+    if (window.PasswordCredential)
+      try {
+        navigator.credentials.store(new PasswordCredential({ id: f.em.value.trim().toLowerCase(), password: f.pw.value })).catch(function () {});
+      } catch (x) {}
     f.pw.value = "";
     landing(false);
     render();
