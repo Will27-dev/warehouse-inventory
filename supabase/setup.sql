@@ -145,6 +145,10 @@ create policy "staff view warehouse files" on storage.objects for select to auth
 drop policy if exists "managers upload warehouse files" on storage.objects;
 create policy "managers upload warehouse files" on storage.objects for insert to authenticated
   with check (bucket_id in ('delivery-photos', 'inspection-pdfs') and public.app_role() in ('owner', 'admin'));
+-- Finished inspection sheets: any staff member may add the pages of their sheet under sheets/ (add only).
+drop policy if exists "staff add inspection sheet pages" on storage.objects;
+create policy "staff add inspection sheet pages" on storage.objects for insert to authenticated
+  with check (bucket_id = 'inspection-pdfs' and name like 'sheets/%' and public.app_role() is not null);
 drop policy if exists "managers replace warehouse files" on storage.objects;
 create policy "managers replace warehouse files" on storage.objects for update to authenticated
   using (bucket_id in ('delivery-photos', 'inspection-pdfs') and public.app_role() in ('owner', 'admin'));

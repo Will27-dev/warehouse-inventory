@@ -381,8 +381,9 @@
     }
     return best;
   }
-  function mk(id, n, d, l, q, u, notes) {
+  function mk(id, n, d, l, q, u, notes, c) {
     n = String(n == null ? "" : n);
+    c = String(c == null ? (window.CATID || {})[n] || "" : c); // Cat ID: saved one, else from the Excel
     d = String(d || "");
     l = String(l || "");
     notes = notes || "";
@@ -394,8 +395,9 @@
       q: q,
       u: u || "",
       notes: notes,
+      c: c,
       t: tabOf(l),
-      h: (n + " " + d + " " + l + " " + notes).toLowerCase(),
+      h: (n + " " + d + " " + l + " " + notes + " " + c).toLowerCase(),
     };
   }
   function rebuild() {
@@ -405,11 +407,11 @@
       if (st.deleted[id]) return;
       var e = st.edits[id];
       items.push(
-        e ? mk(id, e.n, e.d, e.l, e.q, e.u, e.notes) : mk(id, r[0], r[1], r[2], r[3], r[4], "")
+        e ? mk(id, e.n, e.d, e.l, e.q, e.u, e.notes, e.c) : mk(id, r[0], r[1], r[2], r[3], r[4], "")
       );
     });
     st.added.forEach(function (a) {
-      items.push(mk(a.id, a.n, a.d, a.l, a.q, a.u, a.notes));
+      items.push(mk(a.id, a.n, a.d, a.l, a.q, a.u, a.notes, a.c));
     });
     items.sort(function (a, b) {
       return a.l < b.l ? -1 : a.l > b.l ? 1 : a.n < b.n ? -1 : a.n > b.n ? 1 : 0;
@@ -506,6 +508,14 @@
           (picked[i.id] ? " checked" : "") +
           ' aria-label="Select item"></td><td class="num">' +
           esc(i.n) +
+          (i.c
+            ? '<button type="button" class="cattri" data-cat aria-expanded="' +
+              !!(st.catAll || catOne[i.id]) +
+              '" aria-label="Cat ID for ' +
+              esc(i.n) +
+              '"></button>' +
+              (st.catAll || catOne[i.id] ? '<small class="catid">Cat ID ' + esc(i.c) + "</small>" : "")
+            : "") +
           '</td><td class="desc">' +
           esc(i.d) +
           (i.notes ? "<small>" + esc(i.notes) + "</small>" : "") +
@@ -522,6 +532,7 @@
         );
       })
       .join("");
+    $("catAll").checked = !!st.catAll;
     var sel = selTabs(),
       isG = st.sel === "a" || st.sel.charAt(0) === "g";
     document.documentElement.style.setProperty(
@@ -563,6 +574,13 @@
       " left)";
   }
 
+  var catOne = {}; // items whose Cat ID was opened with the triangle (this visit only)
+  $("catAll").addEventListener("change", function () {
+    st.catAll = this.checked;
+    catOne = {};
+    save();
+    render();
+  });
   function openDlg(item) {
     editId = item ? item.id : null;
     $("dlgTitle").textContent = item
@@ -578,6 +596,7 @@
     f.q.value = item ? item.q : 1;
     f.u.value = item ? item.u : "EA";
     f.notes.value = item ? item.notes : "";
+    f.c.value = item ? item.c : "";
     $("dlg").showModal();
     f.n.focus();
   }
@@ -590,7 +609,7 @@
     } else st.edits[id] = data;
   }
   function fieldsOf(i) {
-    return { n: i.n, d: i.d, l: i.l, q: i.q, u: i.u, notes: i.notes };
+    return { n: i.n, d: i.d, l: i.l, q: i.q, u: i.u, notes: i.notes, c: i.c };
   }
 
   $("form").addEventListener("submit", function (ev) {
@@ -603,6 +622,7 @@
       q: Math.max(0, parseFloat(f.q.value) || 0),
       u: f.u.value.trim(),
       notes: f.notes.value.trim(),
+      c: f.c.value.trim().replace(/^0+/, "") || undefined, // blank: use the Excel's Cat ID, if any
     };
     if (
       tabOf(d.l) < 0 &&
@@ -951,6 +971,12 @@
       it = items.find(function (i) {
         return i.id === id;
       });
+    if (b.hasAttribute("data-cat")) {
+      catOne[id] = !(st.catAll || catOne[id]);
+      if (st.catAll && !catOne[id]) st.catAll = false; // hiding one while all show: switch to one at a time
+      render();
+      return;
+    }
     if (!can("qty")) {
       deny("add or edit quantities");
       return;
@@ -1742,7 +1768,7 @@
         ? ""
         : '<div class="pksub">' +
           pkProgHtml(p) +
-          '<button type="button" id="pkDiscard">Cancel pick list</button><button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
+          '<button type="button" id="pkNewItem">Add item not on the list</button><button type="button" id="pkDiscard">Cancel pick list</button><button type="button" class="primary" id="pkSubmit">Submit pick list</button></div>')
     );
   }
   // What stays in stock once this line's Picked comes off (On hand now − Picked); below 0 is short.
@@ -2132,6 +2158,8 @@
   $("pkRows").addEventListener("click", function (e) {
     if (e.target.closest("#pkSubmit") && pkPdfs[pkOpen]) pkSubmit(pkPdfs[pkOpen]);
     if (e.target.closest("#pkDiscard") && pkPdfs[pkOpen]) pkDiscard(pkPdfs[pkOpen]);
+    // An item the slip has that the item list doesn't: create it at a location (same form and rules as Add item).
+    if (e.target.closest("#pkNewItem")) $("add").onclick();
   });
   $("pkRows").addEventListener("input", function (e) {
     var p = pkPdfs[pkOpen];
@@ -3920,13 +3948,17 @@
       return (st.audit || []).filter(function (e) {
         return e.ms && e.by === me;
       });
+    if (i === 7)
+      return inspAll().filter(function (r) {
+        return r.by === me;
+      });
     return null; // Put Away isn't built yet, so nobody has records there.
   }
   function pfName(i) {
-    return i === 5 ? "Green Count" : i === 6 ? "Master sheets" : oname(i);
+    return i === 5 ? "Green Count" : i === 6 ? "Master sheets" : i === 7 ? "Inspections" : oname(i);
   }
   function renderPfWork() {
-    $("pfActs").innerHTML = [1, 2, 3, 4, 5, 6]
+    $("pfActs").innerHTML = [1, 2, 3, 4, 5, 6, 7]
       .map(function (i) {
         var l = pfMine(i);
         return (
@@ -3953,9 +3985,23 @@
       box.innerHTML = grSheetsHtml(l, true);
     } else if (!l.length) {
       box.innerHTML = '<div class="empty">You have no ' + name + " records yet.</div>";
+    } else if (pfWorkSel === 7) {
+      box.innerHTML =
+        '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Sheet</th><th>Date</th><th>Finished</th><th></th></tr></thead><tbody>' +
+        l
+          .map(function (r) {
+            return (
+              '<tr><td class="cname">' + esc(r.tplName) + (r.equipment ? "<small>Equip. " + esc(r.equipment) + "</small>" : "") +
+              "</td><td>" + esc(r.date || "–") + "</td><td>" + dvWhen(r.ts) +
+              '</td><td class="act"><button type="button" data-inspv="' + esc(r.id) + '">View</button><button type="button" data-inspv="' + esc(r.id) +
+              '" data-inspdl="1">Download</button></td></tr>'
+            );
+          })
+          .join("") +
+        "</tbody></table></div>";
     } else if (pfWorkSel === 6) {
       box.innerHTML =
-        '<div class="tw"><table class="sumtbl"><thead><tr><th>Master sheet</th><th>QR codes</th><th></th></tr></thead><tbody>' +
+        '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Master sheet</th><th>QR codes</th><th></th></tr></thead><tbody>' +
         l
           .map(function (e) {
             return (
@@ -4323,7 +4369,7 @@
       return [n, "submitted today"];
     }
     if (i === 4) {
-      var td = st.insp.filter(function (r) {
+      var td = inspAll().filter(function (r) {
           return visibleP(r.by) && dayOf(r.ts) === today;
         }),
         no = td.filter(function (r) {
@@ -5596,7 +5642,8 @@
       $("grSheets").innerHTML =
         grView === "sheets"
           ? grSec("x", "Transferable", grXfers().filter(function (x) { return !x.e.gt.done; }).length + " waiting", "Transfers saved for later. Review one to approve it.", grXHtml()) +
-            grSec("c", "Count sheets", grSheets().length + " saved", "Finished counts for each location.", grSheetsHtml(grSheets().reverse(), false))
+            grSec("c", "Count sheets", grSheets().length + " saved", "Finished counts for each location.", grSheetsHtml(grSheets().reverse(), false)) +
+            grDelHtml()
           : '<div class="grhead"><h3>' +
             esc(grView) +
             '</h3><button type="button" class="gredit" data-gredit>Edit counts</button></div>' +
@@ -5734,6 +5781,47 @@
     return (st.audit || []).filter(function (e) {
       return e.gr && !gone[e.k] && (!me || e.by === me);
     });
+  }
+  // Deleted count sheets and transfers stay in the shared log; list them (view only), newest first.
+  function grDelHtml() {
+    var rows = (st.audit || [])
+      .filter(function (d) {
+        return d.grdel;
+      })
+      .reverse()
+      .map(function (d) {
+        var sh = (st.audit || []).find(function (e) {
+            return e.gr && e.k === d.grdel;
+          }),
+          x = null;
+        if (!sh)
+          (st.audit || []).forEach(function (e) {
+            if (e.gt && (e.gt.of || e.k) === d.grdel && (!x || e.ts > x.ts)) x = e;
+          });
+        var g = sh ? sh.gr : x ? x.gt : null;
+        if (!g) return "";
+        var tot = g.order.reduce(function (s2, n) {
+          return s2 + (g.counts[n] || 0);
+        }, 0);
+        return (
+          '<tr><td class="cname">' + (sh ? "Count sheet: " + esc(g.site) : "Transfer: " + esc(g.from) + " to " + esc(g.to)) +
+          '</td><td class="ph">' + g.order.length + (g.order.length === 1 ? " item, " : " items, ") + tot + " total</td><td>" +
+          esc(whoName(d.by)) + "</td><td>" + dvWhen(d.ts) + '</td><td class="act">' +
+          (sh ? '<button type="button" data-grview="' + esc(sh.k) + '">View</button>' : "") +
+          "</td></tr>"
+        );
+      })
+      .filter(Boolean);
+    if (!rows.length) return "";
+    return grSec(
+      "del",
+      "Deleted",
+      rows.length + " deleted",
+      "Count sheets and transfers that were deleted. They're kept here for the record and no longer count toward stock.",
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>What</th><th>Items</th><th>Deleted by</th><th>Deleted</th><th></th></tr></thead><tbody>' +
+        rows.join("") +
+        "</tbody></table></div>"
+    );
   }
   // Deleting a count sheet or transfer adds an entry naming it (.grdel), because the shared log is add-only.
   function grGone() {
@@ -5883,8 +5971,8 @@
     return { cv: cv, S: S, pw: Math.round(v1.width * 100) / 100, ph: Math.round(v1.height * 100) / 100 };
   }
   async function grOpen(key, dl) {
-    var e = grSheets().find(function (x) {
-      return x.k === key;
+    var e = (st.audit || []).find(function (x) {
+      return x.k === key && x.gr; // deleted ones too, from the Deleted list
     });
     if (!e) return toast("That count sheet could not be found.");
     var g = e.gr;
@@ -7386,10 +7474,14 @@
       : sess
         ? "Start a new inspection sheet from the template library."
         : "Sign in to create an inspection sheet.";
+    // Only the inspection forms are offered here (other templates, like GCW.GREENS, are for other tabs).
+    var inspTpls = (tpCloud || []).filter(function (cf) {
+      return /^gcw\.?\s*(truck|fork(lift)?)$/i.test(cf.name.replace(/\.pdf$/i, "").trim());
+    });
     if (inMenuOn && !ins)
       $("inMenu").innerHTML =
-        tpCloud && tpCloud.length
-          ? tpCloud
+        inspTpls.length
+          ? inspTpls
               .map(function (cf) {
                 var f = tpCloudRef(cf);
                 return (
@@ -7410,7 +7502,7 @@
                 ? "Couldn't load the templates: " + esc(tpCloudErr)
                 : !tpCloud
                   ? "Loading templates…"
-                  : "No templates yet. A manager can upload PDF sheets under Manage → Templates.") +
+                  : "GCW.TRUCK and GCW.FORK aren't uploaded yet. A manager can upload them under Manage → Templates.") +
             "</div>";
   }
   function opDefault() {
@@ -7810,6 +7902,7 @@
         ts: Date.now(),
         counts: cnt,
         pages: blobs.length,
+        scale: INSC,
         labels: ins.labels,
         answers: ins.qs.map(function (q) {
           return { q: q.text, a: q.ans };
@@ -7833,10 +7926,12 @@
           ins.labels.na +
           ")"
       );
+      st.audit[st.audit.length - 1].insp = inspCopy(st.insp[st.insp.length - 1]);
       save();
       ins = null;
       renderInsp();
-      toast("Inspection sheet finished. It is saved under Manage → Inspection Sheets.");
+      toast("Inspection sheet finished. Find it under Profile → Inspections and Manage → Inspection Sheets.");
+      inspPush();
     } catch (e) {
       console.error(e);
       toast("The sheet could not be saved. Browser storage may be full.");
@@ -7850,7 +7945,7 @@
      ===================================================================== */
   function renderFinished() {
     var box = $("mgFinished"),
-      list = st.insp
+      list = inspAll()
         .filter(function (r) {
           return visibleP(r.by);
         })
@@ -8064,14 +8159,133 @@
     shUrls = [];
     $("sheetPages").innerHTML = "";
   }
-  async function sheetPdfBytes(rec) {
+  /* ---------- Finished inspection sheets in the cloud ----------
+     A sheet's answers ride the activity log (st.audit entry with .insp), which syncs to every device;
+     its page images go to storage at inspection-pdfs/sheets/<id>/<n>.jpg. Remove adds .inspdel.
+     shortcut: removed sheets' images stay in storage, delete them there if space runs short. */
+  var SH_DIR = "sheets/";
+  function inspCopy(r) {
+    var c = Object.assign({}, r);
+    delete c.up;
+    return c;
+  }
+  // Every finished sheet: this device's plus the ones shared from other devices, oldest first.
+  function inspAll() {
+    var gone = {},
+      seen = {},
+      out = [];
+    (st.audit || []).forEach(function (e) {
+      if (e.inspdel) gone[e.inspdel] = 1;
+    });
+    st.insp
+      .concat(
+        (st.audit || [])
+          .filter(function (e) {
+            return e.insp;
+          })
+          .map(function (e) {
+            return e.insp;
+          })
+      )
+      .forEach(function (r) {
+        if (gone[r.id] || seen[r.id]) return;
+        seen[r.id] = 1;
+        out.push(r);
+      });
+    return out.sort(function (a, b) {
+      return a.ts - b.ts;
+    });
+  }
+  // A sheet's page images: from this browser, or downloaded from the cloud. null when missing.
+  async function inspPages(rec) {
     var row = await tpTx(
       "readonly",
       function (os) {
         return os.get(rec.id);
       },
       "sheets"
-    );
+    ).catch(function () {
+      return null;
+    });
+    if (row) return row;
+    if (!cloudOn() || !rec.pages) return null;
+    try {
+      var pages = [];
+      for (var i = 0; i < rec.pages; i++) pages.push(await sbDownload("inspection-pdfs", SH_DIR + rec.id + "/" + i + ".jpg"));
+      return { pages: pages, scale: rec.scale || INSC };
+    } catch (x) {
+      return null;
+    }
+  }
+  // Uploads the pages of this user's sheets that aren't in the cloud yet, and shares sheets made
+  // before syncing existed. Runs after each sync, so a sheet finished offline goes up later.
+  var inspBusy = false;
+  async function inspPush() {
+    if (inspBusy || !cloudOn() || !sess) return;
+    inspBusy = true;
+    var changed = false,
+      shared = {};
+    (st.audit || []).forEach(function (e) {
+      if (e.insp) shared[e.insp.id] = 1;
+    });
+    var upOk = true; // after one failed upload (offline, or not allowed yet), skip uploads until the next sync
+    for (var k = 0; k < st.insp.length; k++) {
+      var r = st.insp[k];
+      if (r.by !== curEmail()) continue;
+      if (!shared[r.id]) {
+        audit("Inspections", "Shared the inspection sheet “" + r.tplName + "” to the cloud");
+        st.audit[st.audit.length - 1].insp = inspCopy(r);
+        changed = true;
+      }
+      if (r.up || !upOk) continue;
+      try {
+        var row = await tpTx(
+          "readonly",
+          function (os) {
+            return os.get(r.id);
+          },
+          "sheets"
+        );
+        if (!row) continue;
+        for (var i = 0; i < row.pages.length; i++) {
+          try {
+            // Add only (no x-upsert): staff may add sheet pages but not replace them.
+            await sbFetch("/storage/v1/object/inspection-pdfs/" + sbPath(SH_DIR + r.id + "/" + i + ".jpg"), {
+              method: "POST",
+              headers: { "Content-Type": "image/jpeg" },
+              body: row.pages[i],
+            });
+          } catch (x) {
+            if (!(x.status === 409 || /exist|duplicate/i.test(x.message))) throw x; // already there from an earlier try
+          }
+        }
+        r.up = 1;
+        changed = true;
+      } catch (x) {
+        upOk = false;
+      }
+    }
+    inspBusy = false;
+    if (changed) save();
+  }
+  function inspFile(rec) {
+    return (rec.tplName + " - " + (rec.operator || "operator") + " - " + (rec.date || "").replace(/[\/\\:]/g, "-")).replace(/[^\w\- .]/g, "");
+  }
+  // Profile → Inspections: View (PDF with Print) and Download.
+  document.addEventListener("click", async function (e) {
+    var b = e.target.closest("button[data-inspv]");
+    if (!b) return;
+    var rec = inspAll().find(function (x) {
+      return x.id === b.dataset.inspv;
+    });
+    if (!rec) return toast("That inspection sheet could not be found.");
+    toast("Opening the inspection sheet…");
+    var bytes = await sheetPdfBytes(rec);
+    if (!bytes) return toast("This sheet's pages haven't reached the cloud yet. Open it on the device that made it, or try again later.");
+    tpShow(bytes, inspFile(rec), !!b.dataset.inspdl);
+  });
+  async function sheetPdfBytes(rec) {
+    var row = await inspPages(rec);
     if (!row) return null;
     var imgs = [];
     for (var i = 0; i < row.pages.length; i++) {
@@ -8159,19 +8373,12 @@
     var b = e.target.closest("button");
     if (!b) return;
     var id = b.dataset.sv || b.dataset.sd || b.dataset.sr,
-      rec = st.insp.find(function (x) {
+      rec = inspAll().find(function (x) {
         return x.id === id;
       });
     if (!rec) return;
     if (b.dataset.sr) {
-      if (
-        !confirm(
-          "Remove this finished sheet for " +
-            (rec.operator || "this operator") +
-            "? It will be deleted from this browser."
-        )
-      )
-        return;
+      if (!confirm("Remove this finished sheet for " + (rec.operator || "this operator") + "? It will be removed for everyone.")) return;
       try {
         await tpTx(
           "readwrite",
@@ -8185,6 +8392,7 @@
         return x.id !== id;
       });
       audit("Inspections", "Removed the finished sheet “" + rec.tplName + "”");
+      st.audit[st.audit.length - 1].inspdel = id; // synced, so it's gone on every device
       save();
       renderFinished();
       toast("Finished sheet removed.");
@@ -8215,13 +8423,7 @@
       }, 4000);
       return;
     }
-    var row = await tpTx(
-      "readonly",
-      function (os) {
-        return os.get(id);
-      },
-      "sheets"
-    );
+    var row = await inspPages(rec);
     if (!row) {
       toast("The saved pages for that sheet could not be found.");
       return;
@@ -8322,7 +8524,13 @@
   function audit(cat, text) {
     if (!st.audit) st.audit = [];
     st.audit.push({ ts: Date.now(), by: curEmail(), cat: cat, text: text, k: nid("a") });
-    if (st.audit.length > 2000) st.audit = st.audit.slice(-2000);
+    // Keep the newest 2000 entries, plus every saved record (sheets, counts, transfers, pick lists) and its removal.
+    if (st.audit.length > 2000) {
+      var cut = st.audit.length - 2000;
+      st.audit = st.audit.filter(function (e, i) {
+        return i >= cut || e.insp || e.inspdel || e.gr || e.gt || e.grdel || e.ms || e.pick;
+      });
+    }
   }
   function summaryData(day) {
     var ch = {},
@@ -9040,6 +9248,7 @@
       if (!$("dvPanel").hidden) cloudStatusPaint();
       if (!$("managePanel").hidden && mgOpt === 0) renderManage();
     }
+    if (!cloudErr) inspPush();
     if (cloudAgain) {
       cloudAgain = false;
       cloudSoon();
@@ -9221,7 +9430,7 @@
     dvFlash = "",
     dvSel = null,
     dvAddNew = false, // delivering: the "Add new item to trip?" scan bar is open
-    camHold = "", // code being held in view; it counts after 1.5 s
+    camHold = "", // code being held in view; it counts after 0.75 s
     camHoldAt = 0,
     camHoldSeen = 0,
     camStream = null,
@@ -10325,6 +10534,7 @@
       };
     camHint = any ? "Point the camera at a barcode." : "Point the camera at a QR code.";
     $("camDlg").querySelector("h2").textContent = any ? "Scan barcode" : "Scan QR code";
+    $("camDlg").classList.toggle("wide", !!any); // barcodes: wide rectangle; QR codes: square box
     if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
       toast(
         window.isSecureContext === false
@@ -10369,7 +10579,7 @@
       try {
         var code = await rd.detect(v),
           now = Date.now();
-        // A code counts only after it stays in view for 1.5 s (yellow dot shows the hold);
+        // A code counts only after it stays in view for 0.75 s (yellow dot shows the hold);
         // a short miss (< 0.4 s) between frames doesn't restart it.
         if (camHold && (!code || code !== camHold) && now - camHoldSeen > 400) {
           camHold = "";
@@ -10385,7 +10595,7 @@
             camHoldAt = camHoldSeen = now;
             $("camDlg").classList.add("hold");
             $("camLast").textContent = "Hold still…";
-          } else if ((camHoldSeen = now) - camHoldAt >= 1500) {
+          } else if ((camHoldSeen = now) - camHoldAt >= 750) {
             camHold = "";
             $("camDlg").classList.remove("hold");
             camLastCode = code;

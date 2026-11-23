@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261119y" />
+    <link rel="stylesheet" href="css/styles.css?v=20261123b" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -156,6 +156,7 @@
                 <div class="eyebrow" id="eyebrow"></div>
                 <h2 id="title"></h2>
                 <p id="status"></p>
+                <label class="catsw"><input type="checkbox" id="catAll" />Show Cat IDs</label>
               </div>
               <div class="stat"><b id="statN"></b><span id="statL"></span></div>
             </div>
@@ -969,6 +970,13 @@
           /></label>
           <label>Unit (EA, FT, LB…)<input name="u" value="EA" /></label>
         </div>
+        <label
+          >Cat ID (optional)<input
+            name="c"
+            inputmode="numeric"
+            autocomplete="off"
+            placeholder="Add a Cat ID for this item?"
+        /></label>
         <label>Notes<textarea name="notes" rows="2"></textarea></label>
         <div class="actions">
           <button type="button" class="danger" id="del" hidden>Delete</button>
@@ -980,8 +988,8 @@
     </dialog>
 
     <!-- items-data.js has its own version tag: change it only when the item data changes,
-         so app updates don't re-download 4.6 MB. The PDF and barcode readers load on first use. -->
-    <script src="js/data/items-data.js?v=data-20261112"></script>
-    <script src="js/app.js?v=20261119y"></script>
+         so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
+    <script src="js/data/items-data.js?v=data-20261123"></script>
+    <script src="js/app.js?v=20261123b"></script>
   </body>
 </html>

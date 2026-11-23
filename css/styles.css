@@ -4042,7 +4042,7 @@ html.dark .mgnav:not(.picked) .warn .mgst b { color: #F08A66; }
 
 /* ---------- QR scanner: yellow dot while a code is held in view for 1.5 s ---------- */
 .camhold { position: absolute; top: 16px; right: 16px; width: 24px; height: 24px; border-radius: 50% !important; background: #F5C518; box-shadow: 0 0 0 2px #13233F; opacity: 0; transform: scale(.4); pointer-events: none; }
-.camdlg.hold .camhold { opacity: 1; animation: camHoldGrow 1.5s linear forwards; }
+.camdlg.hold .camhold { opacity: 1; animation: camHoldGrow .75s linear forwards; }
 @keyframes camHoldGrow { from { transform: scale(.4); } to { transform: scale(1); } }
 @media (prefers-reduced-motion: reduce) {
   .camdlg.hold .camhold { animation: none; transform: none; }
@@ -4151,3 +4151,16 @@ html.dark { --pie1: #3987e5; --pie2: #d95926; --pie3: #199e70; --pie4: #c98500; 
 .msfoot { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 8px 16px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--line); font-weight: 700; }
 .msfoot button { min-height: 44px; padding: 0 20px; }
 @media (max-width: 560px) { .mssheet { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; } .msfoot button { width: 100%; } }
+/* Greens barcodes: a wide, short scan rectangle (delivery QR codes keep the square box). */
+.camdlg.wide .camframe { width: min(86%, 86vw); aspect-ratio: 3 / 1; }
+.grsec-del { --grc: var(--pie0); }
+
+/* Cat IDs: "Show Cat IDs" box above the item table, yellow triangle per item */
+.catsw { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.catsw input { width: 20px; height: 20px; margin: 0; accent-color: #f5b335; }
+.cattri { width: 44px; height: 44px; margin: -12px -12px -12px -6px; padding: 0; border: 0; background: none; box-shadow: none; vertical-align: middle; cursor: pointer; display: inline-grid; place-items: center; }
+.cattri::before { content: ""; border-left: 11px solid #f5b335; border-top: 7px solid transparent; border-bottom: 7px solid transparent; transition: transform .15s ease; }
+.cattri[aria-expanded="true"]::before { transform: rotate(90deg); }
+.cattri:focus-visible { outline: 2px solid #f5b335; outline-offset: -6px; border-radius: 8px; }
+td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacing: 0; color: var(--mute); }
+@media (prefers-reduced-motion: reduce) { .cattri::before { transition: none; } }
