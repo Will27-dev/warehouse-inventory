@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       rel="stylesheet"
-      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
+      href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
     <style>
 :root {
@@ -4186,6 +4186,15 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
   .sidemenu { position: static; width: 100%; max-height: none; overflow: visible; visibility: visible; opacity: 1; transform: none; background: transparent; box-shadow: none; padding: 12px 0 0; gap: 28px; transition: none; }
   .sidemenu .tabs { gap: 10px; }
   .sidemenu .tabs button { min-height: 52px; padding: 0 14px; font-size: 16px; }
+}
+
+/* Section tabs (Warehouse Item/Locations to Greens): road-sign face (Overpass, after Highway Gothic), more room between them */
+.topnav { gap: clamp(24px, 2.2vw, 48px); } /* 28px at 1280 wide, so Greens still fits with room to spare */
+.topnav button { font-family: "Overpass", var(--disp); font-size: 15px; font-weight: 600; letter-spacing: 0; } /* 15px: all 7 fit at 1280 wide */
+.topnav button.on { font-weight: 800; }
+@media (max-width: 640px) {
+  .topnav { gap: 28px; }
+  .topnav button { font-size: 15px; }
 }
 </style>
     <script>
