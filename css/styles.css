@@ -4168,7 +4168,11 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 /* Desktop: the side options sit in the navy column, always showing (no 3-line box).
    Phones keep the box: there is no left column at that width. */
 @media (min-width: 641px) {
-  .side { align-self: stretch; }
+  /* The column stays in view while the page scrolls; Edit tab names sits at its foot */
+  .app { background: linear-gradient(to right, var(--char) 240px, var(--canvas) 240px); }
+  .side { position: sticky; top: 0; align-self: start; height: calc(100vh - var(--gcwh, 48px)); overflow-y: auto; background: var(--char); }
+  .sidemenu { flex: 1 0 auto; }
+  .sidefoot { margin-top: auto; padding-bottom: 4px; }
   .menubtn { display: none; }
   .sidemenu { position: static; width: 100%; max-height: none; overflow: visible; visibility: visible; opacity: 1; transform: none; background: transparent; box-shadow: none; padding: 12px 0 0; gap: 28px; transition: none; }
   .sidemenu .tabs { gap: 10px; }
@@ -4183,3 +4187,14 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
   .topnav { gap: 28px; }
   .topnav button { font-size: 15px; }
 }
+
+/* Summary: one tinted section per job, people listed inside it */
+.grsec-sumpk { --grc: var(--pie1); }
+.grsec-sumpa { --grc: var(--pie4); }
+.grsec-sumdv { --grc: var(--pie2); }
+.grsec-sumgn { --grc: var(--pie3); }
+.sumwho { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 16px 0 6px 8px; font-size: 16px; }
+.sumwho span { color: var(--mute); font-size: 14px; font-weight: 400; }
+.grsec .sumwho:first-of-type { margin-top: 4px; }
+@media (max-width: 640px) { [class*="grsec-sum"] .grsheets td[data-l]::before { content: attr(data-l) ": "; color: var(--mute); } }
+.grsec[class*="grsec-sum"] h3 { font-size: 22px; }

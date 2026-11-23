@@ -4181,7 +4181,11 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 /* Desktop: the side options sit in the navy column, always showing (no 3-line box).
    Phones keep the box: there is no left column at that width. */
 @media (min-width: 641px) {
-  .side { align-self: stretch; }
+  /* The column stays in view while the page scrolls; Edit tab names sits at its foot */
+  .app { background: linear-gradient(to right, var(--char) 240px, var(--canvas) 240px); }
+  .side { position: sticky; top: 0; align-self: start; height: calc(100vh - var(--gcwh, 48px)); overflow-y: auto; background: var(--char); }
+  .sidemenu { flex: 1 0 auto; }
+  .sidefoot { margin-top: auto; padding-bottom: 4px; }
   .menubtn { display: none; }
   .sidemenu { position: static; width: 100%; max-height: none; overflow: visible; visibility: visible; opacity: 1; transform: none; background: transparent; box-shadow: none; padding: 12px 0 0; gap: 28px; transition: none; }
   .sidemenu .tabs { gap: 10px; }
@@ -4196,6 +4200,17 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
   .topnav { gap: 28px; }
   .topnav button { font-size: 15px; }
 }
+
+/* Summary: one tinted section per job, people listed inside it */
+.grsec-sumpk { --grc: var(--pie1); }
+.grsec-sumpa { --grc: var(--pie4); }
+.grsec-sumdv { --grc: var(--pie2); }
+.grsec-sumgn { --grc: var(--pie3); }
+.sumwho { display: flex; flex-wrap: wrap; align-items: baseline; gap: 8px; margin: 16px 0 6px 8px; font-size: 16px; }
+.sumwho span { color: var(--mute); font-size: 14px; font-weight: 400; }
+.grsec .sumwho:first-of-type { margin-top: 4px; }
+@media (max-width: 640px) { [class*="grsec-sum"] .grsheets td[data-l]::before { content: attr(data-l) ": "; color: var(--mute); } }
+.grsec[class*="grsec-sum"] h3 { font-size: 22px; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4799,7 +4814,7 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
               <div>
                 <h2>Daily summary</h2>
                 <p>
-                  Every quantity added, subtracted or moved, and every EWO created, on a chosen day.
+                  Each person's pick lists, put aways, deliveries and Greens moves on a chosen day.
                 </p>
               </div>
               <div class="sumctl">
@@ -43993,7 +44008,7 @@ var ZXING_Z = [
     var i = tabIdx(n);
     return i < 0 ? "" : tname(i);
   }
-  var SIDES = ["Log in", "Important Contacts", "Delivery Locations", "Option 4", "Option 5"];
+  var SIDES = ["Log in", "Important Contacts", "Delivery Locations", "Option 4", "Common Problems/Solutions"];
   function inspKey() {
     var best = null;
     ["p2", "p3", "p4", "s3", "s4"].forEach(function (k) {
@@ -52406,48 +52421,82 @@ var ZXING_Z = [
       });
     }
   }
+  // Summary: what each person did on the day, one tinted section per job (Pick lists, Put aways, Deliveries, Greens).
+  // Each record: { by, ts, c: [cells] }; c[0] names it, the rest fill that section's columns.
+  var SUM_SECS = [
+    { k: "pk", t: "Pick lists", one: "pick list", many: "pick lists", cols: ["Pick list", "Lines", "Picked", "Problems"], none: "No pick lists were submitted on this day." },
+    { k: "pa", t: "Put aways", one: "put away", many: "put aways", cols: ["Put away"], none: "No put aways on this day. Put Away isn't set up yet, so none are recorded." },
+    { k: "dv", t: "Deliveries", one: "trip", many: "trips", cols: ["Trip", "Receipts", "Boxes", "Status"], none: "No delivery trips were started on this day." },
+    { k: "gn", t: "Greens", one: "move", many: "moves", cols: ["What", "Items", "Total"], none: "No Greens counts or transfers on this day." },
+  ];
   function summaryData(day) {
-    var ch = {},
-      mv = [],
-      add = 0,
-      sub = 0;
-    st.log.forEach(function (e) {
-      if (dayOf(e.ts) !== day) return;
-      if (e.note && e.note.indexOf("EWO") === 0) return;
-      if (e.a === "move") {
-        mv.push(e);
-        return;
-      }
-      var k = e.id + "|" + e.l,
-        r = ch[k] || (ch[k] = { n: e.n, d: e.d, l: e.l, u: e.u, add: 0, sub: 0 });
-      r[e.a] += e.q;
-      if (e.a === "add") add += e.q;
-      else sub += e.q;
-    });
-    var rows = Object.keys(ch)
-      .map(function (k) {
-        return ch[k];
-      })
-      .sort(function (a, b) {
-        return a.l < b.l ? -1 : a.l > b.l ? 1 : a.n < b.n ? -1 : 1;
-      });
-    mv.sort(function (a, b) {
-      return a.ts - b.ts;
-    });
-    var ew = st.ewos
-      .filter(function (e) {
+    var A = st.audit || [],
+      gone = grGone(),
+      on = function (e) {
         return dayOf(e.ts) === day;
-      })
-      .sort(function (a, b) {
-        return a.ts - b.ts;
-      });
-    return { rows: rows, mv: mv, ew: ew, add: add, sub: sub };
+      };
+    return {
+      pk: A.filter(function (e) {
+        return on(e) && e.pick && !e.pick.of; // first submissions; edits are part of them
+      }).map(function (e) {
+        var x = e.pick,
+          got = Object.keys(x.picked || {}).reduce(function (t, j) {
+            return t + (pkNum(x.picked[j]) || 0);
+          }, 0);
+        return { by: e.by, ts: e.ts, c: [x.no ? "Pick slip " + x.no : x.name || "Pick list", x.rows.length, fmtQ(got), Object.keys(x.prob || {}).length] };
+      }),
+      pa: A.filter(function (e) {
+        return on(e) && e.cat === "Put aways";
+      }).map(function (e) {
+        return { by: e.by, ts: e.ts, c: [e.text] };
+      }),
+      dv: (st.manifests || []).filter(on).map(function (m) {
+        return {
+          by: m.by,
+          ts: m.ts,
+          c: [dvTripName(m) + " (" + m.no + ")", m.lines.length, dvBoxes(m.lines), m.status === "submitted" ? "Delivered" : m.status === "delivering" ? "Delivering" : "Loading"],
+        };
+      }),
+      gn: A.filter(function (e) {
+        return on(e) && (e.gr || e.gt);
+      }).map(function (e) {
+        var g = e.gr || e.gt,
+          tot = g.order.reduce(function (t, n) {
+            return t + (g.counts[n] || 0);
+          }, 0);
+        return {
+          by: e.by,
+          ts: e.ts,
+          c: [
+            (e.gr ? "Count at " + g.site : (g.done ? "Transferred " : "Transfer saved: ") + g.from + " to " + g.to) +
+              (gone[e.gr ? e.k : g.of || e.k] ? " (deleted)" : ""),
+            g.order.length,
+            tot,
+          ],
+        };
+      }),
+    };
   }
-  function sgn(n) {
-    return n > 0 ? "+" : n < 0 ? "−" : "";
+  function sumByWho(list) {
+    var by = {};
+    list.forEach(function (r) {
+      (by[r.by || ""] = by[r.by || ""] || []).push(r);
+    });
+    return Object.keys(by)
+      .sort(function (x, y) {
+        return whoName(x).localeCompare(whoName(y));
+      })
+      .map(function (em) {
+        return {
+          em: em,
+          l: by[em].sort(function (x, y) {
+            return x.ts - y.ts;
+          }),
+        };
+      });
   }
   /* =====================================================================
-     Summary page: daily summary, moves, quantity changes and EWOs
+     Summary page: each person's pick lists, put aways, deliveries and Greens moves on a day
      ===================================================================== */
   function renderSummary() {
     var b = $("sumBody");
@@ -52463,134 +52512,84 @@ var ZXING_Z = [
       month: "long",
       day: "numeric",
     });
-    if (!s.rows.length && !s.mv.length && !s.ew.length) {
-      b.innerHTML =
-        '<div class="empty">No activity or EWOs were recorded on ' +
-        esc(nice) +
-        ".<br>Changes made with the + and − buttons, Add item, Edit and Delete are recorded from the moment this version is in use.</div>";
-      return;
-    }
-    var net = s.add - s.sub;
     var h =
       '<div class="sumhead"><h3>' +
       esc(nice) +
       '</h3><div class="sumact"><button id="sumPrint">Print</button><button id="sumCsv">Export CSV</button></div></div>' +
-      '<div class="sumstats"><div class="card"><b class="pos">+' +
-      fmtQ(s.add) +
-      '</b><span>Added</span></div><div class="card"><b class="neg">−' +
-      fmtQ(s.sub) +
-      '</b><span>Subtracted</span></div><div class="card"><b>' +
-      sgn(net) +
-      fmtQ(Math.abs(net)) +
-      '</b><span>Net change</span></div><div class="card"><b>' +
-      s.mv.length +
-      '</b><span>Moves</span></div><div class="card"><b>' +
-      s.ew.length +
-      "</b><span>EWOs created</span></div></div>";
-    if (s.rows.length) {
-      h +=
-        '<div class="sumsec">Quantity changes</div><div class="tw"><table class="sumtbl"><thead><tr><th>Item #</th><th>Description</th><th>Location</th><th>Added</th><th>Subtracted</th><th>Net</th></tr></thead><tbody>' +
-        s.rows
-          .map(function (r) {
-            var n = r.add - r.sub;
-            return (
-              '<tr><td class="num">' +
-              esc(r.n) +
-              "</td><td>" +
-              esc(r.d) +
-              '</td><td class="loc">' +
-              esc(r.l) +
-              '</td><td class="' +
-              (r.add ? "pos" : "") +
-              '">' +
-              (r.add ? "+" + fmtQ(r.add) + " " + esc(r.u) : "–") +
-              '</td><td class="' +
-              (r.sub ? "neg" : "") +
-              '">' +
-              (r.sub ? "−" + fmtQ(r.sub) + " " + esc(r.u) : "–") +
-              '</td><td class="num">' +
-              sgn(n) +
-              fmtQ(Math.abs(n)) +
-              " " +
-              esc(r.u) +
-              "</td></tr>"
-            );
-          })
-          .join("") +
-        "</tbody></table></div>";
-    }
-    if (s.mv.length) {
-      h +=
-        '<div class="sumsec">Moves</div><div class="tw"><table class="sumtbl"><thead><tr><th>Item #</th><th>Description</th><th>Quantity</th><th>From</th><th>To</th><th>Time</th></tr></thead><tbody>' +
-        s.mv
-          .map(function (e) {
-            return (
-              '<tr><td class="num">' +
-              esc(e.n) +
-              "</td><td>" +
-              esc(e.d) +
-              '</td><td class="num">' +
-              fmtQ(e.q) +
-              " " +
-              esc(e.u) +
-              '</td><td class="loc">' +
-              esc(e.from) +
-              '</td><td class="loc">' +
-              esc(e.to) +
-              "</td><td>" +
-              new Date(e.ts).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }) +
-              "</td></tr>"
-            );
-          })
-          .join("") +
-        "</tbody></table></div>";
-    }
-    if (s.ew.length) h += '<div class="sumsec">EWOs created</div>' + ewoTableHtml(s.ew, true);
+      '<div class="sumstats">' +
+      SUM_SECS.map(function (x) {
+        return '<div class="card"><b>' + s[x.k].length + "</b><span>" + x.t + "</span></div>";
+      }).join("") +
+      "</div>";
+    SUM_SECS.forEach(function (x) {
+      var g = sumByWho(s[x.k]);
+      h += grSec(
+        "sum" + x.k,
+        x.t,
+        s[x.k].length + " " + (s[x.k].length === 1 ? x.one : x.many),
+        g.length ? (g.length === 1 ? "1 person" : g.length + " people") + ", earliest first." : "",
+        g.length
+          ? g
+              .map(function (w) {
+                return (
+                  '<h4 class="sumwho">' +
+                  esc(whoName(w.em) || "Unknown") +
+                  " <span>" +
+                  w.l.length +
+                  " " +
+                  (w.l.length === 1 ? x.one : x.many) +
+                  '</span></h4><div class="tw"><table class="sumtbl grsheets"><thead><tr>' +
+                  x.cols
+                    .map(function (c) {
+                      return "<th>" + c + "</th>";
+                    })
+                    .join("") +
+                  "<th>Time</th></tr></thead><tbody>" +
+                  w.l
+                    .map(function (r) {
+                      return (
+                        "<tr>" +
+                        r.c
+                          .map(function (v, i) {
+                            return i ? '<td class="ph" data-l="' + esc(x.cols[i]) + '">' + esc(v) + "</td>" : '<td class="cname">' + esc(v) + "</td>";
+                          })
+                          .join("") +
+                        "<td>" +
+                        dvTime(r.ts) +
+                        "</td></tr>"
+                      );
+                    })
+                    .join("") +
+                  "</tbody></table></div>"
+                );
+              })
+              .join("")
+          : '<div class="empty">' + x.none + "</div>"
+      );
+    });
     b.innerHTML = h;
   }
   function sumCsv() {
     var s = summaryData(sumDay),
-      rows = [
-        [
-          "Date",
-          "Type",
-          "Item Number",
-          "Description",
-          "Quantity",
-          "Unit",
-          "From",
-          "To / Location",
-          "Requester",
-          "Extension",
-          "Badge",
-          "Area Manager",
-        ],
-      ];
-    s.rows.forEach(function (r) {
-      if (r.add) rows.push([sumDay, "Added", r.n, r.d, r.add, r.u, "", r.l]);
-      if (r.sub) rows.push([sumDay, "Subtracted", r.n, r.d, r.sub, r.u, r.l, ""]);
-    });
-    s.mv.forEach(function (e) {
-      rows.push([sumDay, "Moved", e.n, e.d, e.q, e.u, e.from, e.to]);
-    });
-    s.ew.forEach(function (e) {
-      rows.push([
-        sumDay,
-        "EWO",
-        e.n,
-        e.d,
-        e.q,
-        e.u,
-        e.loc,
-        e.to,
-        e.req || "",
-        e.ext || "",
-        e.badge || "",
-        e.mgr || "",
-      ]);
-    });
-    rows.forEach(function (r) {
-      while (r.length < 12) r.push("");
+      rows = [["Date", "Section", "Person", "Time", "What", "Details"]];
+    SUM_SECS.forEach(function (x) {
+      sumByWho(s[x.k]).forEach(function (w) {
+        w.l.forEach(function (r) {
+          rows.push([
+            sumDay,
+            x.t,
+            whoName(w.em),
+            dvTime(r.ts),
+            r.c[0],
+            r.c
+              .slice(1)
+              .map(function (v, i) {
+                return x.cols[i + 1] + ": " + v;
+              })
+              .join("; "),
+          ]);
+        });
+      });
     });
     download(
       "daily-summary-" + sumDay + ".csv",
