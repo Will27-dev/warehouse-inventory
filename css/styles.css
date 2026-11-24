@@ -4221,3 +4221,10 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .grtip .grstock { gap: 8px; }
 .grtip .grstock ul { columns: 5.5em; column-gap: 16px; }
 .grtip .grstock li { padding: 0; font-size: 13px; line-height: 1.4; }
+/* Inspection sheet viewer: answers shown when the page images aren't in the cloud yet */
+.shnopg { width: 100%; max-width: 760px; padding: 16px; border-radius: 12px; background: var(--head); color: var(--ink); }
+.shnopg p { margin: 0 0 12px; max-width: 70ch; }
+.shnopg p:last-child { margin: 12px 0 0; }
+.shnopg table { width: 100%; min-width: 0; table-layout: fixed; }
+.shnopg td { white-space: normal; overflow-wrap: anywhere; }
+.shnopg th:last-child, .shnopg td:last-child { width: 6.5em; }

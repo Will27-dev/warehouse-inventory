@@ -4234,6 +4234,13 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .grtip .grstock { gap: 8px; }
 .grtip .grstock ul { columns: 5.5em; column-gap: 16px; }
 .grtip .grstock li { padding: 0; font-size: 13px; line-height: 1.4; }
+/* Inspection sheet viewer: answers shown when the page images aren't in the cloud yet */
+.shnopg { width: 100%; max-width: 760px; padding: 16px; border-radius: 12px; background: var(--head); color: var(--ink); }
+.shnopg p { margin: 0 0 12px; max-width: 70ch; }
+.shnopg p:last-child { margin: 12px 0 0; }
+.shnopg table { width: 100%; min-width: 0; table-layout: fixed; }
+.shnopg td { white-space: normal; overflow-wrap: anywhere; }
+.shnopg th:last-child, .shnopg td:last-child { width: 6.5em; }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -52459,7 +52466,7 @@ var ZXING_Z = [
     if (b.dataset.sd) {
       var bytes = await sheetPdfBytes(rec);
       if (!bytes) {
-        toast("The saved pages for that sheet could not be found.");
+        toast("This sheet's pages haven't reached the cloud yet. Select View to see its answers.");
         return;
       }
       var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
@@ -52481,13 +52488,11 @@ var ZXING_Z = [
       }, 4000);
       return;
     }
+    // No page images yet (still on the device that made it): show the synced answers instead.
     var row = await inspPages(rec);
-    if (!row) {
-      toast("The saved pages for that sheet could not be found.");
-      return;
-    }
-    shRec = rec;
+    shRec = row ? rec : null;
     shClean();
+    $("sheetDl").hidden = !row;
     $("sheetTitle").textContent = rec.tplName;
     $("sheetMeta").textContent =
       "Operator: " +
@@ -52497,6 +52502,23 @@ var ZXING_Z = [
       (rec.date || "–") +
       " · Finished " +
       new Date(rec.ts).toLocaleString();
+    if (!row) {
+      var L = rec.labels || { yes: "Yes", no: "No", na: "N/A" };
+      $("sheetPages").innerHTML =
+        '<div class="shnopg"><p>The page images for this sheet haven\'t reached the cloud yet. They upload the next time ' +
+        esc(whoName(rec.by) || "the person who made it") +
+        " opens the app. Here are the answers.</p>" +
+        '<table class="sumtbl"><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>' +
+        (rec.answers || [])
+          .map(function (x) {
+            return "<tr><td>" + esc(x.q) + "</td><td" + (x.a === "no" ? ' style="color:#d92d20;font-weight:700"' : "") + ">" + esc(L[x.a] || x.a || "–") + "</td></tr>";
+          })
+          .join("") +
+        "</tbody></table>" +
+        (rec.notes ? "<p><b>Notes:</b> " + esc(rec.notes) + "</p>" : "") +
+        "</div>";
+      return $("sheetDlg").showModal();
+    }
     row.pages.forEach(function (bl, i) {
       var u = URL.createObjectURL(bl);
       shUrls.push(u);

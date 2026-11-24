@@ -8552,7 +8552,7 @@
     if (b.dataset.sd) {
       var bytes = await sheetPdfBytes(rec);
       if (!bytes) {
-        toast("The saved pages for that sheet could not be found.");
+        toast("This sheet's pages haven't reached the cloud yet. Select View to see its answers.");
         return;
       }
       var url = URL.createObjectURL(new Blob([bytes], { type: "application/pdf" })),
@@ -8574,13 +8574,11 @@
       }, 4000);
       return;
     }
+    // No page images yet (still on the device that made it): show the synced answers instead.
     var row = await inspPages(rec);
-    if (!row) {
-      toast("The saved pages for that sheet could not be found.");
-      return;
-    }
-    shRec = rec;
+    shRec = row ? rec : null;
     shClean();
+    $("sheetDl").hidden = !row;
     $("sheetTitle").textContent = rec.tplName;
     $("sheetMeta").textContent =
       "Operator: " +
@@ -8590,6 +8588,23 @@
       (rec.date || "–") +
       " · Finished " +
       new Date(rec.ts).toLocaleString();
+    if (!row) {
+      var L = rec.labels || { yes: "Yes", no: "No", na: "N/A" };
+      $("sheetPages").innerHTML =
+        '<div class="shnopg"><p>The page images for this sheet haven\'t reached the cloud yet. They upload the next time ' +
+        esc(whoName(rec.by) || "the person who made it") +
+        " opens the app. Here are the answers.</p>" +
+        '<table class="sumtbl"><thead><tr><th>Question</th><th>Answer</th></tr></thead><tbody>' +
+        (rec.answers || [])
+          .map(function (x) {
+            return "<tr><td>" + esc(x.q) + "</td><td" + (x.a === "no" ? ' style="color:#d92d20;font-weight:700"' : "") + ">" + esc(L[x.a] || x.a || "–") + "</td></tr>";
+          })
+          .join("") +
+        "</tbody></table>" +
+        (rec.notes ? "<p><b>Notes:</b> " + esc(rec.notes) + "</p>" : "") +
+        "</div>";
+      return $("sheetDlg").showModal();
+    }
     row.pages.forEach(function (bl, i) {
       var u = URL.createObjectURL(bl);
       shUrls.push(u);
