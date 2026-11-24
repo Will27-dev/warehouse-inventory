@@ -3048,8 +3048,9 @@ main > section:not([hidden]),
   }
 }
 
-/* Add item, Back up, Restore and Export CSV are for the owner and admins only (see renderAuth). */
-.nomgr #add,
+/* Back up, Restore and Export CSV are for the owner and admins only; Add item needs "Add new items" (see renderAuth). */
+.noadd #add,
+.noadd #pkNewItem,
 .nomgr #exportJson,
 .nomgr #importBtn,
 .nomgr #exportCsv {

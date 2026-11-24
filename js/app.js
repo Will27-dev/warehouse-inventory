@@ -727,10 +727,7 @@
     render();
   };
   $("add").onclick = function () {
-    if (!isMgr()) {
-      toast("Only the owner or an admin can add items.");
-      return;
-    }
+    if (!can("additem")) return deny("add items");
     if (!can("qty")) {
       deny("add or edit quantities");
       return;
@@ -2048,7 +2045,7 @@
     $("pkSubBody").innerHTML =
       pkRowsHtml(p, pkSub.editing ? "edit" : true) +
       (Object.keys(p.prob).length ? '<section class="pkprobs">' + pkProbsHtml(p) + "</section>" : "");
-    $("pkSubEdit").hidden = pkSub.editing || !isMgr();
+    $("pkSubEdit").hidden = pkSub.editing || !can("pkedit");
     $("pkSubSave").hidden = $("pkSubCancel").hidden = !pkSub.editing;
     $("pkSubClose").hidden = pkSub.editing;
   }
@@ -2056,7 +2053,7 @@
     $("pkSubDlg").close();
   };
   $("pkSubEdit").onclick = function () {
-    if (!isMgr()) return;
+    if (!can("pkedit")) return;
     pkSub.editing = true;
     renderPkSub();
   };
@@ -2064,7 +2061,7 @@
     pkViewSub(pkSub.k);
   };
   $("pkSubSave").onclick = function () {
-    if (!isMgr() || !sess) return toast("Sign in as a manager to save changes.");
+    if (!can("pkedit") || !sess) return deny("edit submitted pick lists");
     var p = pkSub.p,
       s = pkSub.e.pick,
       probs = Object.keys(p.prob).length,
@@ -3033,7 +3030,7 @@
       (n === 1 ? " photo" : " photos") +
       (l.folder ? " · from folder" : "") +
       "</small></div>" +
-      (l.folder && !isMgr()
+      (l.folder && !can("dlphotos")
         ? ""
         : '<div class="dlcb"><button data-photo>+ Photo</button></div>') +
       "</div>"
@@ -3106,7 +3103,7 @@
             ? '<p class="dlfnote">No cloud photos for “' +
               esc(a.name) +
               "” yet." +
-              (isMgr() ? " Use Upload photos above to add some." : "") +
+              (can("dlphotos") ? " Use Upload photos above to add some." : "") +
               "</p>"
             : '<p class="dlfnote">Showing ' +
               fl.length +
@@ -3320,7 +3317,7 @@
           ? "Couldn't load photos: " + esc(dlf.err)
           : "Each button shows the photos in its own cloud folder.") +
       '</span><button data-dlf="refresh">Refresh</button>' +
-      (isMgr() ? '<button data-dlf="files">Upload photos</button><button data-dlf="dir">Upload a folder</button>' : "");
+      (can("dlphotos") ? '<button data-dlf="files">Upload photos</button><button data-dlf="dir">Upload a folder</button>' : "");
   }
   // Which button a picked folder belongs to: the folder itself, or its parent (delivery-locations).
   function dlfAreaFor(parts) {
@@ -3345,7 +3342,7 @@
       else renderMap();
       return;
     }
-    if (!isMgr()) return;
+    if (!can("dlphotos")) return;
     if (act === "files") {
       if (!open) {
         toast("Open a button first, then upload its photos.");
@@ -3573,8 +3570,8 @@
       l = findLoc(a, lId);
     if (!l) return;
     viewRef = { a: aId, l: lId };
-    // Cloud photos: only the owner/admins can change them (storage rules).
-    $("viewAdd").hidden = $("viewEdit").hidden = !!l.folder && !isMgr();
+    // Cloud photos: only people with "Edit Delivery Locations photos" can change them (storage rules).
+    $("viewAdd").hidden = $("viewEdit").hidden = !!l.folder && !can("dlphotos");
     $("viewBody").innerHTML =
       '<div class="vlabel" style="margin:0 0 4px">' +
       esc(a.name) +
@@ -3771,6 +3768,12 @@
     ["summary", "Create summaries"],
     ["contacts", "Add or edit important contacts"],
     ["greens", "Use Greens Management"],
+    ["additem", "Add new items", 1],
+    ["pkedit", "Edit submitted pick lists", 1],
+    ["dlphotos", "Edit Delivery Locations photos", 1],
+    ["grapprove", "Approve Greens transfers", 1],
+    ["grdel", "Delete Greens count sheets and transfers", 1],
+    ["inspall", "View everyone's inspection sheets", 1],
   ];
   var ROLE_LABEL = { owner: "Owner", admin: "Admin", user: "User" };
   /* =====================================================================
@@ -3844,7 +3847,7 @@
   function permsOf(u) {
     var p = {};
     PERMS.forEach(function (k) {
-      p[k[0]] = u.role === "owner" ? true : u.perms ? !!u.perms[k[0]] : u.role === "admin";
+      p[k[0]] = u.role === "owner" || (k[2] && u.role === "admin") ? true : u.perms ? !!u.perms[k[0]] : u.role === "admin";
     });
     return p;
   }
@@ -3877,7 +3880,8 @@
     cl.toggle("nosum", !can("summary"));
     cl.toggle("noct", !can("contacts"));
     cl.toggle("nogreens", !can("greens"));
-    cl.toggle("nomgr", !isMgr()); // hides Add item, Back up, Restore, Export CSV
+    cl.toggle("nomgr", !isMgr()); // hides Back up, Restore, Export CSV
+    cl.toggle("noadd", !can("additem")); // hides Add item
     applyDark();
     updateProfileBtn();
   }
@@ -4017,7 +4021,7 @@
       });
     if (i === 7)
       return inspAll().filter(function (r) {
-        return r.by === me;
+        return r.by === me || can("inspall");
       });
     return null; // Put Away isn't built yet, so nobody has records there.
   }
@@ -4059,6 +4063,7 @@
           .map(function (r) {
             return (
               '<tr><td class="cname">' + esc(r.tplName) + (r.equipment ? "<small>Equip. " + esc(r.equipment) + "</small>" : "") +
+              (r.by !== curEmail() ? "<small>By " + esc(whoName(r.by) || r.by) + "</small>" : "") +
               "</td><td>" + esc(r.date || "–") + "</td><td>" + dvWhen(r.ts) +
               '</td><td class="act"><button type="button" data-inspv="' + esc(r.id) + '">View</button><button type="button" data-inspv="' + esc(r.id) +
               '" data-inspdl="1">Download</button></td></tr>'
@@ -5738,11 +5743,10 @@
             esc(whoName(x.e.by)) +
             "</td><td>" +
             dvWhen(x.e.ts) +
-            '</td><td class="act"><button type="button" data-grxopen="' +
-            esc(x.k) +
-            '">Review</button><button type="button" class="danger" data-grdel="' +
-            esc(x.k) +
-            '">Delete</button></td></tr>'
+            '</td><td class="act">' +
+            (can("grapprove") ? '<button type="button" data-grxopen="' + esc(x.k) + '">Review</button>' : "") +
+            (can("grdel") ? '<button type="button" class="danger" data-grdel="' + esc(x.k) + '">Delete</button>' : "") +
+            "</td></tr>"
           );
         })
         .join("") +
@@ -5806,6 +5810,7 @@
   document.addEventListener("click", function (e) {
     var b = e.target.closest("button[data-grxopen]");
     if (!b) return;
+    if (!can("grapprove")) return deny("approve Greens transfers");
     var x = grXfers().find(function (y) {
       return y.k === b.dataset.grxopen;
     });
@@ -6026,6 +6031,7 @@
   document.addEventListener("click", function (ev) {
     var b = ev.target.closest("button[data-grdel]");
     if (!b) return;
+    if (!can("grdel")) return deny("delete Greens count sheets and transfers");
     var k = b.dataset.grdel,
       sh = grSheets().find(function (e) {
         return e.k === k;
@@ -6120,7 +6126,7 @@
             '">View</button><button type="button" data-grview="' +
             esc(e.k) +
             '" data-grdl="1">Download</button>' +
-            (mine ? "" : '<button type="button" class="danger" data-grdel="' + esc(e.k) + '">Delete</button>') +
+            (mine || !can("grdel") ? "" : '<button type="button" class="danger" data-grdel="' + esc(e.k) + '">Delete</button>') +
             "</td></tr>"
           );
         })
