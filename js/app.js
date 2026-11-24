@@ -604,9 +604,50 @@
     f.u.value = item ? item.u : "EA";
     f.notes.value = item ? item.notes : "";
     f.c.value = item ? item.c : "";
+    $("locPick").hidden = !!item;
+    if (!item) {
+      var t0 = selTabs().length === 1 ? selTabs()[0] : -1;
+      locFill(t0 >= 0 ? TABS[t0].g : st.sel.charAt(0) === "g" ? +st.sel.slice(1) : -1, t0);
+    }
     $("dlg").showModal();
     f.n.focus();
   }
+  // Add item: pick the location from the master tabs and their sub-tabs; the sub-tab fills the Locator.
+  function locFill(g, ti) {
+    var f = $("form").elements,
+      gs = GROUPS.map(function (G, i) {
+        return i;
+      })
+        .filter(function (i) {
+          return TABS.some(function (t) {
+            return t.g === i;
+          });
+        })
+        .sort(function (a, b) {
+          return GROUPS[a].o - GROUPS[b].o;
+        });
+    if (gs.indexOf(g) < 0) g = gs[0];
+    f.lg.innerHTML = gs
+      .map(function (i) {
+        return '<option value="' + i + '"' + (i === g ? " selected" : "") + ">" + esc(gname(i)) + "</option>";
+      })
+      .join("");
+    var gl = gname(g).toLowerCase();
+    f.lt.innerHTML =
+      '<option value="">Choose a sub-tab</option>' +
+      TABS.map(function (t, i) {
+        if (t.g !== g) return "";
+        var nm = tname(i),
+          sh = nm.toLowerCase().indexOf(gl) === 0 ? nm.slice(gl.length).replace(/^[\s,.:–-]+/, "") : ""; // same short name as the sub-tab chips
+        return '<option value="' + i + '"' + (i === ti ? " selected" : "") + ">" + esc(sh || nm) + "</option>";
+      }).join("");
+  }
+  $("form").elements.lg.addEventListener("change", function () {
+    locFill(+this.value, -1);
+  });
+  $("form").elements.lt.addEventListener("change", function () {
+    if (this.value !== "") $("form").elements.l.value = TABS[+this.value].p + ".";
+  });
   function setItem(id, data) {
     if (id.charAt(0) === "a") {
       var a = st.added.find(function (x) {

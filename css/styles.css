@@ -4228,3 +4228,6 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .shnopg table { width: 100%; min-width: 0; table-layout: fixed; }
 .shnopg td { white-space: normal; overflow-wrap: anywhere; }
 .shnopg th:last-child, .shnopg td:last-child { width: 6.5em; }
+
+/* Add item: master tab and sub-tab pickers (hidden when editing) */
+#locPick[hidden] { display: none; }
