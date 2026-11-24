@@ -4232,3 +4232,17 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 
 /* Add item: master tab and sub-tab pickers (hidden when editing) */
 #locPick[hidden] { display: none; }
+
+/* Profile popup: wider; Full name and Nickname on one line with the work buttons under them; full-width Bio */
+#profDlg { width: min(1040px, 96vw); }
+.pfnames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pfnames label { margin-bottom: 12px; }
+.pfright .pfacts { margin: 4px 0 0; }
+.pfbio { display: block; margin: 0 0 16px; }
+.pfbio textarea { min-height: 144px; resize: vertical; }
+@media (max-width: 560px) {
+  .pftop { grid-template-columns: minmax(0, 1fr); }
+  .pfleft { flex-direction: row; align-items: center; gap: 16px; }
+  .pfleft .pfpicbtns { flex: 1; width: auto; }
+  .pfnames { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}

@@ -4245,6 +4245,20 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 
 /* Add item: master tab and sub-tab pickers (hidden when editing) */
 #locPick[hidden] { display: none; }
+
+/* Profile popup: wider; Full name and Nickname on one line with the work buttons under them; full-width Bio */
+#profDlg { width: min(1040px, 96vw); }
+.pfnames { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 16px; }
+.pfnames label { margin-bottom: 12px; }
+.pfright .pfacts { margin: 4px 0 0; }
+.pfbio { display: block; margin: 0 0 16px; }
+.pfbio textarea { min-height: 144px; resize: vertical; }
+@media (max-width: 560px) {
+  .pftop { grid-template-columns: minmax(0, 1fr); }
+  .pfleft { flex-direction: row; align-items: center; gap: 16px; }
+  .pfleft .pfpicbtns { flex: 1; width: auto; }
+  .pfnames { grid-template-columns: minmax(0, 1fr); gap: 0; }
+}
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4994,30 +5008,32 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
           </div>
           <div class="pfright">
             <p class="pfwho" id="pfWho"></p>
-            <label
-              >Full name <span id="pfNameNote"></span
-              ><input name="fullname" maxlength="80" autocomplete="name" placeholder="First and last name, filled in on forms"
-            /></label>
-            <label
-              >Nickname<input
-                name="nick"
-                maxlength="40"
-                autocomplete="off"
-                placeholder="What people call you"
-            /></label>
-            <label
-              >Bio<textarea
-                name="bio"
-                rows="4"
-                maxlength="500"
-                placeholder="A little about you, your role, your area…"
-              ></textarea>
-              <small id="pfCount" class="pfcount"></small>
-            </label>
+            <div class="pfnames">
+              <label
+                >Full name <span id="pfNameNote"></span
+                ><input name="fullname" maxlength="80" autocomplete="name" placeholder="First and last name, filled in on forms"
+              /></label>
+              <label
+                >Nickname<input
+                  name="nick"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="What people call you"
+              /></label>
+            </div>
+            <div class="pfacts" id="pfActs" role="tablist" aria-label="Your work"></div>
           </div>
         </div>
-        <div class="pfacts" id="pfActs" role="tablist" aria-label="Your work"></div>
         <div class="pfwork" id="pfWork" role="tabpanel" hidden></div>
+        <label class="pfbio"
+          >Bio<textarea
+            name="bio"
+            rows="6"
+            maxlength="500"
+            placeholder="A little about you, your role, your area…"
+          ></textarea>
+          <small id="pfCount" class="pfcount"></small>
+        </label>
         <div class="pfdark">
           <button type="button" class="dmswitch" id="darkSwitch" role="switch" aria-checked="false">
             <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span

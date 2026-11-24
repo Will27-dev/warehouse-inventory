@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261124c" />
+    <link rel="stylesheet" href="css/styles.css?v=20261124d" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -759,30 +759,32 @@
           </div>
           <div class="pfright">
             <p class="pfwho" id="pfWho"></p>
-            <label
-              >Full name <span id="pfNameNote"></span
-              ><input name="fullname" maxlength="80" autocomplete="name" placeholder="First and last name, filled in on forms"
-            /></label>
-            <label
-              >Nickname<input
-                name="nick"
-                maxlength="40"
-                autocomplete="off"
-                placeholder="What people call you"
-            /></label>
-            <label
-              >Bio<textarea
-                name="bio"
-                rows="4"
-                maxlength="500"
-                placeholder="A little about you, your role, your area…"
-              ></textarea>
-              <small id="pfCount" class="pfcount"></small>
-            </label>
+            <div class="pfnames">
+              <label
+                >Full name <span id="pfNameNote"></span
+                ><input name="fullname" maxlength="80" autocomplete="name" placeholder="First and last name, filled in on forms"
+              /></label>
+              <label
+                >Nickname<input
+                  name="nick"
+                  maxlength="40"
+                  autocomplete="off"
+                  placeholder="What people call you"
+              /></label>
+            </div>
+            <div class="pfacts" id="pfActs" role="tablist" aria-label="Your work"></div>
           </div>
         </div>
-        <div class="pfacts" id="pfActs" role="tablist" aria-label="Your work"></div>
         <div class="pfwork" id="pfWork" role="tabpanel" hidden></div>
+        <label class="pfbio"
+          >Bio<textarea
+            name="bio"
+            rows="6"
+            maxlength="500"
+            placeholder="A little about you, your role, your area…"
+          ></textarea>
+          <small id="pfCount" class="pfcount"></small>
+        </label>
         <div class="pfdark">
           <button type="button" class="dmswitch" id="darkSwitch" role="switch" aria-checked="false">
             <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span
@@ -994,6 +996,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261124c"></script>
+    <script src="js/app.js?v=20261124d"></script>
   </body>
 </html>
