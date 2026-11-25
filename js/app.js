@@ -3801,7 +3801,7 @@
       "Upload PDF forms to keep as guides and use as inspection sheet templates.",
       "Submitted pick lists, plus who added, removed or moved stock on a chosen day, with a 7-day view per person.",
       "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
-      "Charts and trends for your inventory. Coming soon.",
+      "The top 10 departments that order on pick lists, and the top 10 items they order, this month and last month.",
       "See what each location holds, count greens, and transfer them between locations.",
     ],
     MGICONS = [
@@ -4469,8 +4469,209 @@
       var ns = grSheets().length;
       return [ns, ns === 1 ? "count sheet" : "count sheets"];
     }
+    if (i === 5) {
+      var np = anStats(0).picks;
+      return [np, (np === 1 ? "pick list" : "pick lists") + " this month"];
+    }
     return ["", "Coming soon"];
   }
+  /* ---------- Analytics: who orders what, from submitted pick lists ----------
+     A department is the pick slip's "Deliver to" (36K-xxxx gives xxxx). Departments are ranked by
+     how many pick slip lines they ordered; their items by the quantity picked (or allocated). */
+  var anTab = 0; // 0: this month, 1: previous month
+  function anMonth(back) {
+    var d = new Date();
+    return [new Date(d.getFullYear(), d.getMonth() - back, 1), new Date(d.getFullYear(), d.getMonth() - back + 1, 1)];
+  }
+  function anTop(o) {
+    return Object.keys(o)
+      .map(function (k) {
+        return [k, o[k]];
+      })
+      .sort(function (a, b) {
+        return b[1] - a[1] || (a[0] < b[0] ? -1 : 1);
+      })
+      .slice(0, 10);
+  }
+  function anStats(back) {
+    var m = anMonth(back),
+      first = {},
+      last = {};
+    // Edits are newer entries pointing at the first submission (pick.of): count the newest, dated by the first.
+    (st.audit || []).forEach(function (x) {
+      if (!x.pick) return;
+      var k = x.pick.of || x.k;
+      if (!first[k] || x.ts < first[k].ts) first[k] = x;
+      if (!last[k] || x.ts > last[k].ts) last[k] = x;
+    });
+    var picks = Object.keys(first)
+        .filter(function (k) {
+          return first[k].ts >= +m[0] && first[k].ts < +m[1];
+        })
+        .map(function (k) {
+          return last[k].pick;
+        }),
+      dep = {},
+      rows = [];
+    picks.forEach(function (pk) {
+      (pk.rows || []).forEach(function (r, j) {
+        var d = String(r.dest || "").trim(),
+          q = pkNum((pk.picked || {})[j]);
+        if (!d) return;
+        if (!(q > 0)) q = pkNum(r.alloc) || 0;
+        dep[d] = (dep[d] || 0) + 1;
+        rows.push({ d: d, n: r.n, q: q });
+      });
+    });
+    var deps = anTop(dep),
+      inTop = {},
+      it = {};
+    deps.forEach(function (t) {
+      inTop[t[0]] = 1;
+    });
+    rows.forEach(function (r) {
+      if (inTop[r.d]) it[r.n] = (it[r.n] || 0) + r.q;
+    });
+    return { m: m[0], picks: picks.length, lines: rows.length, deps: deps, items: anTop(it) };
+  }
+  // Ring chart: one hue, darkest = biggest; a 2px gap between slices. Hover a slice for its name and count.
+  function anRing(list, hue, total, label, names) {
+    var C = 2 * Math.PI * 48,
+      sum = list.reduce(function (a, t) {
+        return a + t[1];
+      }, 0),
+      at = 0,
+      arcs = list
+        .map(function (t, i) {
+          var len = (t[1] / sum) * C,
+            gap = list.length > 1 ? Math.min(2, len / 2) : 0,
+            a =
+              '<circle r="48" cx="60" cy="60" stroke="' +
+              hue +
+              '" stroke-opacity="' +
+              (1 - i * 0.07).toFixed(2) +
+              '" stroke-dasharray="' +
+              (len - gap).toFixed(2) +
+              " " +
+              C.toFixed(2) +
+              '" stroke-dashoffset="' +
+              (-at).toFixed(2) +
+              '"><title>' +
+              esc(names[i]) +
+              ": " +
+              t[1].toLocaleString() +
+              "</title></circle>";
+          at += len;
+          return a;
+        })
+        .join("");
+    return (
+      '<div class="anring"><svg viewBox="0 0 120 120" role="img" aria-label="' +
+      esc(label) +
+      '"><circle r="48" cx="60" cy="60" class="antrack"/><g transform="rotate(-90 60 60)">' +
+      arcs +
+      '</g></svg><div class="ancen"><b>' +
+      total.toLocaleString() +
+      "</b><span>" +
+      esc(label) +
+      "</span></div></div>"
+    );
+  }
+  function anCard(title, list, hue, total, label, names, sub, empty) {
+    return (
+      '<section class="ancard"><h4>' +
+      title +
+      "</h4>" +
+      anRing(list, hue, total, label, names) +
+      (list.length
+        ? '<ol class="anleg">' +
+          list
+            .map(function (t, i) {
+              return (
+                '<li><i style="background:' +
+                hue +
+                ";opacity:" +
+                (1 - i * 0.07).toFixed(2) +
+                '"></i><span>' +
+                esc(names[i]) +
+                (sub[i] ? "<small>" + esc(sub[i]) + "</small>" : "") +
+                "</span><b>" +
+                t[1].toLocaleString() +
+                "</b></li>"
+              );
+            })
+            .join("") +
+          "</ol>"
+        : '<p class="anempty">' + empty + "</p>") +
+      "</section>"
+    );
+  }
+  function renderAn() {
+    var me = curEmail(),
+      a = anStats(anTab),
+      mon = a.m.toLocaleString([], { month: "long", year: "numeric" }),
+      itemD = a.items.map(function (t) {
+        var it = items.find(function (x) {
+          return x.n === t[0];
+        });
+        return it ? it.d.split("|")[1] || it.d : "";
+      });
+    $("anBox").innerHTML =
+      '<div class="an"><aside class="anside"><div class="anme">' +
+      avatarHtml(me, whoName(me), "lg") +
+      "<b>" +
+      esc(whoName(me)) +
+      '</b></div><p class="anlab">Main</p><span class="annav" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>Items</span></aside>' +
+      '<div class="anmain"><header class="anhead"><h3>Who orders what</h3><p>From submitted pick lists in ' +
+      esc(mon) +
+      '.</p><div class="antabs" role="tablist" aria-label="Month">' +
+      ["This month", "Previous month"]
+        .map(function (t, i) {
+          return '<button type="button" role="tab" data-an="' + i + '" aria-selected="' + (i === anTab) + '">' + t + "</button>";
+        })
+        .join("") +
+      '</div></header><div class="anbody" role="tabpanel"><p class="antot"><b>Totals</b> · ' +
+      a.picks +
+      (a.picks === 1 ? " pick list" : " pick lists") +
+      " · " +
+      a.lines +
+      (a.lines === 1 ? " line" : " lines") +
+      "</p>" +
+      anCard(
+        "Top 10 departments",
+        a.deps,
+        "var(--acc1)",
+        a.deps.length,
+        a.deps.length === 1 ? "department" : "departments",
+        a.deps.map(function (t) {
+          return "Dept " + t[0];
+        }),
+        a.deps.map(function (t) {
+          return t[1] === 1 ? "line ordered" : "lines ordered";
+        }),
+        "No pick lists were submitted in " + esc(mon) + "."
+      ) +
+      anCard(
+        "Top 10 items they order",
+        a.items,
+        "var(--acc2)",
+        a.items.length,
+        a.items.length === 1 ? "item" : "items",
+        a.items.map(function (t) {
+          return t[0];
+        }),
+        itemD,
+        "No items were picked for these departments in " + esc(mon) + "."
+      ) +
+      "</div></div></div>";
+  }
+  $("anBox").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-an]");
+    if (!b) return;
+    anTab = +b.dataset.an;
+    renderAn();
+    $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
+  });
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
     var ok = isMgr();
@@ -4522,6 +4723,7 @@
       if (!tpCloud && !tpCloudErr) tpCloudScan();
     }
     if (mgOpt === 3) renderMaterial();
+    if (mgOpt === 5) renderAn();
     if (mgOpt === 6) renderGr();
     if (mgOpt === 4) {
       renderFinished();

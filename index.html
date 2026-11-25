@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125c" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125d" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -396,13 +396,7 @@
                 </div>
               </div>
               <div id="mgOpt5" hidden>
-                <div class="mgpad">
-                  <div class="anlsoon">
-                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20V10M10 20V4M16 20v-7M21 20H3" /></svg>
-                    <h3>Analytics</h3>
-                    <p>Charts and trends for your inventory will live here. Coming soon.</p>
-                  </div>
-                </div>
+                <div class="mgpad" id="anBox"></div>
               </div>
               <div id="mgOpt6" hidden>
                 <div class="mgpad" id="grBox">
@@ -1026,6 +1020,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125c"></script>
+    <script src="js/app.js?v=20261125d"></script>
   </body>
 </html>
