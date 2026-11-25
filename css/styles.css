@@ -3322,9 +3322,6 @@ html.dark .dlfolder button[data-dlf="reconnect"] { background:var(--acc1); color
 .dvscan button { padding:11px 18px; border:0; border-radius:999px; font-weight:800; background:var(--tile); color:var(--on-dark); }
 .dvscan button.primary { background:var(--acc1); color:var(--char); }
 .dvflash { margin:10px 4px 0; color:var(--ink); font-size:13px; animation:mgRise .3s ease both; }
-.dvlines { margin-top:14px; min-width:560px; }
-.dvlines td { vertical-align:middle; }
-.dvlines input { margin:0; padding:7px 10px; }
 .dvfoot { display:flex; align-items:center; flex-wrap:wrap; gap:10px; margin-top:16px; padding-top:14px; border-top:1px solid var(--line); }
 .dvfoot .sp { flex:1; }
 .dvtot { font-weight:800; }
@@ -4297,3 +4294,52 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 .grcode figcaption b { font-size: 18px; }
 .grcode figcaption span { font-size: 13px; font-variant-numeric: tabular-nums; color: #444; }
 .grcode svg { display: block; width: 100%; height: 56px; fill: #000; }
+
+/* Delivery trips (Load and Delivery modes): location photo beside dark receipt cards */
+.dvsplit { display: grid; grid-template-columns: minmax(0, 1fr); gap: 16px; margin-top: 16px; }
+@media (min-width: 1000px) {
+  .dvsplit:has(> .dvphoto) { grid-template-columns: minmax(280px, 380px) minmax(0, 1fr); align-items: start; }
+  .dvphoto { position: sticky; top: 88px; } /* below the sticky tab bar */
+}
+.dvmain > .dvp:first-child { margin-top: 0; }
+.dvmain > .dvgrp:first-of-type { margin-top: 0; }
+.dvphoto { padding: 12px; background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
+.dvpimg { display: grid; place-items: center; aspect-ratio: 4 / 3; overflow: hidden; background: var(--canvas); }
+.dvpimg img { display: block; width: 100%; height: 100%; object-fit: cover; }
+.dvpimg p { margin: 0; padding: 16px; color: var(--mute); text-align: center; }
+.dvpcap { display: flex; align-items: center; gap: 8px; margin-top: 12px; }
+.dvpcap span { display: flex; flex: 1; flex-direction: column; min-width: 0; }
+.dvpcap b { font-size: 17px; overflow-wrap: anywhere; }
+.dvpcap small { color: var(--mute); font-size: 13px; }
+.dvpcap button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 1px solid var(--line); background: var(--tile); color: var(--ink); cursor: pointer; }
+.dvpcap button svg { width: 20px; height: 20px; }
+.dvcard { grid-template-columns: minmax(0, 1fr) auto; gap: 2px 12px; align-items: center; padding: 14px 16px; background: var(--char); color: var(--on-dark); }
+html.dark .dvcard { box-shadow: inset 0 0 0 1px var(--line); }
+.dvcard .dvlab { grid-column: 1; grid-row: 1; font-size: 14px; font-weight: 800; color: var(--on-dark); }
+.dvcard .dvl2 { grid-row: 2; margin-top: 8px; font-size: 12px; font-weight: 700; color: var(--on-dark-mute); }
+.dvcard .dvrc { grid-column: 2; grid-row: 1; text-align: right; font-size: 17px; font-variant-numeric: tabular-nums; }
+.dvcard .dvloc { grid-column: 1; grid-row: 3; font-size: 17px; font-weight: 700; color: var(--on-dark); }
+.dvcard .dvbox { grid-column: 2; grid-row: 2 / span 2; align-self: end; padding: 8px 14px; background: var(--acc1); color: var(--on-acc); font-size: 13px; }
+.dvcard.on { background: var(--acc1); color: var(--on-acc); box-shadow: 0 0 0 3px var(--char); }
+.dvcard.on .dvlab, .dvcard.on .dvloc { color: var(--on-acc); }
+.dvcard.on .dvbox { background: var(--char); color: var(--on-dark); }
+/* Load mode cards: receipt # button shows its photo; location, boxes and Remove stay editable */
+.dvlc { cursor: default; }
+.dvlc .dvrc { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; padding: 0 4px; border: 0; background: transparent; color: inherit; font: inherit; font-size: 17px; font-weight: 800; cursor: pointer; }
+.dvlc .dvrc svg { width: 18px; height: 18px; }
+.dvlc .dvll { grid-row: 2 / span 2; margin-top: 4px; font-size: 12px; font-weight: 700; color: var(--on-dark-mute); }
+.dvlc .dvll input { display: block; width: 100%; min-height: 44px; margin-top: 4px; padding: 8px 12px; border: 0; background: var(--head); color: var(--ink); font: inherit; font-size: 16px; }
+.dvlc .dvll input:focus { outline: 2px solid var(--acc1); outline-offset: 2px; }
+.dvlc .dvbox { display: flex; align-items: center; grid-row: 2; padding: 0; box-shadow: none; }
+.dvlc .dvbox b { min-width: 0; padding: 0 2px; color: inherit; white-space: nowrap; }
+.dvlc .dvbox button { min-width: 44px; min-height: 44px; border: 0; background: transparent; color: inherit; font-size: 18px; }
+.dvcards:has(> .dvlc) { grid-template-columns: minmax(0, 1fr); }
+.dvlc .dvrm { grid-column: 2; grid-row: 3; justify-self: end; min-height: 44px; padding: 0 8px; border: 0; background: transparent; color: var(--on-dark-mute); font-weight: 700; text-decoration: underline; cursor: pointer; }
+.dvlc.on .dvll, .dvlc.on .dvrm { color: var(--on-acc); }
+@media (max-width: 640px) {
+  .dvsplit { gap: 12px; }
+  .dvlc .dvll { grid-column: 1 / -1; grid-row: 2; }
+  .dvlc .dvbox { grid-column: 1; grid-row: 3; justify-self: start; margin-top: 8px; }
+  .dvlc .dvrm { grid-row: 3; align-self: end; }
+}
+.dvgrp h4 span { color: var(--on-dark); } /* cobalt on navy was too faint */

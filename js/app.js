@@ -9707,6 +9707,9 @@
     dvFlash = "",
     dvSel = null,
     dvAddNew = false, // delivering: the "Add new item to trip?" scan bar is open
+    dvPic = 0, // which photo of the shown location (‹ › buttons)
+    dvPicFor = null,
+    dvScanned = false, // cloud Delivery Locations folders read once per visit
     camHold = "", // code being held in view; it counts after 0.75 s
     camHoldAt = 0,
     camHoldSeen = 0,
@@ -9962,6 +9965,15 @@
       dvView = "home";
       return renderDv();
     }
+    if (!dvScanned && cloudOn()) {
+      dvScanned = true;
+      Promise.all(dl.areas.map(function (a) {
+        return dlfScan(a);
+      })).then(function () {
+        var ae = document.activeElement;
+        if (!$("dvPanel").hidden && dvView === "trip" && !(ae && ae.tagName === "INPUT" && ae.value)) renderDv();
+      });
+    }
     var ro = !dvMine(m) || m.status === "submitted";
     if (m.status === "loading" && !ro) box.innerHTML = back + cloudStatusHtml() + dvLoadHtml(m);
     else if (m.status === "delivering" && !ro) box.innerHTML = back + cloudStatusHtml() + dvDeliverHtml(m);
@@ -9970,8 +9982,74 @@
     if (sc && !("ontouchstart" in window)) sc.focus();
   }
 
+  /* ---------- Location photo (Load and Delivery modes) ----------
+     Matches a receipt's location by name against Delivery Locations (saved spots and cloud folders). */
+  function dvSpot(loc) {
+    var k = dlfKey(loc || ""),
+      all = [];
+    if (!k) return null;
+    dl.areas.forEach(function (a) {
+      a.locs.concat(dlf.cache[a.id] || []).forEach(function (l) {
+        all.push({ a: a, l: l, k: dlfKey(l.name) });
+      });
+    });
+    return (
+      all.find(function (x) {
+        return x.k === k;
+      }) ||
+      all.find(function (x) {
+        return x.k.length > 2 && (k.indexOf(x.k) >= 0 || x.k.indexOf(k) >= 0);
+      }) ||
+      all.find(function (x) {
+        return dlfKey(x.a.name) === k && x.l.pics.length;
+      }) ||
+      null
+    );
+  }
+  var DV_CHEV = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="';
+  function dvPhotoHtml(l) {
+    if (!l) return "";
+    if (l.id !== dvPicFor) {
+      dvPicFor = l.id;
+      dvPic = 0;
+    }
+    var sp = dvSpot(l.loc),
+      pics = sp ? sp.l.pics : [],
+      i = pics.length ? ((dvPic % pics.length) + pics.length) % pics.length : 0;
+    return (
+      '<section class="dvphoto" aria-label="Photo of the delivery location"><div class="dvpimg">' +
+      (pics.length
+        ? '<img src="' + esc(pics[i]) + '" alt="' + esc(sp.l.name) + (pics.length > 1 ? ", photo " + (i + 1) + " of " + pics.length : "") + '">'
+        : "<p>" +
+          (sp
+            ? "No photos of " + esc(sp.l.name) + " yet. Add them in Delivery Locations."
+            : l.loc
+              ? "“" + esc(l.loc) + "” isn't in Delivery Locations yet."
+              : "This receipt has no location.") +
+          "</p>") +
+      '</div><div class="dvpcap"><span><b>' +
+      (esc(sp ? sp.l.name : l.loc) || "No location") +
+      "</b><small>Receipt " +
+      esc(l.rc) +
+      (sp ? " · " + esc(sp.a.name) : "") +
+      "</small></span>" +
+      (pics.length > 1
+        ? '<button data-dvpic="-1" aria-label="Previous photo">' + DV_CHEV + 'm15 18-6-6 6-6"/></svg></button><small>' +
+          (i + 1) +
+          " of " +
+          pics.length +
+          '</small><button data-dvpic="1" aria-label="Next photo">' + DV_CHEV + 'm9 18 6-6-6-6"/></svg></button>'
+        : "") +
+      "</div></section>"
+    );
+  }
+
   /* ---------- Load mode ---------- */
   function dvLoadHtml(m) {
+    var cur =
+      m.lines.find(function (l) {
+        return l.id === dvSel;
+      }) || m.lines[m.lines.length - 1];
     return (
       dvTripHead(m) +
       '<div class="dvfields"><label>Location (when a QR code has none)<input id="dvCurLoc" list="dvPlaces" maxlength="120" autocomplete="off" placeholder="Used only if the QR code has no location" value="' +
@@ -9981,23 +10059,40 @@
       "</div>" +
       dvScanBar("Scan a QR code, or type a receipt number and press Enter") +
       (m.lines.length
-        ? '<div class="tw dvtw"><table class="sumtbl dvlines"><thead><tr><th>Receipt #</th><th>Location</th><th>Boxes</th><th></th></tr></thead><tbody>' +
+        ? '<div class="dvsplit">' +
+          dvPhotoHtml(cur) +
+          '<div class="dvcards">' +
           m.lines
+            .slice()
+            .reverse()
             .map(function (l) {
+              var on = l === cur;
               return (
-                '<tr data-l="' +
+                '<div class="dvcard dvlc' +
+                (on ? " on" : "") +
+                '" data-l="' +
                 l.id +
-                '"><td class="num">' +
+                '"><span class="dvlab">Receipt #</span><button class="dvrc" data-dvpick="' +
+                l.id +
+                '" aria-pressed="' +
+                on +
+                '" aria-label="Show the location photo for receipt ' +
                 esc(l.rc) +
-                '</td><td><input data-f="loc" list="dvPlaces" maxlength="120" value="' +
+                '">' +
+                esc(l.rc) +
+                DV_CHEV +
+                'M3 7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><circle cx="9" cy="10" r="2"/><path d="m21 15-4-4-8 8"/></svg></button><label class="dvlab dvll">Location<input data-f="loc" list="dvPlaces" maxlength="120" value="' +
                 esc(l.loc) +
-                '" placeholder="Location"></td><td><span class="qty"><button data-dvq="-1" aria-label="One less box">−</button><b>' +
+                '" placeholder="Location"></label><span class="dvbox qty"><button data-dvq="-1" aria-label="One less box">−</button><b>' +
                 esc(l.boxes) +
-                '</b><button data-dvq="1" aria-label="One more box">+</button></span></td><td class="act"><button data-dvrm aria-label="Remove receipt">Remove</button></td></tr>'
+                (+l.boxes === 1 ? " box" : " boxes") +
+                '</b><button data-dvq="1" aria-label="One more box">+</button></span><button class="dvrm" data-dvrm aria-label="Remove receipt ' +
+                esc(l.rc) +
+                '">Remove</button></div>'
               );
             })
             .join("") +
-          "</tbody></table></div>"
+          "</div></div>"
         : '<div class="empty dvempty">Nothing loaded yet. Scan the QR code on each receipt. The QR code fills in the receipt #, location and box count.</div>') +
       '<div class="dvfoot"><span class="dvtot">' +
       m.lines.length +
@@ -10032,6 +10127,9 @@
       ' boxes left</span><div class="pbar"><i style="width:' +
       pct +
       '%"></i></div></div>' +
+      '<div class="dvsplit">' +
+      dvPhotoHtml(sel || left[0]) +
+      '<div class="dvmain">' +
       (dvAddNew
         ? dvScanBar("Scan or type the receipt # of the package to add", '<button data-dv="addnew-off">Cancel</button>')
         : '<p class="dvp"><button class="primary" data-dv="addnew">Add new item to trip?</button></p>' +
@@ -10056,9 +10154,9 @@
                       l.id +
                       '" aria-pressed="' +
                       (l.id === dvSel) +
-                      '"><span class="dvrc">' +
+                      '"><span class="dvlab">Receipt #</span><span class="dvrc">' +
                       esc(l.rc) +
-                      '</span><span class="dvloc">' +
+                      '</span><span class="dvlab dvl2">Location</span><span class="dvloc">' +
                       (esc(l.loc) || "No location") +
                       '</span><span class="dvbox">' +
                       l.boxes +
@@ -10102,6 +10200,7 @@
             .join("") +
           "</details>"
         : "") +
+      "</div></div>" +
       '<div class="dvfoot dvsticky">' +
       (left.length
         ? sel
@@ -10630,6 +10729,8 @@
     } else if (act === "print" && m) {
       dvPrint(m);
       return;
+    } else if (b.dataset.dvpic) {
+      dvPic += +b.dataset.dvpic;
     } else if (b.dataset.dvpick && m) {
       dvSel = dvSel === b.dataset.dvpick ? null : b.dataset.dvpick;
       dvFlash = "";
@@ -10668,7 +10769,7 @@
       dvView = "home";
       toast("Trip deleted.");
     } else if ((b.dataset.dvq || b.hasAttribute("data-dvrm")) && m && dvMine(m) && m.status === "loading") {
-      var tr = b.closest("tr"),
+      var tr = b.closest("[data-l]"),
         idx = m.lines.findIndex(function (x) {
           return x.id === tr.dataset.l;
         });
@@ -10694,7 +10795,7 @@
     if (t.id === "dvCurLoc") m.curLoc = t.value;
     else if (t.dataset.f) {
       var line = m.lines.find(function (x) {
-        return x.id === t.closest("tr").dataset.l;
+        return x.id === t.closest("[data-l]").dataset.l;
       });
       if (!line) return;
       line[t.dataset.f] = t.value;
