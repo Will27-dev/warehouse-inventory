@@ -4417,17 +4417,17 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .antabs button:hover { color: var(--ink); }
 .anbody { padding: 32px 48px 48px; }
 .anstats { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 32px; align-items: start; }
-.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; justify-items: center; }
+.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 170px)); justify-content: center; gap: 8px 12px; }
 .anring { position: relative; width: min(170px, 100%); container-type: inline-size; }
 .anring svg { display: block; width: 100%; height: auto; fill: none; stroke-width: 10; }
 .anring .antrack { stroke: var(--line); }
-.anring circle:not(.antrack):hover { stroke-opacity: 1; }
-.ancen { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
+.anring circle[data-tip]:not(.antrack):hover { stroke-opacity: 1; stroke-width: 13; }
+.anring .antrack[data-tip]:hover { stroke: var(--mute); }
+.ancen { position: absolute; inset: 0; pointer-events: none; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .ancen b { font-family: var(--disp); font-size: 24cqw; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .ancen span { margin-top: 4px; padding: 0 18%; color: var(--mute); font-size: max(9px, 7.5cqw); font-weight: 700; line-height: 1.15; }
 .anpill { grid-column: 1 / -1; justify-self: center; margin: 16px 0 0; padding: 8px 16px; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); font-size: 13px; }
 .anchart { display: flex; flex-direction: column; min-width: 0; }
-.anchart .anpill { align-self: center; }
 .anbars { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; height: 190px; }
 .anaxis { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 14px; color: var(--mute); font-size: 12px; line-height: 12px; text-align: right; font-variant-numeric: tabular-nums; }
 .anbarl { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
@@ -4511,6 +4511,22 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
   .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anbar { padding: 12px 16px; }
 }
+
+/* Back to Analytics: after leaving Analytics through one of its links */
+.anback { position: fixed; right: 24px; bottom: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px 0 14px; border: 0; background: var(--acc1); color: var(--on-acc); font: inherit; font-weight: 800; box-shadow: 0 8px 24px rgba(8, 14, 26, .3); cursor: pointer; }
+.anback[hidden] { display: none; }
+.anback svg { width: 20px; height: 20px; }
+.anback:hover { background: var(--acc1-hover); }
+.anback:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
+body:has(#dvPanel:not([hidden]) .dvsticky) .anback { bottom: 96px; }
+@media (max-width: 640px) {
+  .anback { right: 16px; bottom: 16px; }
+}
+
+/* Analytics ring hover details */
+.antip { position: fixed; z-index: 50; max-width: 300px; padding: 8px 12px; background: var(--char); color: var(--on-dark); font-size: 13px; font-weight: 700; line-height: 1.35; box-shadow: 0 6px 18px rgba(8, 14, 26, .3); pointer-events: none; }
+.antip[hidden] { display: none; }
+html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0, 0, .4); }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -5408,6 +5424,10 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
       <div class="camwrap"><video id="camVideo" playsinline muted></video><i class="camframe"></i><i class="camhold" aria-hidden="true"></i></div>
       <p class="camlast" id="camLast">Point the camera at a QR code.</p>
     </dialog>
+    <button type="button" class="anback" id="anBack" hidden>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to Analytics
+    </button>
+    <div class="antip" id="anTip" role="tooltip" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
     <dialog id="subDlg">
       <form method="dialog" id="subForm">
@@ -44705,6 +44725,8 @@ var ZXING_Z = [
       else if (st.side === 1) renderContacts();
     }
     if (onMg) renderManage();
+    else $("anBox").innerHTML = "";
+    $("anBack").hidden = !anRet || (onMg && mgOpt === 5);
     if (tp >= 2 && tp <= 4) document.documentElement.style.setProperty("--tab", "#f5b335");
     if (onInsp) renderInsp();
     if (tp === 1) renderEwo();
@@ -48695,6 +48717,7 @@ var ZXING_Z = [
      Sidebar and top-bar links open the matching page of the app. */
   var anTab = 0, // AN_TABS index
     anFold = false, // ring/bar row folded away
+    anRet = false, // left Analytics through one of its links: show "Back to Analytics"
     anSideOff = false, // sidebar hidden (menu button)
     anTxt = {}, // text behind each Copy button
     AN_TABS = ["This month", "Previous month", "Last 3 months", "This year", "All time", "Activity", "Problems"],
@@ -48817,7 +48840,8 @@ var ZXING_Z = [
     return mo(f) + " " + (f.getFullYear() !== l.getFullYear() ? f.getFullYear() + " " : "") + "to " + mo(l, 1);
   }
   // Ring chart: one hue, darkest = biggest, 2px gaps; or a single arc for a share (pct 0-1).
-  function anRing(list, hue, big, label, names, pct) {
+  // tips: hover text per slice; for a share ring, [filled part, the rest].
+  function anRing(list, hue, big, label, tips, pct) {
     var C = 2 * Math.PI * 48,
       sum = list.reduce(function (s, t) {
         return s + t[1];
@@ -48825,7 +48849,7 @@ var ZXING_Z = [
       at = 0,
       arcs =
         pct != null
-          ? '<circle r="48" cx="60" cy="60" stroke="' + hue + '" stroke-dasharray="' + (pct * C).toFixed(2) + " " + C.toFixed(2) + '"/>'
+          ? '<circle r="48" cx="60" cy="60" stroke="' + hue + '" stroke-dasharray="' + (pct * C).toFixed(2) + " " + C.toFixed(2) + '"' + (tips[0] ? ' data-tip="' + esc(tips[0]) + '"' : "") + "/>"
           : list
               .map(function (t, i) {
                 var len = (t[1] / sum) * C,
@@ -48841,11 +48865,9 @@ var ZXING_Z = [
                     C.toFixed(2) +
                     '" stroke-dashoffset="' +
                     (-at).toFixed(2) +
-                    '"><title>' +
-                    esc(names[i]) +
-                    ": " +
-                    t[1].toLocaleString() +
-                    "</title></circle>";
+                    '" data-tip="' +
+                    esc(tips[i]) +
+                    '"/>';
                 at += len;
                 return c;
               })
@@ -48853,7 +48875,9 @@ var ZXING_Z = [
     return (
       '<div class="anring"><svg viewBox="0 0 120 120" role="img" aria-label="' +
       esc(big + " " + label) +
-      '"><circle r="48" cx="60" cy="60" class="antrack"/><g transform="rotate(-90 60 60)">' +
+      '"><circle r="48" cx="60" cy="60" class="antrack"' +
+      (pct != null && tips[1] ? ' data-tip="' + esc(tips[1]) + '"' : "") +
+      '/><g transform="rotate(-90 60 60)">' +
       arcs +
       '</g></svg><div class="ancen"><b>' +
       big +
@@ -49030,8 +49054,25 @@ var ZXING_Z = [
       sum = anSummary(a, per),
       deptNames = a.deps.map(function (t) {
         return "Dept " + t[0];
-      });
+      }),
+      share = function (t, list) {
+        var all = list.reduce(function (n, x) {
+          return n + x[1];
+        }, 0);
+        return Math.round((t[1] / all) * 100) + "% of the top 10";
+      },
+      depTips = a.deps.map(function (t) {
+        return "Dept " + t[0] + ": " + t[1] + (t[1] === 1 ? " line" : " lines") + " ordered, " + share(t, a.deps);
+      }),
+      itemTips = a.items.map(function (t) {
+        var d = anItemDesc(t[0]);
+        return t[0] + (d ? ", " + (d.length > 48 ? d.slice(0, 47) + "…" : d) : "") + ": " + t[1].toLocaleString() + " ordered, " + share(t, a.items);
+      }),
+      fillTips = a.alloced
+        ? ["Filled in full: " + a.filled + " of " + a.alloced + " lines", "Not filled in full: " + (a.alloced - a.filled) + " of " + a.alloced + " lines"]
+        : [];
     anTxt = {};
+    $("anTip").hidden = true;
     $("anBox").innerHTML =
       '<div class="an' +
       (anSideOff ? " noside" : "") +
@@ -49095,17 +49136,9 @@ var ZXING_Z = [
         : (anFold
             ? ""
             : '<div class="anstats"><div class="anrings">' +
-              anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", deptNames) +
-              anRing(
-                a.items,
-                "var(--acc2)",
-                a.items.length,
-                a.items.length === 1 ? "item" : "items",
-                a.items.map(function (t) {
-                  return t[0];
-                })
-              ) +
-              anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", [], a.alloced ? a.filled / a.alloced : 0) +
+              anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", depTips) +
+              anRing(a.items, "var(--acc2)", a.items.length, a.items.length === 1 ? "item" : "items", itemTips) +
+              anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", fillTips, a.alloced ? a.filled / a.alloced : 0) +
               '<p class="anpill"><b>Totals</b> · ' +
               a.slips.length +
               (a.slips.length === 1 ? " pick list" : " pick lists") +
@@ -49114,34 +49147,15 @@ var ZXING_Z = [
               (a.lines === 1 ? " line" : " lines") +
               '</p></div><div class="anchart">' +
               anBars(a) +
-              '<p class="anpill">' +
-              (a.daily ? "Lines per day" : "Lines per month") +
-              "</p></div></div>") +
+              "</div></div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
           (anFold ? "Show the charts" : "Hide the charts") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
-          '</button></div><div class="anlow"><div class="anleft"><section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section><div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
+          '</button></div><div class="anlow"><div class="anleft">' +
+          '<div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
           anList(
             a.deps,
             "var(--acc1)",
@@ -49163,7 +49177,27 @@ var ZXING_Z = [
             }),
             "No items were picked for these departments in " + esc(per) + "."
           ) +
-          '</section></div></div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
+          '</section></div>' +
+          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>' +
+          '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +
           encodeURIComponent(sum) +
@@ -49256,16 +49290,43 @@ var ZXING_Z = [
       if (g[0] === "me") return openProfile();
       anExit();
       if (g[0] !== "exit") {
+        anRet = true;
         var tg = document.querySelector("[data-" + g[0] + '="' + g[1] + '"]');
         if (tg) tg.click();
       }
     }
+  });
+  $("anBack").onclick = function () {
+    anRet = false;
+    st.manage = true;
+    st.top = null;
+    st.side = null;
+    mgOpt = 5;
+    if (document.querySelector("dialog[open]")) document.querySelector("dialog[open]").close();
+    render();
+  };
+  // Hover a ring slice: what it stands for.
+  $("anBox").addEventListener("mousemove", function (e) {
+    var t = e.target.closest && e.target.closest("circle[data-tip]"),
+      tip = $("anTip");
+    if (!t) {
+      tip.hidden = true;
+      return;
+    }
+    tip.textContent = t.getAttribute("data-tip");
+    tip.hidden = false;
+    tip.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px";
+    tip.style.top = (e.clientY + 18 + tip.offsetHeight > innerHeight ? e.clientY - tip.offsetHeight - 12 : e.clientY + 18) + "px";
+  });
+  $("anBox").addEventListener("mouseleave", function () {
+    $("anTip").hidden = true;
   });
   // Search hands off to the item list.
   $("anBox").addEventListener("keydown", function (e) {
     if (e.target.id !== "anQ" || e.key !== "Enter") return;
     var v = e.target.value;
     anExit();
+    anRet = true;
     document.querySelector('[data-top="0"]').click();
     $("q").value = v;
     $("q").dispatchEvent(new Event("input", { bubbles: true }));
@@ -49277,6 +49338,7 @@ var ZXING_Z = [
   });
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
+    $("anBack").hidden = !anRet || mgOpt === 5;
     var ok = isMgr();
     $("mgGate").hidden = ok;
     $("mgBody").hidden = !ok;
@@ -49326,7 +49388,9 @@ var ZXING_Z = [
       if (!tpCloud && !tpCloudErr) tpCloudScan();
     }
     if (mgOpt === 3) renderMaterial();
-    if (mgOpt === 5) renderAn();
+    // Analytics is drawn once per visit (tabs and Refresh redraw it), so cloud syncs don't reset it.
+    if (mgOpt !== 5) $("anBox").innerHTML = "";
+    else if (!$("anBox").firstChild) renderAn();
     if (mgOpt === 6) renderGr();
     if (mgOpt === 4) {
       renderFinished();

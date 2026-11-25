@@ -491,6 +491,8 @@
       else if (st.side === 1) renderContacts();
     }
     if (onMg) renderManage();
+    else $("anBox").innerHTML = "";
+    $("anBack").hidden = !anRet || (onMg && mgOpt === 5);
     if (tp >= 2 && tp <= 4) document.documentElement.style.setProperty("--tab", "#f5b335");
     if (onInsp) renderInsp();
     if (tp === 1) renderEwo();
@@ -4481,6 +4483,7 @@
      Sidebar and top-bar links open the matching page of the app. */
   var anTab = 0, // AN_TABS index
     anFold = false, // ring/bar row folded away
+    anRet = false, // left Analytics through one of its links: show "Back to Analytics"
     anSideOff = false, // sidebar hidden (menu button)
     anTxt = {}, // text behind each Copy button
     AN_TABS = ["This month", "Previous month", "Last 3 months", "This year", "All time", "Activity", "Problems"],
@@ -4603,7 +4606,8 @@
     return mo(f) + " " + (f.getFullYear() !== l.getFullYear() ? f.getFullYear() + " " : "") + "to " + mo(l, 1);
   }
   // Ring chart: one hue, darkest = biggest, 2px gaps; or a single arc for a share (pct 0-1).
-  function anRing(list, hue, big, label, names, pct) {
+  // tips: hover text per slice; for a share ring, [filled part, the rest].
+  function anRing(list, hue, big, label, tips, pct) {
     var C = 2 * Math.PI * 48,
       sum = list.reduce(function (s, t) {
         return s + t[1];
@@ -4611,7 +4615,7 @@
       at = 0,
       arcs =
         pct != null
-          ? '<circle r="48" cx="60" cy="60" stroke="' + hue + '" stroke-dasharray="' + (pct * C).toFixed(2) + " " + C.toFixed(2) + '"/>'
+          ? '<circle r="48" cx="60" cy="60" stroke="' + hue + '" stroke-dasharray="' + (pct * C).toFixed(2) + " " + C.toFixed(2) + '"' + (tips[0] ? ' data-tip="' + esc(tips[0]) + '"' : "") + "/>"
           : list
               .map(function (t, i) {
                 var len = (t[1] / sum) * C,
@@ -4627,11 +4631,9 @@
                     C.toFixed(2) +
                     '" stroke-dashoffset="' +
                     (-at).toFixed(2) +
-                    '"><title>' +
-                    esc(names[i]) +
-                    ": " +
-                    t[1].toLocaleString() +
-                    "</title></circle>";
+                    '" data-tip="' +
+                    esc(tips[i]) +
+                    '"/>';
                 at += len;
                 return c;
               })
@@ -4639,7 +4641,9 @@
     return (
       '<div class="anring"><svg viewBox="0 0 120 120" role="img" aria-label="' +
       esc(big + " " + label) +
-      '"><circle r="48" cx="60" cy="60" class="antrack"/><g transform="rotate(-90 60 60)">' +
+      '"><circle r="48" cx="60" cy="60" class="antrack"' +
+      (pct != null && tips[1] ? ' data-tip="' + esc(tips[1]) + '"' : "") +
+      '/><g transform="rotate(-90 60 60)">' +
       arcs +
       '</g></svg><div class="ancen"><b>' +
       big +
@@ -4816,8 +4820,25 @@
       sum = anSummary(a, per),
       deptNames = a.deps.map(function (t) {
         return "Dept " + t[0];
-      });
+      }),
+      share = function (t, list) {
+        var all = list.reduce(function (n, x) {
+          return n + x[1];
+        }, 0);
+        return Math.round((t[1] / all) * 100) + "% of the top 10";
+      },
+      depTips = a.deps.map(function (t) {
+        return "Dept " + t[0] + ": " + t[1] + (t[1] === 1 ? " line" : " lines") + " ordered, " + share(t, a.deps);
+      }),
+      itemTips = a.items.map(function (t) {
+        var d = anItemDesc(t[0]);
+        return t[0] + (d ? ", " + (d.length > 48 ? d.slice(0, 47) + "…" : d) : "") + ": " + t[1].toLocaleString() + " ordered, " + share(t, a.items);
+      }),
+      fillTips = a.alloced
+        ? ["Filled in full: " + a.filled + " of " + a.alloced + " lines", "Not filled in full: " + (a.alloced - a.filled) + " of " + a.alloced + " lines"]
+        : [];
     anTxt = {};
+    $("anTip").hidden = true;
     $("anBox").innerHTML =
       '<div class="an' +
       (anSideOff ? " noside" : "") +
@@ -4881,17 +4902,9 @@
         : (anFold
             ? ""
             : '<div class="anstats"><div class="anrings">' +
-              anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", deptNames) +
-              anRing(
-                a.items,
-                "var(--acc2)",
-                a.items.length,
-                a.items.length === 1 ? "item" : "items",
-                a.items.map(function (t) {
-                  return t[0];
-                })
-              ) +
-              anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", [], a.alloced ? a.filled / a.alloced : 0) +
+              anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", depTips) +
+              anRing(a.items, "var(--acc2)", a.items.length, a.items.length === 1 ? "item" : "items", itemTips) +
+              anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", fillTips, a.alloced ? a.filled / a.alloced : 0) +
               '<p class="anpill"><b>Totals</b> · ' +
               a.slips.length +
               (a.slips.length === 1 ? " pick list" : " pick lists") +
@@ -4900,34 +4913,15 @@
               (a.lines === 1 ? " line" : " lines") +
               '</p></div><div class="anchart">' +
               anBars(a) +
-              '<p class="anpill">' +
-              (a.daily ? "Lines per day" : "Lines per month") +
-              "</p></div></div>") +
+              "</div></div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
           (anFold ? "Show the charts" : "Hide the charts") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
-          '</button></div><div class="anlow"><div class="anleft"><section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section><div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
+          '</button></div><div class="anlow"><div class="anleft">' +
+          '<div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
           anList(
             a.deps,
             "var(--acc1)",
@@ -4949,7 +4943,27 @@
             }),
             "No items were picked for these departments in " + esc(per) + "."
           ) +
-          '</section></div></div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
+          '</section></div>' +
+          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>' +
+          '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +
           encodeURIComponent(sum) +
@@ -5042,16 +5056,43 @@
       if (g[0] === "me") return openProfile();
       anExit();
       if (g[0] !== "exit") {
+        anRet = true;
         var tg = document.querySelector("[data-" + g[0] + '="' + g[1] + '"]');
         if (tg) tg.click();
       }
     }
+  });
+  $("anBack").onclick = function () {
+    anRet = false;
+    st.manage = true;
+    st.top = null;
+    st.side = null;
+    mgOpt = 5;
+    if (document.querySelector("dialog[open]")) document.querySelector("dialog[open]").close();
+    render();
+  };
+  // Hover a ring slice: what it stands for.
+  $("anBox").addEventListener("mousemove", function (e) {
+    var t = e.target.closest && e.target.closest("circle[data-tip]"),
+      tip = $("anTip");
+    if (!t) {
+      tip.hidden = true;
+      return;
+    }
+    tip.textContent = t.getAttribute("data-tip");
+    tip.hidden = false;
+    tip.style.left = Math.max(8, Math.min(e.clientX + 14, innerWidth - tip.offsetWidth - 8)) + "px";
+    tip.style.top = (e.clientY + 18 + tip.offsetHeight > innerHeight ? e.clientY - tip.offsetHeight - 12 : e.clientY + 18) + "px";
+  });
+  $("anBox").addEventListener("mouseleave", function () {
+    $("anTip").hidden = true;
   });
   // Search hands off to the item list.
   $("anBox").addEventListener("keydown", function (e) {
     if (e.target.id !== "anQ" || e.key !== "Enter") return;
     var v = e.target.value;
     anExit();
+    anRet = true;
     document.querySelector('[data-top="0"]').click();
     $("q").value = v;
     $("q").dispatchEvent(new Event("input", { bubbles: true }));
@@ -5063,6 +5104,7 @@
   });
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
+    $("anBack").hidden = !anRet || mgOpt === 5;
     var ok = isMgr();
     $("mgGate").hidden = ok;
     $("mgBody").hidden = !ok;
@@ -5112,7 +5154,9 @@
       if (!tpCloud && !tpCloudErr) tpCloudScan();
     }
     if (mgOpt === 3) renderMaterial();
-    if (mgOpt === 5) renderAn();
+    // Analytics is drawn once per visit (tabs and Refresh redraw it), so cloud syncs don't reset it.
+    if (mgOpt !== 5) $("anBox").innerHTML = "";
+    else if (!$("anBox").firstChild) renderAn();
     if (mgOpt === 6) renderGr();
     if (mgOpt === 4) {
       renderFinished();
