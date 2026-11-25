@@ -4534,6 +4534,14 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
 .antip { position: fixed; z-index: 50; max-width: 300px; padding: 8px 12px; background: var(--char); color: var(--on-dark); font-size: 13px; font-weight: 700; line-height: 1.35; box-shadow: 0 6px 18px rgba(8, 14, 26, .3); pointer-events: none; }
 .antip[hidden] { display: none; }
 html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0, 0, .4); }
+
+/* Terms of service and Cookie policy links: landing footer, sign-in forms, account card */
+.ldlegal { display: flex; flex-wrap: wrap; justify-content: center; gap: 0 24px; padding: 0 16px 32px; font-size: 15px; }
+.ldlegal a { display: inline-flex; align-items: center; min-height: 44px; }
+.lglegal { grid-column: 1 / -1; display: flex; flex-wrap: wrap; gap: 4px 24px; margin: 0; color: var(--mute); font-size: 14px; }
+.ldlegal a, .lglegal a, .ldnote a { color: var(--acc1); text-underline-offset: 3px; }
+.ldlegal a:hover, .lglegal a:hover, .ldnote a:hover { color: var(--acc1-hover); }
+html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hover { color: var(--ink); }
 </style>
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
@@ -4586,6 +4594,7 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
         <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M3 5l1.5 1.5L7 4M3 12l1.5 1.5L7 11M3 19l1.5 1.5L7 18"/></svg></span><h2>Pick</h2><p>Work a pick slip line by line and flag anything that's short.</p></div>
         <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><h2>Put Away</h2><p>Put new stock on the shelf and record where it went. Coming soon.</p></div>
       </section>
+      <footer class="ldlegal"><a href="terms.html">Terms of service</a><a href="cookies.html">Cookie policy</a></footer>
       <dialog id="ldDlg" class="lddlg" aria-labelledby="ldDlgH">
         <form class="lgcard ldform" id="ldForm">
           <h2 id="ldDlgH">Log in</h2>
@@ -4594,7 +4603,7 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
           <label>Password<input name="pw" type="password" required autocomplete="current-password" /></label>
           <p class="lgerr" role="alert"></p>
           <button class="primary lgsubmit">Sign in</button>
-          <p class="ldnote">No account yet? Ask a manager to add you.</p>
+          <p class="ldnote">No account yet? Ask a manager to add you. By signing in, you agree to the <a href="terms.html">Terms of service</a>.</p>
           <button type="button" class="ldclose" id="ldX">Cancel</button>
         </form>
       </dialog>
@@ -48512,11 +48521,12 @@ var ZXING_Z = [
         '</ul></div><div class="lgbtns">' +
         '<button id="lgProfile">Edit profile</button>' +
         (isMgr() ? '<button id="lgManage" class="lgmg">Open Manage</button>' : "") +
-        '<span class="sp"></span><button id="lgOut">Sign out</button></div></div>';
+        '<span class="sp"></span><button id="lgOut">Sign out</button></div>' +
+        '<p class="lglegal"><a href="terms.html">Terms of service</a><a href="cookies.html">Cookie policy</a></p></div>';
       return;
     }
     b.innerHTML =
-      '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button></form>';
+      '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button><p class="lglegal">By signing in, you agree to the <a href="terms.html">Terms of service</a>.</p></form>';
   }
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
   // Guests get their own page (items and locations only) instead of the app.

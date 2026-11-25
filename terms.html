@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Terms of service · Storeroom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="css/legal.css?v=3" />
+    <script>
+      /* Same dark mode as the app: the signed-in person's profile setting. */
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
+            d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
+            p = d && d.profiles && d.profiles[s.email];
+          if (p && p.dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="lghead">
+      <a class="lglogo" href="index.html"><span aria-hidden="true">GC</span>Storeroom</a>
+      <a class="lgback" href="index.html"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to the app</a
+      >
+    </header>
+    <main>
+      <h1>Terms of service</h1>
+      <p class="lgdate">Updated November 25, 2026</p>
+      <p class="lglead">These terms cover your use of the Storeroom app, the website the Granite City Works storeroom team uses to look up, pick, put away, deliver and count stock. By logging in or using the app, you agree to them.</p>
+
+      <h2>Who can use the app</h2>
+      <p>The app's owner or a manager creates accounts for people who work with the storeroom. Anyone can look up item locations without logging in. Your role decides what you can see and change.</p>
+
+      <h2>Your account</h2>
+      <ul>
+        <li>Keep your password to yourself, and don't let anyone else use your account.</li>
+        <li>Log out when you finish on a shared device.</li>
+        <li>If you think someone else used your account, tell a manager right away so they can reset it.</li>
+      </ul>
+
+      <h2>Using the app</h2>
+      <ul>
+        <li>Use the app for storeroom work.</li>
+        <li>Enter quantities, counts, deliveries and inspections as they actually happened.</li>
+        <li>Add only the pictures and files the work needs. Leave out people's faces and private information where you can.</li>
+        <li>Don't try to see or change what your role doesn't allow, get around signing in, or slow down or break the app.</li>
+      </ul>
+
+      <h2>Records you add</h2>
+      <p>Counts, pick lists, deliveries, inspection sheets, photos and contacts you enter are shared with the people who use the app. Changes are kept in the activity log, and some records stay there after they're deleted, such as deleted Greens count sheets. Your nickname, bio, profile photo and settings are on your profile, and other signed-in people can see your name and photo.</p>
+
+      <h2>Check before you rely on it</h2>
+      <p>Locations and quantities are only as accurate as what people enter. Check the shelf before you promise stock to someone. Follow the plant's safety rules and procedures: an inspection sheet in the app doesn't replace an inspection or sign-off the plant requires.</p>
+
+      <h2>Availability</h2>
+      <p>The app is provided as it is. It may change, and at times it may be unavailable. It keeps working without a signal and syncs when you're back online. Select Back up to keep your own copy of important records. To the extent the law allows, the app's owner isn't responsible for losses caused by wrong entries, missed syncs or outages.</p>
+
+      <h2>Ending access</h2>
+      <p>The owner or a manager can change your role or remove your account at any time, for example when you change jobs. Records you added stay with the storeroom.</p>
+
+      <h2>Privacy and storage</h2>
+      <p>The <a href="cookies.html">Cookie policy</a> lists what the app keeps in your browser and which services it connects to.</p>
+
+      <h2>Changes to these terms</h2>
+      <p>These terms may be updated. The date at the top will change when they are. If you keep using the app after a change, you accept the updated terms.</p>
+
+      <h2>Questions</h2>
+      <p>Ask your supervisor or the app's owner.</p>
+    </main>
+    <footer class="lgfoot">
+      <nav aria-label="Policies"><a href="index.html">Storeroom app</a><a href="terms.html" aria-current="page">Terms of service</a><a href="cookies.html">Cookie policy</a></nav>
+    </footer>
+  </body>
+</html>

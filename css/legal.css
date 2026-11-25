@@ -1,0 +1,74 @@
+/* Cookie policy and Terms of service: one reading column in the app's Ledger look. */
+:root {
+  color-scheme: light;
+  --page: #e6ecef;
+  --char: #13233f;
+  --ink: #13233f;
+  --mute: #4a5a72;
+  --line: #c9d3dc;
+  --head: #fff;
+  --acc1: #2546b8;
+  --acc1-hover: #1e3a96;
+  --on-dark: #f7f9fa;
+  --disp: "Familjen Grotesk", "Segoe UI", system-ui, sans-serif;
+}
+html.dark {
+  color-scheme: dark;
+  --page: #17253d;
+  --char: #0f1b30;
+  --ink: #e6ecef;
+  --mute: #9fb0c4;
+  --line: #3d5580;
+  --head: #2a4068;
+  --acc1: #7c9bf5;
+  --acc1-hover: #a3b9f8;
+}
+* { box-sizing: border-box; }
+html, body { background: var(--page); }
+body { margin: 0; color: var(--ink); font: 17px/1.6 "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif; }
+
+.lghead { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 8px clamp(16px, 5vw, 48px); background: var(--char); color: var(--on-dark); }
+.lglogo, .lgback { display: inline-flex; align-items: center; gap: 10px; min-height: 44px; color: inherit; text-decoration: none; }
+.lglogo { font-family: var(--disp); font-size: 20px; font-weight: 700; }
+.lglogo span { display: grid; place-items: center; width: 36px; height: 36px; background: #fff; color: #13233f; font-size: 14px; }
+.lgback { padding: 0 16px; box-shadow: inset 0 0 0 2px currentColor; font-weight: 700; white-space: nowrap; }
+@media (max-width: 400px) { .lgback { padding: 0 12px; font-size: 15px; } }
+.lgback:hover { background: rgba(255, 255, 255, .1); }
+.lgback svg { width: 18px; height: 18px; }
+
+main { max-width: 72ch; margin: 0 auto; padding: 48px clamp(16px, 5vw, 24px) 64px; }
+h1, h2 { font-family: var(--disp); line-height: 1.2; }
+h1 { margin: 0; font-size: clamp(32px, 6vw, 44px); letter-spacing: -.01em; }
+.lgdate { margin: 8px 0 0; color: var(--mute); font-size: 15px; }
+.lglead { margin: 24px 0 0; font-size: 19px; }
+h2 { margin: 48px 0 8px; font-size: 24px; }
+p, ul { margin: 12px 0 0; }
+ul { padding-left: 24px; }
+li + li { margin-top: 8px; }
+a { color: var(--acc1); text-underline-offset: 3px; }
+a:hover { color: var(--acc1-hover); }
+a:focus-visible { outline: 3px solid var(--acc1); outline-offset: 2px; }
+.lghead a:focus-visible { outline-color: #fff; }
+code { font-size: 15px; overflow-wrap: anywhere; }
+
+/* What's stored: a framed table; on phones each row becomes a card */
+.lgtable { margin-top: 16px; background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
+table { width: 100%; border-collapse: collapse; font-size: 15px; }
+th, td { padding: 12px 16px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--mute); font-size: 14px; }
+tr:last-child td { border-bottom: 0; }
+td:first-child { white-space: nowrap; }
+td small { display: block; margin-top: 2px; color: var(--mute); font-size: 13px; }
+@media (max-width: 640px) {
+  thead { display: none; }
+  table, tbody, tr, td { display: block; }
+  tr { padding: 8px 0; border-bottom: 1px solid var(--line); }
+  tr:last-child { border-bottom: 0; }
+  td { padding: 4px 16px; border: 0; }
+  td:first-child { white-space: normal; }
+  td::before { content: attr(data-l); display: block; color: var(--mute); font-size: 13px; font-weight: 700; }
+}
+
+.lgfoot { max-width: 72ch; margin: 0 auto; padding: 24px clamp(16px, 5vw, 24px) 48px; border-top: 1px solid var(--line); color: var(--mute); font-size: 15px; }
+.lgfoot nav { display: flex; flex-wrap: wrap; gap: 8px 24px; }
+.lgfoot a { display: inline-flex; align-items: center; min-height: 44px; }

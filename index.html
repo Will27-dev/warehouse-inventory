@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125u" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125v" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -62,6 +62,7 @@
         <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M3 5l1.5 1.5L7 4M3 12l1.5 1.5L7 11M3 19l1.5 1.5L7 18"/></svg></span><h2>Pick</h2><p>Work a pick slip line by line and flag anything that's short.</p></div>
         <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><h2>Put Away</h2><p>Put new stock on the shelf and record where it went. Coming soon.</p></div>
       </section>
+      <footer class="ldlegal"><a href="terms.html">Terms of service</a><a href="cookies.html">Cookie policy</a></footer>
       <dialog id="ldDlg" class="lddlg" aria-labelledby="ldDlgH">
         <form class="lgcard ldform" id="ldForm">
           <h2 id="ldDlgH">Log in</h2>
@@ -70,7 +71,7 @@
           <label>Password<input name="pw" type="password" required autocomplete="current-password" /></label>
           <p class="lgerr" role="alert"></p>
           <button class="primary lgsubmit">Sign in</button>
-          <p class="ldnote">No account yet? Ask a manager to add you.</p>
+          <p class="ldnote">No account yet? Ask a manager to add you. By signing in, you agree to the <a href="terms.html">Terms of service</a>.</p>
           <button type="button" class="ldclose" id="ldX">Cancel</button>
         </form>
       </dialog>
@@ -1026,6 +1027,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125u"></script>
+    <script src="js/app.js?v=20261125v"></script>
   </body>
 </html>

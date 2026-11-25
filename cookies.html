@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Cookie policy · Storeroom</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
+    <link rel="stylesheet" href="css/legal.css?v=3" />
+    <script>
+      /* Same dark mode as the app: the signed-in person's profile setting. */
+      (function () {
+        try {
+          var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
+            d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
+            p = d && d.profiles && d.profiles[s.email];
+          if (p && p.dark) document.documentElement.classList.add("dark");
+        } catch (e) {}
+      })();
+    </script>
+  </head>
+  <body>
+    <header class="lghead">
+      <a class="lglogo" href="index.html"><span aria-hidden="true">GC</span>Storeroom</a>
+      <a class="lgback" href="index.html"
+        ><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to the app</a
+      >
+    </header>
+    <main>
+      <h1>Cookie policy</h1>
+      <p class="lgdate">Updated November 25, 2026</p>
+      <p class="lglead">The Storeroom app doesn't use cookies. It keeps a few things in your browser's own storage so it can remember who's signed in and keep working without a signal. This page lists what's stored, why, and how to clear it.</p>
+
+      <h2>Cookies</h2>
+      <p>The app sets no cookies. It has no advertising, analytics or tracking of any kind.</p>
+
+      <h2>What the app keeps in your browser</h2>
+      <p>These stay on your device. When you're signed in, your records also sync to the app's cloud database so your other devices and your team see the same thing.</p>
+      <div class="lgtable">
+        <table>
+          <thead>
+            <tr><th>Stored as</th><th>What it's for</th><th>Kept until</th></tr>
+          </thead>
+          <tbody>
+            <tr><td data-l="Stored as"><code>wh-lookup-v2</code><small>Local storage</small></td><td data-l="What it's for">Your copy of the app's records (item locations, quantities, contacts, pick lists, Greens counts, activity) and your settings, so the app opens fast and works offline.</td><td data-l="Kept until">You clear it</td></tr>
+            <tr><td data-l="Stored as"><code>wh-lookup-delivery</code><small>Local storage</small></td><td data-l="What it's for">Delivery locations and their pictures.</td><td data-l="Kept until">You clear it</td></tr>
+            <tr><td data-l="Stored as"><code>wh-session</code><small>Local storage</small></td><td data-l="What it's for">Who's signed in on this device: name, email and role.</td><td data-l="Kept until">You log out</td></tr>
+            <tr><td data-l="Stored as"><code>wh-auth</code><small>Local storage</small></td><td data-l="What it's for">Your sign-in tokens, so you stay signed in.</td><td data-l="Kept until">You log out</td></tr>
+            <tr><td data-l="Stored as"><code>wh-prefs-dirty</code><small>Local storage</small></td><td data-l="What it's for">Marks profile changes that haven't reached the cloud yet.</td><td data-l="Kept until">They're sent</td></tr>
+            <tr><td data-l="Stored as"><code>wh-cloud-del:…</code><small>Local storage</small></td><td data-l="What it's for">Delivery trips you deleted, so they're removed from the cloud too.</td><td data-l="Kept until">You clear it</td></tr>
+            <tr><td data-l="Stored as"><code>wh-uploaded:…</code><small>Local storage</small></td><td data-l="What it's for">Owner only: notes that this device's records were moved to the cloud.</td><td data-l="Kept until">You clear it</td></tr>
+            <tr><td data-l="Stored as"><code>wh-guest</code><small>Session storage</small></td><td data-l="What it's for">Remembers that you chose to look up items without logging in.</td><td data-l="Kept until">You close the tab</td></tr>
+            <tr><td data-l="Stored as"><code>wh-lookup-files</code><small>IndexedDB</small></td><td data-l="What it's for">Uploaded PDF templates, inspection sheets and folders you linked.</td><td data-l="Kept until">You clear it</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <h2>Services the app connects to</h2>
+      <ul>
+        <li><b>Supabase</b> signs you in and stores the shared records, pictures and PDFs. Sign-in uses the tokens above, not cookies.</li>
+        <li><b>Google Fonts</b> supplies the typefaces. Your browser downloads the font files from Google, which shares your IP address and browser type with Google. Google Fonts doesn't set cookies.</li>
+        <li><b>GitHub Pages</b> hosts the website. GitHub may keep server logs, including IP addresses, to run and protect the service.</li>
+      </ul>
+
+      <h2>Camera</h2>
+      <p>The camera turns on only when you select Scan barcode or Scan QR code. The picture is read on your device to find the code, and it isn't saved or sent. Photos you choose to add, like delivery location pictures, are saved like any other record.</p>
+
+      <h2>How to clear it</h2>
+      <ul>
+        <li>Log out to remove your sign-in tokens and who's signed in on this device.</li>
+        <li>To remove everything, delete this site's stored data in your browser's settings. Anything that hasn't synced yet is lost, so select Back up first if you need a copy.</li>
+      </ul>
+
+      <h2>Changes</h2>
+      <p>If the app starts storing something new, this page will be updated and the date at the top will change.</p>
+
+      <h2>Questions</h2>
+      <p>Ask your supervisor or the app's owner. See also the <a href="terms.html">Terms of service</a>.</p>
+    </main>
+    <footer class="lgfoot">
+      <nav aria-label="Policies"><a href="index.html">Storeroom app</a><a href="terms.html">Terms of service</a><a href="cookies.html" aria-current="page">Cookie policy</a></nav>
+    </footer>
+  </body>
+</html>

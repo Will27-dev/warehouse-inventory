@@ -4269,11 +4269,12 @@
         '</ul></div><div class="lgbtns">' +
         '<button id="lgProfile">Edit profile</button>' +
         (isMgr() ? '<button id="lgManage" class="lgmg">Open Manage</button>' : "") +
-        '<span class="sp"></span><button id="lgOut">Sign out</button></div></div>';
+        '<span class="sp"></span><button id="lgOut">Sign out</button></div>' +
+        '<p class="lglegal"><a href="terms.html">Terms of service</a><a href="cookies.html">Cookie policy</a></p></div>';
       return;
     }
     b.innerHTML =
-      '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button></form>';
+      '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button><p class="lglegal">By signing in, you agree to the <a href="terms.html">Terms of service</a>.</p></form>';
   }
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
   // Guests get their own page (items and locations only) instead of the app.
