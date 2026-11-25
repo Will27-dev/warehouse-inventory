@@ -4281,6 +4281,7 @@
     document.body.classList.toggle("onland", up);
   }
   function landing(on) {
+    if (!on && $("ldDlg").open) $("ldDlg").close();
     $("landing").hidden = !on;
     cover();
   }
@@ -4329,15 +4330,25 @@
         : "";
   }
   $("gq").addEventListener("input", renderGuest);
-  $("ldGuest").onclick = function () {
-    landing(false);
-    guestPage(true);
-    $("gq").focus();
-  };
+  function ldLogin() {
+    $("ldDlg").showModal();
+    $("ldForm").elements.em.focus();
+  }
+  $("landing").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-ldguest], [data-ldlogin], #ldX");
+    if (!b) return;
+    if (b.id === "ldX") $("ldDlg").close();
+    else if (b.hasAttribute("data-ldlogin")) ldLogin();
+    else {
+      landing(false);
+      guestPage(true);
+      $("gq").focus();
+    }
+  });
   $("gSign").onclick = function () {
     guestPage(false);
     landing(true);
-    $("ldForm").elements.em.focus();
+    ldLogin();
   };
   if (!sess) {
     var wasGuest = false;

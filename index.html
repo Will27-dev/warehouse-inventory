@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261124e" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125b" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -26,25 +26,54 @@
   <body>
     <!-- Landing: first screen for anyone not signed in on this device -->
     <section class="landing" id="landing" aria-labelledby="ldH" hidden>
-      <div class="ldside">
-        <div class="ldbrand">Warehouse inventory</div>
-        <div class="ldtitle">
-          <h1 id="ldH">Granite City Steel Storeroom</h1>
-          <p>The Department of Getting It Done!</p>
+      <header class="ldnav">
+        <div class="ldlogo"><span class="ldmark" aria-hidden="true">GC</span><b>Storeroom</b></div>
+        <div class="ldnavr"><button type="button" class="ldlink" data-ldguest>Look up items</button><button type="button" class="primary ldcta" data-ldlogin>Log in</button></div>
+      </header>
+      <div class="ldhero">
+        <div class="ldcopy">
+          <h1 id="ldH">Granite City Works,<br /><span>Storeroom</span></h1>
+          <p>The Department of Getting It Done, Most of the Time</p>
+          <div class="ldbtns"><button type="button" class="primary" data-ldlogin>Log in</button><button type="button" class="ldsec" id="ldGuest" data-ldguest>Look up items without logging in</button></div>
         </div>
-        <p class="ldnote">No account yet? Ask a manager to add you.</p>
+          <div class="ldart" aria-hidden="true">
+           <div class="ldtilt">
+            <div class="ldcol">
+            <div class="ldcard "><div class="ldcbar"><i></i><b>Pick slip 4471</b></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldbtn"></div></div>
+            <div class="ldcard ldbar"><div class="ldcbar"><i></i><b>Bin floor 2</b></div><div class="ldcode"></div><div class="ldrow"><i></i><span></span><em></em></div></div>
+            <div class="ldcard "><div class="ldcbar"><i></i><b>Put away</b></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div></div>
+            </div>
+            <div class="ldcol ldcol2">
+            <div class="ldcard ldgrid"><div class="ldcbar"><i></i><b>Greens count</b></div><div class="ldsizes"><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+            <div class="ldcard "><div class="ldcbar"><i></i><b>Trip to GO4</b></div><div class="ldprog"><i></i></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldbtn"></div></div>
+            <div class="ldcard ldbar"><div class="ldcbar"><i></i><b>Item 1001313194</b></div><div class="ldcode"></div></div>
+            </div>
+            <div class="ldcol ldcol3">
+            <div class="ldcard "><div class="ldcbar"><i></i><b>Deliveries today</b></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div></div>
+            <div class="ldcard ldgrid"><div class="ldcbar"><i></i><b>Warehouse 1</b></div><div class="ldsizes"><span></span><span></span><span></span><span></span><span></span><span></span></div></div>
+            <div class="ldcard "><div class="ldcbar"><i></i><b>EWO 2208</b></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldrow"><i></i><span></span><em></em></div><div class="ldbtn"></div></div>
+            </div>
+           </div>
+          </div>
       </div>
-      <div class="ldmain">
+      <svg class="ldwave" viewBox="0 0 1440 80" preserveAspectRatio="none" aria-hidden="true"><path d="M0 80V44C240 6 520 -8 820 18C1080 40 1280 58 1440 30V80Z" /></svg>
+      <section class="ldfeat" aria-label="What the storeroom app does">
+        <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/></svg></span><h2>Deliver</h2><p>Load a trip, scan each box, and mark every stop delivered.</p></div>
+        <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5h10M9 12h10M9 19h10"/><path d="M3 5l1.5 1.5L7 4M3 12l1.5 1.5L7 11M3 19l1.5 1.5L7 18"/></svg></span><h2>Pick</h2><p>Work a pick slip line by line and flag anything that's short.</p></div>
+        <div class="ldf"><span class="ldic"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/></svg></span><h2>Put Away</h2><p>Put new stock on the shelf and record where it went. Coming soon.</p></div>
+      </section>
+      <dialog id="ldDlg" class="lddlg" aria-labelledby="ldDlgH">
         <form class="lgcard ldform" id="ldForm">
-          <h2>Sign in</h2>
+          <h2 id="ldDlgH">Log in</h2>
           <p class="ldhint">Use the email and password your manager set up for you.</p>
           <label>Email<input name="em" type="email" required autocomplete="username" /></label>
           <label>Password<input name="pw" type="password" required autocomplete="current-password" /></label>
           <p class="lgerr" role="alert"></p>
           <button class="primary lgsubmit">Sign in</button>
-          <button type="button" class="ldguest" id="ldGuest">Look up items without signing in</button>
+          <p class="ldnote">No account yet? Ask a manager to add you.</p>
+          <button type="button" class="ldclose" id="ldX">Cancel</button>
         </form>
-      </div>
+      </dialog>
     </section>
     <!-- Guest look-up: items and where they are, nothing else -->
     <section class="guest" id="guest" aria-labelledby="gH" hidden>
@@ -997,6 +1026,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261124e"></script>
+    <script src="js/app.js?v=20261125b"></script>
   </body>
 </html>
