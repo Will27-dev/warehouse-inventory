@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125g" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125h" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -178,6 +178,9 @@
           </header>
         </div>
         <main>
+          <button type="button" class="anback" id="anBack" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to Analytics
+          </button>
           <div class="mrow" id="mRow"></div>
           <section class="panel" id="panel">
             <div class="head">
@@ -907,9 +910,6 @@
       <div class="camwrap"><video id="camVideo" playsinline muted></video><i class="camframe"></i><i class="camhold" aria-hidden="true"></i></div>
       <p class="camlast" id="camLast">Point the camera at a QR code.</p>
     </dialog>
-    <button type="button" class="anback" id="anBack" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to Analytics
-    </button>
     <div class="antip" id="anTip" role="tooltip" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
     <dialog id="subDlg">
@@ -1024,6 +1024,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125g"></script>
+    <script src="js/app.js?v=20261125h"></script>
   </body>
 </html>

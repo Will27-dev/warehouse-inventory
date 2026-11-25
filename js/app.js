@@ -4652,42 +4652,6 @@
       "</span></div></div>"
     );
   }
-  function anBars(a) {
-    var max = Math.max.apply(
-        null,
-        a.bars.map(function (b) {
-          return b.n;
-        }).concat(1)
-      ),
-      top = Math.ceil(max / 4) * 4,
-      many = a.bars.length > 16;
-    return (
-      '<div class="anbars"><div class="anaxis" aria-hidden="true">' +
-      [top, top * 0.75, top / 2, top / 4, 0]
-        .map(function (v) {
-          return "<span>" + v + "</span>";
-        })
-        .join("") +
-      '</div><ol class="anbarl" aria-label="Pick slip lines ' + (a.daily ? "per day" : "per month") + '">' +
-      a.bars
-        .map(function (b, i) {
-          var tip = (a.daily ? b.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : b.t.toLocaleString([], { month: "long", year: "numeric" })) + ": " + b.n + (b.n === 1 ? " line" : " lines");
-          return (
-            '<li tabindex="0" aria-label="' +
-            esc(tip) +
-            '" data-tip="' +
-            esc(tip) +
-            '"><b><i style="height:' +
-            ((b.n / top) * 100).toFixed(1) +
-            '%"></i></b><span>' +
-            (a.daily ? (many && i % 5 && i !== a.bars.length - 1 ? "" : b.t.getDate()) : b.t.toLocaleString([], { month: "narrow" })) +
-            "</span></li>"
-          );
-        })
-        .join("") +
-      "</ol></div>"
-    );
-  }
   function anList(list, hue, names, sub, empty) {
     return list.length
       ? '<ol class="anleg">' +
@@ -4911,13 +4875,31 @@
               " · " +
               a.lines +
               (a.lines === 1 ? " line" : " lines") +
-              '</p></div><div class="anchart">' +
-              anBars(a) +
-              "</div></div>") +
+              "</p></div>" +
+          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>' +
+              "</div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
-          (anFold ? "Show the charts" : "Hide the charts") +
+          (anFold ? "Show the summary" : "Hide the summary") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
           '</button></div><div class="anlow"><div class="anleft">' +
@@ -4944,25 +4926,6 @@
             "No items were picked for these departments in " + esc(per) + "."
           ) +
           '</section></div>' +
-          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section>' +
           '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +

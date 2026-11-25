@@ -4416,8 +4416,10 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .antabs button[aria-selected="true"] { border-bottom-color: var(--acc1); color: var(--ink); }
 .antabs button:hover { color: var(--ink); }
 .anbody { padding: 32px 48px 48px; }
-.anstats { display: grid; grid-template-columns: minmax(0, 3fr) minmax(0, 2fr); gap: 32px; align-items: start; }
-.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 170px)); justify-content: center; gap: 8px 12px; }
+.anstats { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start; }
+.anstats .anrows { padding: 8px 24px 16px; }
+.anstats .anrow { grid-template-columns: 140px minmax(0, 1fr); padding: 12px 0; }
+.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 150px)); align-self: center; justify-content: center; gap: 8px 12px; }
 .anring { position: relative; width: min(170px, 100%); container-type: inline-size; }
 .anring svg { display: block; width: 100%; height: auto; fill: none; stroke-width: 10; }
 .anring .antrack { stroke: var(--line); }
@@ -4427,18 +4429,6 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .ancen b { font-family: var(--disp); font-size: 24cqw; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .ancen span { margin-top: 4px; padding: 0 18%; color: var(--mute); font-size: max(9px, 7.5cqw); font-weight: 700; line-height: 1.15; }
 .anpill { grid-column: 1 / -1; justify-self: center; margin: 16px 0 0; padding: 8px 16px; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); font-size: 13px; }
-.anchart { display: flex; flex-direction: column; min-width: 0; }
-.anbars { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 8px; height: 190px; }
-.anaxis { display: flex; flex-direction: column; justify-content: space-between; padding-bottom: 14px; color: var(--mute); font-size: 12px; line-height: 12px; text-align: right; font-variant-numeric: tabular-nums; }
-.anbarl { display: flex; gap: 3px; margin: 0; padding: 0; list-style: none; }
-.anbarl li { position: relative; display: grid; flex: 1; grid-template-rows: minmax(0, 1fr) 20px; min-width: 0; outline-offset: 2px; }
-.anbarl b { position: relative; display: block; margin-top: 6px; background: color-mix(in srgb, var(--line) 55%, transparent); }
-.anbarl i { position: absolute; left: 0; right: 0; bottom: 0; background: var(--acc1); }
-.anbarl li:hover i, .anbarl li:focus i { background: var(--acc1-hover); }
-.anbarl span { color: var(--mute); font-size: 11px; font-weight: 700; line-height: 20px; text-align: center; }
-.anbarl li:hover::after, .anbarl li:focus::after { content: attr(data-tip); position: absolute; bottom: calc(100% - 4px); left: 50%; z-index: 2; padding: 6px 10px; background: var(--char); color: var(--on-dark); font-size: 12px; font-weight: 700; white-space: nowrap; transform: translateX(-50%); pointer-events: none; }
-.anbarl li:nth-child(-n+4)::after { left: 0; transform: none; }
-.anbarl li:nth-last-child(-n+4)::after { left: auto; right: 0; transform: none; }
 .anfold { display: flex; align-items: center; gap: 16px; margin: 32px 0; }
 .anfold::before, .anfold::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .anfold button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50% !important; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); color: var(--mute); cursor: pointer; }
@@ -4504,6 +4494,8 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
   .antabs { gap: 24px; margin-top: 8px; }
   .anbody { padding: 16px; }
   .anstats { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .anrings { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  .anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anrings { gap: 8px; }
   .anfold { margin: 16px 0; }
   .anlow, .anpair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
@@ -4512,16 +4504,12 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
   .anbar { padding: 12px 16px; }
 }
 
-/* Back to Analytics: after leaving Analytics through one of its links */
-.anback { position: fixed; right: 24px; bottom: 24px; z-index: 40; display: inline-flex; align-items: center; gap: 8px; min-height: 48px; padding: 0 20px 0 14px; border: 0; background: var(--acc1); color: var(--on-acc); font: inherit; font-weight: 800; box-shadow: 0 8px 24px rgba(8, 14, 26, .3); cursor: pointer; }
+/* Back to Analytics: top of the page after leaving Analytics through one of its links */
+.anback { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin: 0 0 16px; padding: 0 20px 0 14px; border: 0; background: var(--acc1); color: var(--on-acc); font: inherit; font-weight: 800; cursor: pointer; }
 .anback[hidden] { display: none; }
 .anback svg { width: 20px; height: 20px; }
 .anback:hover { background: var(--acc1-hover); }
 .anback:focus-visible { outline: 3px solid var(--ink); outline-offset: 2px; }
-body:has(#dvPanel:not([hidden]) .dvsticky) .anback { bottom: 96px; }
-@media (max-width: 640px) {
-  .anback { right: 16px; bottom: 16px; }
-}
 
 /* Analytics ring hover details */
 .antip { position: fixed; z-index: 50; max-width: 300px; padding: 8px 12px; background: var(--char); color: var(--on-dark); font-size: 13px; font-weight: 700; line-height: 1.35; box-shadow: 0 6px 18px rgba(8, 14, 26, .3); pointer-events: none; }
@@ -4695,6 +4683,9 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
           </header>
         </div>
         <main>
+          <button type="button" class="anback" id="anBack" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to Analytics
+          </button>
           <div class="mrow" id="mRow"></div>
           <section class="panel" id="panel">
             <div class="head">
@@ -5424,9 +5415,6 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
       <div class="camwrap"><video id="camVideo" playsinline muted></video><i class="camframe"></i><i class="camhold" aria-hidden="true"></i></div>
       <p class="camlast" id="camLast">Point the camera at a QR code.</p>
     </dialog>
-    <button type="button" class="anback" id="anBack" hidden>
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6" /></svg>Back to Analytics
-    </button>
     <div class="antip" id="anTip" role="tooltip" hidden></div>
     <div class="toast" id="toast" role="status" hidden></div>
     <dialog id="subDlg">
@@ -48886,42 +48874,6 @@ var ZXING_Z = [
       "</span></div></div>"
     );
   }
-  function anBars(a) {
-    var max = Math.max.apply(
-        null,
-        a.bars.map(function (b) {
-          return b.n;
-        }).concat(1)
-      ),
-      top = Math.ceil(max / 4) * 4,
-      many = a.bars.length > 16;
-    return (
-      '<div class="anbars"><div class="anaxis" aria-hidden="true">' +
-      [top, top * 0.75, top / 2, top / 4, 0]
-        .map(function (v) {
-          return "<span>" + v + "</span>";
-        })
-        .join("") +
-      '</div><ol class="anbarl" aria-label="Pick slip lines ' + (a.daily ? "per day" : "per month") + '">' +
-      a.bars
-        .map(function (b, i) {
-          var tip = (a.daily ? b.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : b.t.toLocaleString([], { month: "long", year: "numeric" })) + ": " + b.n + (b.n === 1 ? " line" : " lines");
-          return (
-            '<li tabindex="0" aria-label="' +
-            esc(tip) +
-            '" data-tip="' +
-            esc(tip) +
-            '"><b><i style="height:' +
-            ((b.n / top) * 100).toFixed(1) +
-            '%"></i></b><span>' +
-            (a.daily ? (many && i % 5 && i !== a.bars.length - 1 ? "" : b.t.getDate()) : b.t.toLocaleString([], { month: "narrow" })) +
-            "</span></li>"
-          );
-        })
-        .join("") +
-      "</ol></div>"
-    );
-  }
   function anList(list, hue, names, sub, empty) {
     return list.length
       ? '<ol class="anleg">' +
@@ -49145,13 +49097,31 @@ var ZXING_Z = [
               " · " +
               a.lines +
               (a.lines === 1 ? " line" : " lines") +
-              '</p></div><div class="anchart">' +
-              anBars(a) +
-              "</div></div>") +
+              "</p></div>" +
+          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>' +
+              "</div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
-          (anFold ? "Show the charts" : "Hide the charts") +
+          (anFold ? "Show the summary" : "Hide the summary") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
           '</button></div><div class="anlow"><div class="anleft">' +
@@ -49178,25 +49148,6 @@ var ZXING_Z = [
             "No items were picked for these departments in " + esc(per) + "."
           ) +
           '</section></div>' +
-          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section>' +
           '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +
