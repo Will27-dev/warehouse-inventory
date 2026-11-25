@@ -4425,7 +4425,7 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .anstats { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .anstats .anrows { padding: 8px 20px 16px; }
 .anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px 0; }
-.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); align-self: start; margin-top: 24px; justify-content: center; gap: 8px 16px; }
+.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); justify-content: center; gap: 8px 16px; }
 .anring { position: relative; width: min(230px, 100%); container-type: inline-size; transition: transform .2s ease-out; }
 .anring:hover { z-index: 1; transform: scale(1.08); }
 .anring circle { transition: stroke-width .15s ease-out; }
@@ -4437,12 +4437,11 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .ancen b { font-family: var(--disp); font-size: 24cqw; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .ancen span { margin-top: 4px; padding: 0 18%; color: var(--mute); font-size: max(9px, 7.5cqw); font-weight: 700; line-height: 1.15; }
 .anpill { grid-column: 1 / -1; justify-self: center; margin: 16px 0 0; padding: 8px 16px; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); font-size: 13px; }
-.anfold { display: flex; align-items: center; gap: 16px; margin: 32px 0; }
+.anfold { display: flex; align-items: center; gap: 16px; }
 .anfold::before, .anfold::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .anfold button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50% !important; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); color: var(--mute); cursor: pointer; }
 .anfold button svg { width: 18px; height: 18px; }
 .anfold button:hover { color: var(--ink); }
-.anlow { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
 .anleft { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .ancard { min-width: 0; background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
 .ancard > h4 { margin: 0; padding: 24px 24px 16px; font-size: 16px; font-weight: 800; }
@@ -4502,11 +4501,14 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
   .antabs { gap: 24px; margin-top: 8px; }
   .anbody { padding: 16px; }
   .anstats { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  /* One column: circles, then At a glance, then the Top 10 lists and sharing */
+  .anstats > .anleft, .anstats > .anright { display: contents; }
+  .anstats .anrings { order: -2; }
+  .anstats .anright > .ancard { order: -1; }
   .anrings { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anrings { gap: 8px; }
-  .anfold { margin: 16px 0; }
-  .anlow, .anpair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .anpair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .anrows { padding: 8px 16px 16px; }
   .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anbar { padding: 12px 16px; }
@@ -49095,9 +49097,10 @@ var ZXING_Z = [
       '</div></header><div class="anbody" role="tabpanel">' +
       (feed
         ? anFeed(anTab === 6)
-        : (anFold
+        : '<div class="anstats"><div class="anleft">' +
+          (anFold
             ? ""
-            : '<div class="anstats"><div class="anrings">' +
+            : '<div class="anrings">' +
               anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", depTips) +
               anRing(a.items, "var(--acc2)", a.items.length, a.items.length === 1 ? "item" : "items", itemTips) +
               anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", fillTips, a.alloced ? a.filled / a.alloced : 0) +
@@ -49107,34 +49110,14 @@ var ZXING_Z = [
               " · " +
               a.lines +
               (a.lines === 1 ? " line" : " lines") +
-              "</p></div>" +
-          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section>' +
-              "</div>") +
+              "</p></div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
           (anFold ? "Show the summary" : "Hide the summary") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
-          '</button></div><div class="anlow"><div class="anleft">' +
+          '</button></div>' +
           '<div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
           anList(
             a.deps,
@@ -49158,7 +49141,29 @@ var ZXING_Z = [
             "No items were picked for these departments in " + esc(per) + "."
           ) +
           '</section></div>' +
-          '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
+          '</div><aside class="anright">' +
+          (anFold
+            ? ""
+            : '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>') +
+          '<a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +
           encodeURIComponent(sum) +

@@ -4412,7 +4412,7 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .anstats { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .anstats .anrows { padding: 8px 20px 16px; }
 .anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px 0; }
-.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); align-self: start; margin-top: 24px; justify-content: center; gap: 8px 16px; }
+.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); justify-content: center; gap: 8px 16px; }
 .anring { position: relative; width: min(230px, 100%); container-type: inline-size; transition: transform .2s ease-out; }
 .anring:hover { z-index: 1; transform: scale(1.08); }
 .anring circle { transition: stroke-width .15s ease-out; }
@@ -4424,12 +4424,11 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .ancen b { font-family: var(--disp); font-size: 24cqw; font-weight: 700; line-height: 1; font-variant-numeric: tabular-nums; }
 .ancen span { margin-top: 4px; padding: 0 18%; color: var(--mute); font-size: max(9px, 7.5cqw); font-weight: 700; line-height: 1.15; }
 .anpill { grid-column: 1 / -1; justify-self: center; margin: 16px 0 0; padding: 8px 16px; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); font-size: 13px; }
-.anfold { display: flex; align-items: center; gap: 16px; margin: 32px 0; }
+.anfold { display: flex; align-items: center; gap: 16px; }
 .anfold::before, .anfold::after { content: ""; flex: 1; height: 1px; background: var(--line); }
 .anfold button { display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; border-radius: 50% !important; background: var(--head); box-shadow: inset 0 0 0 2px var(--line); color: var(--mute); cursor: pointer; }
 .anfold button svg { width: 18px; height: 18px; }
 .anfold button:hover { color: var(--ink); }
-.anlow { display: grid; grid-template-columns: minmax(0, 1fr) 320px; gap: 32px; align-items: start; }
 .anleft { display: flex; flex-direction: column; gap: 24px; min-width: 0; }
 .ancard { min-width: 0; background: var(--head); box-shadow: inset 0 0 0 1px var(--line); }
 .ancard > h4 { margin: 0; padding: 24px 24px 16px; font-size: 16px; font-weight: 800; }
@@ -4489,11 +4488,14 @@ html.dark .anshare:nth-child(2) { box-shadow: inset 0 0 0 1px var(--line); }
   .antabs { gap: 24px; margin-top: 8px; }
   .anbody { padding: 16px; }
   .anstats { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  /* One column: circles, then At a glance, then the Top 10 lists and sharing */
+  .anstats > .anleft, .anstats > .anright { display: contents; }
+  .anstats .anrings { order: -2; }
+  .anstats .anright > .ancard { order: -1; }
   .anrings { grid-template-columns: repeat(3, minmax(0, 1fr)); }
   .anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anrings { gap: 8px; }
-  .anfold { margin: 16px 0; }
-  .anlow, .anpair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
+  .anpair { grid-template-columns: minmax(0, 1fr); gap: 24px; }
   .anrows { padding: 8px 16px 16px; }
   .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; }
   .anbar { padding: 12px 16px; }

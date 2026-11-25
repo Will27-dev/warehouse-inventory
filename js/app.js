@@ -4865,9 +4865,10 @@
       '</div></header><div class="anbody" role="tabpanel">' +
       (feed
         ? anFeed(anTab === 6)
-        : (anFold
+        : '<div class="anstats"><div class="anleft">' +
+          (anFold
             ? ""
-            : '<div class="anstats"><div class="anrings">' +
+            : '<div class="anrings">' +
               anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", depTips) +
               anRing(a.items, "var(--acc2)", a.items.length, a.items.length === 1 ? "item" : "items", itemTips) +
               anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", fillTips, a.alloced ? a.filled / a.alloced : 0) +
@@ -4877,34 +4878,14 @@
               " · " +
               a.lines +
               (a.lines === 1 ? " line" : " lines") +
-              "</p></div>" +
-          '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
-          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
-          'View pick lists</button></header><dl class="anrows">' +
-          anRow("Period", esc(per)) +
-          anRow("Pick lists", a.slips.length + " submitted") +
-          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
-          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
-          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
-          anRow(
-            a.daily ? "Busiest day" : "Busiest month",
-            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
-          ) +
-          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
-          anRow(
-            "Top picker",
-            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
-          ) +
-          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
-          '</dl></section>' +
-              "</div>") +
+              "</p></div>") +
           '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
           !anFold +
           '" aria-label="' +
           (anFold ? "Show the summary" : "Hide the summary") +
           '">' +
           anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
-          '</button></div><div class="anlow"><div class="anleft">' +
+          '</button></div>' +
           '<div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
           anList(
             a.deps,
@@ -4928,7 +4909,29 @@
             "No items were picked for these departments in " + esc(per) + "."
           ) +
           '</section></div>' +
-          '</div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
+          '</div><aside class="anright">' +
+          (anFold
+            ? ""
+            : '<section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section>') +
+          '<a class="anshare" href="mailto:?subject=' +
           encodeURIComponent("Storeroom analytics, " + per) +
           "&body=" +
           encodeURIComponent(sum) +
