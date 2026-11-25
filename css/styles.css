@@ -4401,13 +4401,21 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .antabs { grid-column: 1 / -1; display: flex; gap: 32px; margin-top: 24px; overflow-x: auto; scrollbar-width: none; }
 .antabs button { flex: none; min-height: 48px; padding: 0; border: 0; border-bottom: 3px solid transparent; background: none; color: var(--mute); font: inherit; font-size: 14px; font-weight: 800; cursor: pointer; }
 .antabs button[aria-selected="true"] { border-bottom-color: var(--acc1); color: var(--ink); }
+.antabs button { transition: color .15s ease-out, border-color .2s ease-out; }
 .antabs button:hover { color: var(--ink); }
+/* Switching period: the new figures rise in, rings pop one after another */
+.anbody.anin { animation: fadeUp .28s ease-out; }
+.anin .anring { animation: popIn .32s ease-out backwards; }
+.anin .anring:nth-child(2) { animation-delay: .06s; }
+.anin .anring:nth-child(3) { animation-delay: .12s; }
 .anbody { padding: 32px 48px 48px; }
-.anstats { display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 32px; align-items: start; }
-.anstats .anrows { padding: 8px 24px 16px; }
-.anstats .anrow { grid-template-columns: 140px minmax(0, 1fr); padding: 12px 0; }
-.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 150px)); align-self: center; justify-content: center; gap: 8px 12px; }
-.anring { position: relative; width: min(170px, 100%); container-type: inline-size; }
+.anstats { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
+.anstats .anrows { padding: 8px 20px 16px; }
+.anstats .anrow { grid-template-columns: minmax(0, 1fr); gap: 4px; padding: 12px 0; }
+.anrings { display: grid; grid-template-columns: repeat(3, minmax(0, 230px)); align-self: start; margin-top: 24px; justify-content: center; gap: 8px 16px; }
+.anring { position: relative; width: min(230px, 100%); container-type: inline-size; transition: transform .2s ease-out; }
+.anring:hover { z-index: 1; transform: scale(1.08); }
+.anring circle { transition: stroke-width .15s ease-out; }
 .anring svg { display: block; width: 100%; height: auto; fill: none; stroke-width: 10; }
 .anring .antrack { stroke: var(--line); }
 .anring circle[data-tip]:not(.antrack):hover { stroke-opacity: 1; stroke-width: 13; }

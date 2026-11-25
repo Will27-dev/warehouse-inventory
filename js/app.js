@@ -4844,7 +4844,9 @@
       anIc('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>') +
       '</button><button type="button" class="anicon" data-ango="exit" aria-label="All Manage options" title="All Manage options">' +
       anIc('<path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/>') +
-      '</button></div><header class="anhead"><div class="antitle"><h3>Who orders what</h3><p>' +
+      '</button></div><header class="anhead"><div class="antitle"><button type="button" class="anback" data-ango="exit">' +
+      anIc('<path d="M15 18l-6-6 6-6"/>') +
+      'Back to Manage</button><h3>Who orders what</h3><p>' +
       anIc('<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>') +
       "Granite City Works, Storeroom · " +
       (feed ? "All pick lists" : esc(per)) +
@@ -4971,6 +4973,7 @@
     if (b.dataset.an) {
       anTab = +b.dataset.an;
       renderAn();
+      $("anBox").querySelector(".anbody").classList.add("anin");
       $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
     } else if (b.hasAttribute("data-anfold")) {
       anFold = !anFold;
