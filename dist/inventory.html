@@ -4416,11 +4416,8 @@ button.annav:hover { background: rgba(255, 255, 255, .06); }
 .antabs button[aria-selected="true"] { border-bottom-color: var(--acc1); color: var(--ink); }
 .antabs button { transition: color .15s ease-out, border-color .2s ease-out; }
 .antabs button:hover { color: var(--ink); }
-/* Switching period: the new figures rise in, rings pop one after another */
-.anbody.anin { animation: fadeUp .28s ease-out; }
-.anin .anring { animation: popIn .32s ease-out backwards; }
-.anin .anring:nth-child(2) { animation-delay: .06s; }
-.anin .anring:nth-child(3) { animation-delay: .12s; }
+/* Switching period: the page crossfades in place (view transition) while the rings sweep */
+::view-transition-old(root), ::view-transition-new(root) { animation-duration: .3s; }
 .anbody { padding: 32px 48px 48px; }
 .anstats { display: grid; grid-template-columns: minmax(0, 1fr) 300px; gap: 32px; align-items: start; }
 .anstats .anrows { padding: 8px 20px 16px; }
@@ -49198,6 +49195,65 @@ var ZXING_Z = [
       "</div></div></div>";
     anTxt.sum = sum;
   }
+  // Period tabs: redraw in the same scroll spot, crossfade the text, and sweep the rings to the new figures.
+  function anSwap() {
+    var box = $("anBox"),
+      y = box.querySelector(".an").scrollTop,
+      tx = box.querySelector(".antabs").scrollLeft,
+      calm = matchMedia("(prefers-reduced-motion: reduce)").matches,
+      was = [].map.call(box.querySelectorAll(".anring"), function (r) {
+        return {
+          arcs: [].map.call(r.querySelectorAll("g circle"), function (c) {
+            return [c.getAttribute("stroke-dasharray"), c.getAttribute("stroke-dashoffset") || "0"];
+          }),
+          n: r.querySelector(".ancen b").textContent
+        };
+      }),
+      draw = function () {
+        renderAn();
+        box.querySelector(".an").scrollTop = y;
+        box.querySelector(".antabs").scrollLeft = tx;
+        box.querySelector('[data-an="' + anTab + '"]').focus({ preventScroll: true });
+        if (calm) return;
+        var C = 2 * Math.PI * 48,
+          px = function (v) {
+            return String(v).replace(/-?[\d.]+/g, "$&px");
+          };
+        box.querySelectorAll(".anring").forEach(function (r, i) {
+          var o = was[i];
+          if (!o) return;
+          r.querySelectorAll("g circle").forEach(function (c, j) {
+            // a slice that is new this period grows out of the end of the ring
+            var from = o.arcs[j] || ["0 " + C, -C];
+            c.animate(
+              [
+                { strokeDasharray: px(from[0]), strokeDashoffset: px(from[1]) },
+                { strokeDasharray: px(c.getAttribute("stroke-dasharray")), strokeDashoffset: px(c.getAttribute("stroke-dashoffset") || 0) }
+              ],
+              { duration: 600, easing: "cubic-bezier(.2, .7, .2, 1)" }
+            );
+          });
+          anCount(r.querySelector(".ancen b"), o.n);
+        });
+      };
+    if (document.startViewTransition && !calm) document.startViewTransition(draw);
+    else draw();
+  }
+  // Ring centre figure counts from the old value to the new one ("12" to "30", "75%" to "100%").
+  function anCount(el, from) {
+    var to = el.textContent,
+      a = parseFloat(from),
+      b = parseFloat(to),
+      suf = to.replace(/^[\d.]+/, ""),
+      t0 = performance.now();
+    if (isNaN(a) || isNaN(b) || a === b) return;
+    el.textContent = a + suf;
+    requestAnimationFrame(function step(t) {
+      var k = Math.min(1, (t - t0) / 600);
+      el.textContent = Math.round(a + (b - a) * (1 - Math.pow(1 - k, 3))) + suf;
+      if (k < 1) requestAnimationFrame(step);
+    });
+  }
   function anExit() {
     mgOpt = -1;
     renderManage();
@@ -49207,9 +49263,7 @@ var ZXING_Z = [
     if (!b) return;
     if (b.dataset.an) {
       anTab = +b.dataset.an;
-      renderAn();
-      $("anBox").querySelector(".anbody").classList.add("anin");
-      $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
+      anSwap();
     } else if (b.hasAttribute("data-anfold")) {
       anFold = !anFold;
       renderAn();

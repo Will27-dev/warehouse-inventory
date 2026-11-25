@@ -4966,6 +4966,65 @@
       "</div></div></div>";
     anTxt.sum = sum;
   }
+  // Period tabs: redraw in the same scroll spot, crossfade the text, and sweep the rings to the new figures.
+  function anSwap() {
+    var box = $("anBox"),
+      y = box.querySelector(".an").scrollTop,
+      tx = box.querySelector(".antabs").scrollLeft,
+      calm = matchMedia("(prefers-reduced-motion: reduce)").matches,
+      was = [].map.call(box.querySelectorAll(".anring"), function (r) {
+        return {
+          arcs: [].map.call(r.querySelectorAll("g circle"), function (c) {
+            return [c.getAttribute("stroke-dasharray"), c.getAttribute("stroke-dashoffset") || "0"];
+          }),
+          n: r.querySelector(".ancen b").textContent
+        };
+      }),
+      draw = function () {
+        renderAn();
+        box.querySelector(".an").scrollTop = y;
+        box.querySelector(".antabs").scrollLeft = tx;
+        box.querySelector('[data-an="' + anTab + '"]').focus({ preventScroll: true });
+        if (calm) return;
+        var C = 2 * Math.PI * 48,
+          px = function (v) {
+            return String(v).replace(/-?[\d.]+/g, "$&px");
+          };
+        box.querySelectorAll(".anring").forEach(function (r, i) {
+          var o = was[i];
+          if (!o) return;
+          r.querySelectorAll("g circle").forEach(function (c, j) {
+            // a slice that is new this period grows out of the end of the ring
+            var from = o.arcs[j] || ["0 " + C, -C];
+            c.animate(
+              [
+                { strokeDasharray: px(from[0]), strokeDashoffset: px(from[1]) },
+                { strokeDasharray: px(c.getAttribute("stroke-dasharray")), strokeDashoffset: px(c.getAttribute("stroke-dashoffset") || 0) }
+              ],
+              { duration: 600, easing: "cubic-bezier(.2, .7, .2, 1)" }
+            );
+          });
+          anCount(r.querySelector(".ancen b"), o.n);
+        });
+      };
+    if (document.startViewTransition && !calm) document.startViewTransition(draw);
+    else draw();
+  }
+  // Ring centre figure counts from the old value to the new one ("12" to "30", "75%" to "100%").
+  function anCount(el, from) {
+    var to = el.textContent,
+      a = parseFloat(from),
+      b = parseFloat(to),
+      suf = to.replace(/^[\d.]+/, ""),
+      t0 = performance.now();
+    if (isNaN(a) || isNaN(b) || a === b) return;
+    el.textContent = a + suf;
+    requestAnimationFrame(function step(t) {
+      var k = Math.min(1, (t - t0) / 600);
+      el.textContent = Math.round(a + (b - a) * (1 - Math.pow(1 - k, 3))) + suf;
+      if (k < 1) requestAnimationFrame(step);
+    });
+  }
   function anExit() {
     mgOpt = -1;
     renderManage();
@@ -4975,9 +5034,7 @@
     if (!b) return;
     if (b.dataset.an) {
       anTab = +b.dataset.an;
-      renderAn();
-      $("anBox").querySelector(".anbody").classList.add("anin");
-      $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
+      anSwap();
     } else if (b.hasAttribute("data-anfold")) {
       anFold = !anFold;
       renderAn();
