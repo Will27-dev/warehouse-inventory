@@ -3887,29 +3887,45 @@
     applyDark();
     updateProfileBtn();
   }
-  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark) ---------- */
+  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark);
+     signed out, this device's own setting (localStorage wh-dark) from the switch on the first screen ---------- */
+  function devDark() {
+    try {
+      return localStorage.getItem("wh-dark") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
   function applyDark() {
-    var on = !!(sess && profOf(sess.email).dark);
+    var on = sess ? !!profOf(sess.email).dark : devDark();
     document.documentElement.classList.toggle("dark", on);
     $("darkSwitch").setAttribute("aria-checked", String(on));
+    $("ldDark").setAttribute("aria-checked", String(on));
   }
-  $("darkSwitch").addEventListener("click", function () {
-    if (!sess) return;
-    var root = document.documentElement;
-    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
-      dark: !profOf(sess.email).dark,
+  ["darkSwitch", "ldDark"].forEach(function (id) {
+    $(id).addEventListener("click", function () {
+      var root = document.documentElement;
+      if (sess) {
+        st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
+          dark: !profOf(sess.email).dark,
+        });
+        save();
+        cloudSavePrefs();
+      } else
+        try {
+          if (devDark()) localStorage.removeItem("wh-dark");
+          else localStorage.setItem("wh-dark", "1");
+        } catch (e) {}
+      root.classList.add("dm-fade");
+      this.classList.add("moved");
+      applyDark();
+      setTimeout(function () {
+        root.classList.remove("dm-fade");
+      }, 450);
     });
-    save();
-    cloudSavePrefs();
-    root.classList.add("dm-fade");
-    this.classList.add("moved");
-    applyDark();
-    setTimeout(function () {
-      root.classList.remove("dm-fade");
-    }, 450);
-  });
-  $("darkSwitch").addEventListener("animationend", function () {
-    this.classList.remove("moved");
+    $(id).addEventListener("animationend", function () {
+      this.classList.remove("moved");
+    });
   });
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */
   function profOf(email) {

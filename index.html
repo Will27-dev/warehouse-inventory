@@ -10,15 +10,16 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125v" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125w" />
     <script>
-      /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
+      /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
         try {
           var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
             d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
             p = d && d.profiles && d.profiles[s.email];
-          if (p && p.dark) document.documentElement.classList.add("dark");
+          // Signed out: this device's own setting, from the switch on the first screen.
+          if (s ? p && p.dark : localStorage.getItem("wh-dark") === "1") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();
     </script>
@@ -28,7 +29,10 @@
     <section class="landing" id="landing" aria-labelledby="ldH" hidden>
       <header class="ldnav">
         <div class="ldlogo"><span class="ldmark" aria-hidden="true">GC</span><b>Storeroom</b></div>
-        <div class="ldnavr"><button type="button" class="ldlink" data-ldguest>Look up items</button><button type="button" class="primary ldcta" data-ldlogin>Log in</button></div>
+        <div class="ldnavr"
+          ><button type="button" class="dmswitch" id="ldDark" role="switch" aria-checked="false" aria-label="Dark mode">
+            <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span><span class="dml" aria-hidden="true">Dark mode</span></button
+          ><button type="button" class="ldlink" data-ldguest>Look up items</button><button type="button" class="primary ldcta" data-ldlogin>Log in</button></div>
       </header>
       <div class="ldhero">
         <div class="ldcopy">
@@ -1027,6 +1031,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125v"></script>
+    <script src="js/app.js?v=20261125w"></script>
   </body>
 </html>

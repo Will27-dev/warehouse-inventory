@@ -9,13 +9,14 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
     <link rel="stylesheet" href="css/legal.css?v=3" />
     <script>
-      /* Same dark mode as the app: the signed-in person's profile setting. */
+      /* Same dark mode as the app. */
       (function () {
         try {
           var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
             d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
             p = d && d.profiles && d.profiles[s.email];
-          if (p && p.dark) document.documentElement.classList.add("dark");
+          // Signed out: this device's own setting, from the switch on the first screen.
+          if (s ? p && p.dark : localStorage.getItem("wh-dark") === "1") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();
     </script>
@@ -47,6 +48,7 @@
             <tr><td data-l="Stored as"><code>wh-lookup-delivery</code><small>Local storage</small></td><td data-l="What it's for">Delivery locations and their pictures.</td><td data-l="Kept until">You clear it</td></tr>
             <tr><td data-l="Stored as"><code>wh-session</code><small>Local storage</small></td><td data-l="What it's for">Who's signed in on this device: name, email and role.</td><td data-l="Kept until">You log out</td></tr>
             <tr><td data-l="Stored as"><code>wh-auth</code><small>Local storage</small></td><td data-l="What it's for">Your sign-in tokens, so you stay signed in.</td><td data-l="Kept until">You log out</td></tr>
+            <tr><td data-l="Stored as"><code>wh-dark</code><small>Local storage</small></td><td data-l="What it's for">Dark mode on this device while no one is signed in, from the switch on the first screen.</td><td data-l="Kept until">You turn it off</td></tr>
             <tr><td data-l="Stored as"><code>wh-prefs-dirty</code><small>Local storage</small></td><td data-l="What it's for">Marks profile changes that haven't reached the cloud yet.</td><td data-l="Kept until">They're sent</td></tr>
             <tr><td data-l="Stored as"><code>wh-cloud-del:…</code><small>Local storage</small></td><td data-l="What it's for">Delivery trips you deleted, so they're removed from the cloud too.</td><td data-l="Kept until">You clear it</td></tr>
             <tr><td data-l="Stored as"><code>wh-uploaded:…</code><small>Local storage</small></td><td data-l="What it's for">Owner only: notes that this device's records were moved to the cloud.</td><td data-l="Kept until">You clear it</td></tr>

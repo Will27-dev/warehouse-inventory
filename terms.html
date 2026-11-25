@@ -9,13 +9,14 @@
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@700&family=Atkinson+Hyperlegible:wght@400;700&display=swap" />
     <link rel="stylesheet" href="css/legal.css?v=3" />
     <script>
-      /* Same dark mode as the app: the signed-in person's profile setting. */
+      /* Same dark mode as the app. */
       (function () {
         try {
           var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
             d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
             p = d && d.profiles && d.profiles[s.email];
-          if (p && p.dark) document.documentElement.classList.add("dark");
+          // Signed out: this device's own setting, from the switch on the first screen.
+          if (s ? p && p.dark : localStorage.getItem("wh-dark") === "1") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();
     </script>

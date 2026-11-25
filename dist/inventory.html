@@ -4542,15 +4542,22 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
 .ldlegal a, .lglegal a, .ldnote a { color: var(--acc1); text-underline-offset: 3px; }
 .ldlegal a:hover, .lglegal a:hover, .ldnote a:hover { color: var(--acc1-hover); }
 html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hover { color: var(--ink); }
+
+/* First screen: dark mode switch for people who aren't signed in */
+.ldnav .dmswitch { min-height: 44px; font-size: 14px; }
+@media (max-width: 640px) {
+  .ldnav .dml { display: none; }
+}
 </style>
     <script>
-      /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
+      /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
         try {
           var s = JSON.parse(localStorage.getItem("wh-session") || "null"),
             d = s && JSON.parse(localStorage.getItem("wh-lookup-v2") || "null"),
             p = d && d.profiles && d.profiles[s.email];
-          if (p && p.dark) document.documentElement.classList.add("dark");
+          // Signed out: this device's own setting, from the switch on the first screen.
+          if (s ? p && p.dark : localStorage.getItem("wh-dark") === "1") document.documentElement.classList.add("dark");
         } catch (e) {}
       })();
     </script>
@@ -4560,7 +4567,10 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
     <section class="landing" id="landing" aria-labelledby="ldH" hidden>
       <header class="ldnav">
         <div class="ldlogo"><span class="ldmark" aria-hidden="true">GC</span><b>Storeroom</b></div>
-        <div class="ldnavr"><button type="button" class="ldlink" data-ldguest>Look up items</button><button type="button" class="primary ldcta" data-ldlogin>Log in</button></div>
+        <div class="ldnavr"
+          ><button type="button" class="dmswitch" id="ldDark" role="switch" aria-checked="false" aria-label="Dark mode">
+            <span class="dmtrack" aria-hidden="true"><span class="dmknob"></span></span><span class="dml" aria-hidden="true">Dark mode</span></button
+          ><button type="button" class="ldlink" data-ldguest>Look up items</button><button type="button" class="primary ldcta" data-ldlogin>Log in</button></div>
       </header>
       <div class="ldhero">
         <div class="ldcopy">
@@ -48139,29 +48149,45 @@ var ZXING_Z = [
     applyDark();
     updateProfileBtn();
   }
-  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark) ---------- */
+  /* ---------- Dark mode: a per-person setting stored on their profile (st.profiles[email].dark);
+     signed out, this device's own setting (localStorage wh-dark) from the switch on the first screen ---------- */
+  function devDark() {
+    try {
+      return localStorage.getItem("wh-dark") === "1";
+    } catch (e) {
+      return false;
+    }
+  }
   function applyDark() {
-    var on = !!(sess && profOf(sess.email).dark);
+    var on = sess ? !!profOf(sess.email).dark : devDark();
     document.documentElement.classList.toggle("dark", on);
     $("darkSwitch").setAttribute("aria-checked", String(on));
+    $("ldDark").setAttribute("aria-checked", String(on));
   }
-  $("darkSwitch").addEventListener("click", function () {
-    if (!sess) return;
-    var root = document.documentElement;
-    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
-      dark: !profOf(sess.email).dark,
+  ["darkSwitch", "ldDark"].forEach(function (id) {
+    $(id).addEventListener("click", function () {
+      var root = document.documentElement;
+      if (sess) {
+        st.profiles[sess.email] = Object.assign({}, profOf(sess.email), {
+          dark: !profOf(sess.email).dark,
+        });
+        save();
+        cloudSavePrefs();
+      } else
+        try {
+          if (devDark()) localStorage.removeItem("wh-dark");
+          else localStorage.setItem("wh-dark", "1");
+        } catch (e) {}
+      root.classList.add("dm-fade");
+      this.classList.add("moved");
+      applyDark();
+      setTimeout(function () {
+        root.classList.remove("dm-fade");
+      }, 450);
     });
-    save();
-    cloudSavePrefs();
-    root.classList.add("dm-fade");
-    this.classList.add("moved");
-    applyDark();
-    setTimeout(function () {
-      root.classList.remove("dm-fade");
-    }, 450);
-  });
-  $("darkSwitch").addEventListener("animationend", function () {
-    this.classList.remove("moved");
+    $(id).addEventListener("animationend", function () {
+      this.classList.remove("moved");
+    });
   });
   /* ---------- Profiles: nickname, bio and photo for every signed-in user ---------- */
   function profOf(email) {

@@ -4529,3 +4529,9 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
 .ldlegal a, .lglegal a, .ldnote a { color: var(--acc1); text-underline-offset: 3px; }
 .ldlegal a:hover, .lglegal a:hover, .ldnote a:hover { color: var(--acc1-hover); }
 html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hover { color: var(--ink); }
+
+/* First screen: dark mode switch for people who aren't signed in */
+.ldnav .dmswitch { min-height: 44px; font-size: 14px; }
+@media (max-width: 640px) {
+  .ldnav .dml { display: none; }
+}
