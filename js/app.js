@@ -6500,7 +6500,8 @@
      st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept until Done or Cancel
      (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
-  var grMsg = "";
+  var grMsg = "",
+    grPick = false; // count screen: barcodes shown to tap instead of scanning
   // Barcodes and Sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
   // Code 128 bar/space widths for values 0-105; digits-only item #s (even length) use code set C, others set B.
   var C128 = (
@@ -6531,7 +6532,8 @@
     }
     return '<svg viewBox="0 0 ' + (x + 10) + ' 50" preserveAspectRatio="none" aria-hidden="true">' + bars + "</svg>";
   }
-  function grCodesHtml() {
+  // c: a count in progress, so each barcode is a button that adds 1 to it and shows its tally.
+  function grCodesHtml(c) {
     var gs = {};
     GR_MAP.forEach(function (t) {
       t[3].split(" ").forEach(function (end) {
@@ -6553,13 +6555,33 @@
           ["x", "c", "d"][i],
           g,
           l.length + (g === "Other" ? (l.length === 1 ? " item" : " items") : " sizes"),
-          i ? "" : "Scan a barcode from the screen, or read the item # under it.",
+          i ? "" : c ? "Tap a barcode to add 1 to this " + (c.to ? "transfer." : "count.") : "Scan a barcode from the screen, or read the item # under it.",
           '<div class="grcodes">' +
             l
               .map(function (r) {
                 var it = g === "Other" && items.find(function (x) { return x.n === r.n; }),
-                  lb = g === "Other" ? (it ? it.d.split("|")[1] || it.d : "Not in the item list") : r.z[1];
-                return '<figure class="grcode"><figcaption><b>' + esc(lb) + "</b><span>" + esc(r.n) + "</span></figcaption>" + c128Svg(r.n) + "</figure>";
+                  lb = g === "Other" ? (it ? it.d.split("|")[1] || it.d : "Not in the item list") : r.z[1],
+                  n = c && c.counts[r.n];
+                return c
+                  ? '<button type="button" class="grcode' +
+                      (n ? " on" : "") +
+                      '" data-grpick="' +
+                      esc(r.n) +
+                      '" aria-label="Add 1 of ' +
+                      esc(r.n) +
+                      ", " +
+                      esc(lb) +
+                      (n ? ", " + n + " so far" : "") +
+                      '"><span class="grcap"><b>' +
+                      esc(lb) +
+                      "</b><span>" +
+                      esc(r.n) +
+                      "</span></span>" +
+                      c128Svg(r.n) +
+                      '<span class="grtally">' +
+                      (n ? n + (c.to ? " added" : " counted") : "Tap to add") +
+                      "</span></button>"
+                  : '<figure class="grcode"><figcaption><b>' + esc(lb) + "</b><span>" + esc(r.n) + "</span></figcaption>" + c128Svg(r.n) + "</figure>";
               })
               .join("") +
             "</div>"
@@ -6601,6 +6623,10 @@
     q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : c.edit ? "Save counts" : "Done";
     $("grFlash").innerHTML = grMsg;
     $("grFlash").hidden = !grMsg;
+    q("codes").textContent = grPick ? "Hide barcodes" : "Show barcodes";
+    q("codes").setAttribute("aria-expanded", grPick);
+    $("grPick").hidden = !grPick;
+    $("grPick").innerHTML = grPick ? grCodesHtml(c) : "";
     $("grList").innerHTML = c.order.length
       ? '<table class="pktab grtab"><thead><tr><th>Item #</th><th>Count</th><th></th></tr></thead><tbody>' +
         c.order
@@ -6674,6 +6700,15 @@
       grAdd($("grScan").value);
       $("grScan").value = "";
     } else if (act === "cam") camOpen(grAdd, true);
+    else if (act === "codes") {
+      grPick = !grPick;
+      renderGr();
+    } else if (b.dataset.grpick) {
+      grAdd(b.dataset.grpick);
+      // the picker was redrawn: keep focus on the barcode just tapped
+      var again = $("grPick").querySelector('[data-grpick="' + CSS.escape(b.dataset.grpick) + '"]');
+      if (again) again.focus({ preventScroll: true });
+    }
     else if (act === "cancel") {
       if (!c.of && c.order.length && !confirm("Cancel the " + (c.to ? "transfer" : c.site + " count") + "? The " + c.order.length + " scanned items are thrown away."))
         return;

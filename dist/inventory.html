@@ -4303,9 +4303,21 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 /* Greens: Barcodes and Sizes. Barcodes stay black on white in dark mode so scanners can read them. */
 .grcodes { display: grid; grid-template-columns: repeat(auto-fill, minmax(176px, 1fr)); gap: 12px; }
 .grcode { margin: 0; padding: 12px; border-radius: 14px; background: #fff; color: #111; box-shadow: inset 0 0 0 2px var(--ink); }
-.grcode figcaption { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
-.grcode figcaption b { font-size: 18px; }
-.grcode figcaption span { font-size: 13px; font-variant-numeric: tabular-nums; color: #444; }
+.grcode figcaption, .grcode .grcap { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; margin-bottom: 8px; }
+.grcode figcaption b, .grcode .grcap b { font-size: 18px; }
+.grcode figcaption span, .grcode .grcap span { font-size: 13px; font-variant-numeric: tabular-nums; color: #444; }
+/* Count screen: Show barcodes, tap one to add 1 */
+.grpick[hidden] { display: none; }
+.grpick .grsec { margin-top: 0; }
+.grpick .grcap { flex-direction: column; align-items: flex-start; gap: 2px; }
+.grpick .grcodes { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+.grpick .grcode { display: block; width: 100%; min-height: 44px; border: 0; font: inherit; text-align: left; cursor: pointer; transition: transform .12s ease-out, box-shadow .15s ease-out; }
+.grpick .grcode:hover { box-shadow: inset 0 0 0 3px var(--acc1); }
+.grpick .grcode:active { transform: scale(.97); }
+.grpick .grcode:focus-visible { outline: 3px solid var(--acc1); outline-offset: 2px; }
+.grpick .grcode.on { box-shadow: inset 0 0 0 4px var(--acc1); }
+.grtally { display: block; margin-top: 8px; color: #444; font-size: 13px; font-weight: 700; }
+.grcode.on .grtally { color: #111; }
 .grcode svg { display: block; width: 100%; height: 56px; fill: #000; }
 
 /* Delivery trips (Load and Delivery modes): location photo beside dark receipt cards */
@@ -4931,9 +4943,11 @@ html.dark .antip { box-shadow: inset 0 0 0 1px var(--line), 0 6px 18px rgba(0, 0
                     <div class="dvscan">
                       <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8"/></svg><input id="grScan" autocomplete="off" placeholder="Scan a barcode, or type an item # and press Enter" aria-label="Scan a barcode, or type an item # and press Enter" /></label
                       ><button type="button" class="primary" data-gr="add">Enter</button
-                      ><button type="button" data-gr="cam">Scan barcode</button>
+                      ><button type="button" data-gr="cam">Scan barcode</button
+                      ><button type="button" data-gr="codes" aria-expanded="false" aria-controls="grPick">Show barcodes</button>
                     </div>
                     <p class="dvflash" id="grFlash" hidden></p>
+                    <div class="grpick" id="grPick" hidden></div>
                     <div id="grList"></div>
                     <div class="pksub">
                       <button type="button" data-gr="cancel">Cancel count</button
@@ -50729,7 +50743,8 @@ var ZXING_Z = [
      st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept until Done or Cancel
      (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
-  var grMsg = "";
+  var grMsg = "",
+    grPick = false; // count screen: barcodes shown to tap instead of scanning
   // Barcodes and Sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
   // Code 128 bar/space widths for values 0-105; digits-only item #s (even length) use code set C, others set B.
   var C128 = (
@@ -50760,7 +50775,8 @@ var ZXING_Z = [
     }
     return '<svg viewBox="0 0 ' + (x + 10) + ' 50" preserveAspectRatio="none" aria-hidden="true">' + bars + "</svg>";
   }
-  function grCodesHtml() {
+  // c: a count in progress, so each barcode is a button that adds 1 to it and shows its tally.
+  function grCodesHtml(c) {
     var gs = {};
     GR_MAP.forEach(function (t) {
       t[3].split(" ").forEach(function (end) {
@@ -50782,13 +50798,33 @@ var ZXING_Z = [
           ["x", "c", "d"][i],
           g,
           l.length + (g === "Other" ? (l.length === 1 ? " item" : " items") : " sizes"),
-          i ? "" : "Scan a barcode from the screen, or read the item # under it.",
+          i ? "" : c ? "Tap a barcode to add 1 to this " + (c.to ? "transfer." : "count.") : "Scan a barcode from the screen, or read the item # under it.",
           '<div class="grcodes">' +
             l
               .map(function (r) {
                 var it = g === "Other" && items.find(function (x) { return x.n === r.n; }),
-                  lb = g === "Other" ? (it ? it.d.split("|")[1] || it.d : "Not in the item list") : r.z[1];
-                return '<figure class="grcode"><figcaption><b>' + esc(lb) + "</b><span>" + esc(r.n) + "</span></figcaption>" + c128Svg(r.n) + "</figure>";
+                  lb = g === "Other" ? (it ? it.d.split("|")[1] || it.d : "Not in the item list") : r.z[1],
+                  n = c && c.counts[r.n];
+                return c
+                  ? '<button type="button" class="grcode' +
+                      (n ? " on" : "") +
+                      '" data-grpick="' +
+                      esc(r.n) +
+                      '" aria-label="Add 1 of ' +
+                      esc(r.n) +
+                      ", " +
+                      esc(lb) +
+                      (n ? ", " + n + " so far" : "") +
+                      '"><span class="grcap"><b>' +
+                      esc(lb) +
+                      "</b><span>" +
+                      esc(r.n) +
+                      "</span></span>" +
+                      c128Svg(r.n) +
+                      '<span class="grtally">' +
+                      (n ? n + (c.to ? " added" : " counted") : "Tap to add") +
+                      "</span></button>"
+                  : '<figure class="grcode"><figcaption><b>' + esc(lb) + "</b><span>" + esc(r.n) + "</span></figcaption>" + c128Svg(r.n) + "</figure>";
               })
               .join("") +
             "</div>"
@@ -50830,6 +50866,10 @@ var ZXING_Z = [
     q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : c.edit ? "Save counts" : "Done";
     $("grFlash").innerHTML = grMsg;
     $("grFlash").hidden = !grMsg;
+    q("codes").textContent = grPick ? "Hide barcodes" : "Show barcodes";
+    q("codes").setAttribute("aria-expanded", grPick);
+    $("grPick").hidden = !grPick;
+    $("grPick").innerHTML = grPick ? grCodesHtml(c) : "";
     $("grList").innerHTML = c.order.length
       ? '<table class="pktab grtab"><thead><tr><th>Item #</th><th>Count</th><th></th></tr></thead><tbody>' +
         c.order
@@ -50903,6 +50943,15 @@ var ZXING_Z = [
       grAdd($("grScan").value);
       $("grScan").value = "";
     } else if (act === "cam") camOpen(grAdd, true);
+    else if (act === "codes") {
+      grPick = !grPick;
+      renderGr();
+    } else if (b.dataset.grpick) {
+      grAdd(b.dataset.grpick);
+      // the picker was redrawn: keep focus on the barcode just tapped
+      var again = $("grPick").querySelector('[data-grpick="' + CSS.escape(b.dataset.grpick) + '"]');
+      if (again) again.focus({ preventScroll: true });
+    }
     else if (act === "cancel") {
       if (!c.of && c.order.length && !confirm("Cancel the " + (c.to ? "transfer" : c.site + " count") + "? The " + c.order.length + " scanned items are thrown away."))
         return;

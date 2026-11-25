@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125p" />
+    <link rel="stylesheet" href="css/styles.css?v=20261125s" />
     <script>
       /* Apply the signed-in person's dark mode (from their profile) before the page draws. */
       (function () {
@@ -419,9 +419,11 @@
                     <div class="dvscan">
                       <label class="search"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" aria-hidden="true"><path d="M3 7V5a2 2 0 0 1 2-2h2M17 3h2a2 2 0 0 1 2 2v2M21 17v2a2 2 0 0 1-2 2h-2M7 21H5a2 2 0 0 1-2-2v-2M7 8v8M11 8v8M15 8v8M18 8v8"/></svg><input id="grScan" autocomplete="off" placeholder="Scan a barcode, or type an item # and press Enter" aria-label="Scan a barcode, or type an item # and press Enter" /></label
                       ><button type="button" class="primary" data-gr="add">Enter</button
-                      ><button type="button" data-gr="cam">Scan barcode</button>
+                      ><button type="button" data-gr="cam">Scan barcode</button
+                      ><button type="button" data-gr="codes" aria-expanded="false" aria-controls="grPick">Show barcodes</button>
                     </div>
                     <p class="dvflash" id="grFlash" hidden></p>
+                    <div class="grpick" id="grPick" hidden></div>
                     <div id="grList"></div>
                     <div class="pksub">
                       <button type="button" data-gr="cancel">Cancel count</button
@@ -1024,6 +1026,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125p"></script>
+    <script src="js/app.js?v=20261125s"></script>
   </body>
 </html>
