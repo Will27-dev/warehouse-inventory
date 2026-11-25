@@ -4470,18 +4470,56 @@
       return [ns, ns === 1 ? "count sheet" : "count sheets"];
     }
     if (i === 5) {
-      var np = anStats(0).picks;
+      var np = anStats(anRange(0)).slips.length;
       return [np, (np === 1 ? "pick list" : "pick lists") + " this month"];
     }
     return ["", "Coming soon"];
   }
   /* ---------- Analytics: who orders what, from submitted pick lists ----------
-     A department is the pick slip's "Deliver to" (36K-xxxx gives xxxx). Departments are ranked by
-     how many pick slip lines they ordered; their items by the quantity picked (or allocated). */
-  var anTab = 0; // 0: this month, 1: previous month
-  function anMonth(back) {
-    var d = new Date();
-    return [new Date(d.getFullYear(), d.getMonth() - back, 1), new Date(d.getFullYear(), d.getMonth() - back + 1, 1)];
+     Full-screen on desktop. A department is the pick slip's "Deliver to" (36K-xxxx gives xxxx).
+     Departments are ranked by pick slip lines ordered; their items by quantity picked (or allocated).
+     Sidebar and top-bar links open the matching page of the app. */
+  var anTab = 0, // AN_TABS index
+    anFold = false, // ring/bar row folded away
+    anSideOff = false, // sidebar hidden (menu button)
+    anTxt = {}, // text behind each Copy button
+    AN_TABS = ["This month", "Previous month", "Last 3 months", "This year", "All time", "Activity", "Problems"],
+    AN_NAV = [
+      ["Main", [["items", "Items", MGICONS[5]], ["top:2", "Pick list", '<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>'], ["top:3", "Put away", MGICONS[3]], ["top:4", "Delivery", MGICONS[1]], ["top:6", "Greens", MGICONS[6]]]],
+      ["Admin", [["opt:0", "Users", MGICONS[0]], ["side:2", "Delivery locations", '<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>'], ["opt:1", "Manifests", MGICONS[1]], ["opt:2", "Templates", MGICONS[2]], ["opt:4", "Inspection sheets", MGICONS[4]]]],
+    ];
+  function anIc(d) {
+    return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>";
+  }
+  function anRange(i) {
+    var d = new Date(),
+      y = d.getFullYear(),
+      mo = d.getMonth();
+    return [
+      [new Date(y, mo, 1), new Date(y, mo + 1, 1)],
+      [new Date(y, mo - 1, 1), new Date(y, mo, 1)],
+      [new Date(y, mo - 2, 1), new Date(y, mo + 1, 1)],
+      [new Date(y, 0, 1), new Date(y + 1, 0, 1)],
+      [null, new Date(y, mo + 1, 1)],
+    ][Math.min(i, 4)];
+  }
+  // Every submitted pick list, newest first: its newest version, dated by the first submission (edits point back with pick.of).
+  function anSlips() {
+    var first = {},
+      last = {};
+    (st.audit || []).forEach(function (x) {
+      if (!x.pick) return;
+      var k = x.pick.of || x.k;
+      if (!first[k] || x.ts < first[k].ts) first[k] = x;
+      if (!last[k] || x.ts > last[k].ts) last[k] = x;
+    });
+    return Object.keys(first)
+      .map(function (k) {
+        return { k: k, ts: first[k].ts, by: first[k].by, p: last[k].pick };
+      })
+      .sort(function (a, b) {
+        return b.ts - a.ts;
+      });
   }
   function anTop(o) {
     return Object.keys(o)
@@ -4493,98 +4531,162 @@
       })
       .slice(0, 10);
   }
-  function anStats(back) {
-    var m = anMonth(back),
-      first = {},
-      last = {};
-    // Edits are newer entries pointing at the first submission (pick.of): count the newest, dated by the first.
-    (st.audit || []).forEach(function (x) {
-      if (!x.pick) return;
-      var k = x.pick.of || x.k;
-      if (!first[k] || x.ts < first[k].ts) first[k] = x;
-      if (!last[k] || x.ts > last[k].ts) last[k] = x;
-    });
-    var picks = Object.keys(first)
-        .filter(function (k) {
-          return first[k].ts >= +m[0] && first[k].ts < +m[1];
-        })
-        .map(function (k) {
-          return last[k].pick;
-        }),
+  function anStats(r) {
+    var all = anSlips(),
+      old = all.length ? new Date(all[all.length - 1].ts) : new Date(),
+      from = +(r[0] || new Date(old.getFullYear(), old.getMonth(), 1)),
+      to = +r[1],
+      slips = all.filter(function (s) {
+        return s.ts >= from && s.ts < to;
+      }),
       dep = {},
-      rows = [];
-    picks.forEach(function (pk) {
-      (pk.rows || []).forEach(function (r, j) {
+      by = {},
+      rows = [],
+      a = { from: from, to: to, slips: slips, filled: 0, alloced: 0, qty: 0, probs: 0 };
+    slips.forEach(function (s) {
+      by[s.by || ""] = (by[s.by || ""] || 0) + 1;
+      (s.p.rows || []).forEach(function (r, j) {
         var d = String(r.dest || "").trim(),
-          q = pkNum((pk.picked || {})[j]);
-        if (!d) return;
-        if (!(q > 0)) q = pkNum(r.alloc) || 0;
-        dep[d] = (dep[d] || 0) + 1;
-        rows.push({ d: d, n: r.n, q: q });
+          got = pkNum((s.p.picked || {})[j]),
+          al = pkNum(r.alloc);
+        if (s.p.prob && s.p.prob[j] != null) a.probs++;
+        if (al != null) {
+          a.alloced++;
+          if (got != null && got >= al) a.filled++;
+        }
+        if (got > 0) a.qty += got;
+        rows.push({ d: d, n: r.n, q: got > 0 ? got : al || 0, ts: s.ts });
+        if (d) dep[d] = (dep[d] || 0) + 1;
       });
     });
-    var deps = anTop(dep),
-      inTop = {},
+    a.lines = rows.length;
+    a.deps = anTop(dep);
+    var inTop = {},
       it = {};
-    deps.forEach(function (t) {
+    a.deps.forEach(function (t) {
       inTop[t[0]] = 1;
     });
-    rows.forEach(function (r) {
-      if (inTop[r.d]) it[r.n] = (it[r.n] || 0) + r.q;
+    rows.forEach(function (x) {
+      if (inTop[x.d]) it[x.n] = (it[x.n] || 0) + x.q;
     });
-    return { m: m[0], picks: picks.length, lines: rows.length, deps: deps, items: anTop(it) };
+    a.items = anTop(it);
+    a.picker = anTop(by)[0];
+    // Lines per day for a month, per month for longer periods.
+    a.daily = to - from <= 32 * 864e5;
+    a.bars = [];
+    for (var b = new Date(from); +b < to; ) {
+      var e = a.daily ? new Date(b.getFullYear(), b.getMonth(), b.getDate() + 1) : new Date(b.getFullYear(), b.getMonth() + 1, 1);
+      a.bars.push({
+        t: b,
+        n: rows.filter(function (x) {
+          return x.ts >= +b && x.ts < +e;
+        }).length,
+      });
+      b = e;
+    }
+    return a;
   }
-  // Ring chart: one hue, darkest = biggest; a 2px gap between slices. Hover a slice for its name and count.
-  function anRing(list, hue, total, label, names) {
+  function anItemDesc(n) {
+    var it = items.find(function (x) {
+      return x.n === n;
+    });
+    return it ? it.d.split("|")[1] || it.d : "";
+  }
+  function anPeriod(a) {
+    var f = new Date(a.from),
+      l = new Date(a.to - 1),
+      mo = function (d, y) {
+        return d.toLocaleString([], y ? { month: "long", year: "numeric" } : { month: "short" });
+      };
+    if (anTab === 3) return String(f.getFullYear());
+    if (anTab < 2) return mo(f, 1);
+    return mo(f) + " " + (f.getFullYear() !== l.getFullYear() ? f.getFullYear() + " " : "") + "to " + mo(l, 1);
+  }
+  // Ring chart: one hue, darkest = biggest, 2px gaps; or a single arc for a share (pct 0-1).
+  function anRing(list, hue, big, label, names, pct) {
     var C = 2 * Math.PI * 48,
-      sum = list.reduce(function (a, t) {
-        return a + t[1];
+      sum = list.reduce(function (s, t) {
+        return s + t[1];
       }, 0),
       at = 0,
-      arcs = list
-        .map(function (t, i) {
-          var len = (t[1] / sum) * C,
-            gap = list.length > 1 ? Math.min(2, len / 2) : 0,
-            a =
-              '<circle r="48" cx="60" cy="60" stroke="' +
-              hue +
-              '" stroke-opacity="' +
-              (1 - i * 0.07).toFixed(2) +
-              '" stroke-dasharray="' +
-              (len - gap).toFixed(2) +
-              " " +
-              C.toFixed(2) +
-              '" stroke-dashoffset="' +
-              (-at).toFixed(2) +
-              '"><title>' +
-              esc(names[i]) +
-              ": " +
-              t[1].toLocaleString() +
-              "</title></circle>";
-          at += len;
-          return a;
-        })
-        .join("");
+      arcs =
+        pct != null
+          ? '<circle r="48" cx="60" cy="60" stroke="' + hue + '" stroke-dasharray="' + (pct * C).toFixed(2) + " " + C.toFixed(2) + '"/>'
+          : list
+              .map(function (t, i) {
+                var len = (t[1] / sum) * C,
+                  gap = list.length > 1 ? Math.min(2, len / 2) : 0,
+                  c =
+                    '<circle r="48" cx="60" cy="60" stroke="' +
+                    hue +
+                    '" stroke-opacity="' +
+                    (1 - i * 0.07).toFixed(2) +
+                    '" stroke-dasharray="' +
+                    (len - gap).toFixed(2) +
+                    " " +
+                    C.toFixed(2) +
+                    '" stroke-dashoffset="' +
+                    (-at).toFixed(2) +
+                    '"><title>' +
+                    esc(names[i]) +
+                    ": " +
+                    t[1].toLocaleString() +
+                    "</title></circle>";
+                at += len;
+                return c;
+              })
+              .join("");
     return (
       '<div class="anring"><svg viewBox="0 0 120 120" role="img" aria-label="' +
-      esc(label) +
+      esc(big + " " + label) +
       '"><circle r="48" cx="60" cy="60" class="antrack"/><g transform="rotate(-90 60 60)">' +
       arcs +
       '</g></svg><div class="ancen"><b>' +
-      total.toLocaleString() +
+      big +
       "</b><span>" +
       esc(label) +
       "</span></div></div>"
     );
   }
-  function anCard(title, list, hue, total, label, names, sub, empty) {
+  function anBars(a) {
+    var max = Math.max.apply(
+        null,
+        a.bars.map(function (b) {
+          return b.n;
+        }).concat(1)
+      ),
+      top = Math.ceil(max / 4) * 4,
+      many = a.bars.length > 16;
     return (
-      '<section class="ancard"><h4>' +
-      title +
-      "</h4>" +
-      anRing(list, hue, total, label, names) +
-      (list.length
-        ? '<ol class="anleg">' +
+      '<div class="anbars"><div class="anaxis" aria-hidden="true">' +
+      [top, top * 0.75, top / 2, top / 4, 0]
+        .map(function (v) {
+          return "<span>" + v + "</span>";
+        })
+        .join("") +
+      '</div><ol class="anbarl" aria-label="Pick slip lines ' + (a.daily ? "per day" : "per month") + '">' +
+      a.bars
+        .map(function (b, i) {
+          var tip = (a.daily ? b.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : b.t.toLocaleString([], { month: "long", year: "numeric" })) + ": " + b.n + (b.n === 1 ? " line" : " lines");
+          return (
+            '<li tabindex="0" aria-label="' +
+            esc(tip) +
+            '" data-tip="' +
+            esc(tip) +
+            '"><b><i style="height:' +
+            ((b.n / top) * 100).toFixed(1) +
+            '%"></i></b><span>' +
+            (a.daily ? (many && i % 5 && i !== a.bars.length - 1 ? "" : b.t.getDate()) : b.t.toLocaleString([], { month: "narrow" })) +
+            "</span></li>"
+          );
+        })
+        .join("") +
+      "</ol></div>"
+    );
+  }
+  function anList(list, hue, names, sub, empty) {
+    return list.length
+      ? '<ol class="anleg">' +
           list
             .map(function (t, i) {
               return (
@@ -4602,75 +4704,362 @@
             })
             .join("") +
           "</ol>"
-        : '<p class="anempty">' + empty + "</p>") +
+      : '<p class="anempty">' + empty + "</p>";
+  }
+  function anCopy(key, text, label) {
+    anTxt[key] = text;
+    return (
+      '<div class="ancopy"><input readonly value="' +
+      esc(text.split("\n")[0]) +
+      '" aria-label="' +
+      esc(label) +
+      '"><button type="button" data-ancopy="' +
+      key +
+      '">Copy</button></div>'
+    );
+  }
+  function anSummary(a, per) {
+    var deps = a.deps.map(function (t) {
+        return "Dept " + t[0] + " (" + t[1] + ")";
+      }),
+      its = a.items.map(function (t) {
+        return t[0] + " (" + t[1].toLocaleString() + ")";
+      });
+    return (
+      "Storeroom analytics, " +
+      per +
+      "\n" +
+      a.slips.length +
+      " pick lists, " +
+      a.lines +
+      " lines" +
+      (deps.length ? "\nTop 10 departments: " + deps.join(", ") : "") +
+      (its.length ? "\nTop 10 items they order: " + its.join(", ") : "")
+    );
+  }
+  function anTsv(a) {
+    var out = ["Rank\tDepartment\tLines ordered\tItem #\tDescription\tQuantity"];
+    for (var i = 0; i < Math.max(a.deps.length, a.items.length); i++) {
+      var d = a.deps[i] || ["", ""],
+        t = a.items[i] || ["", ""];
+      out.push([i + 1, d[0] && "Dept " + d[0], d[1], t[0], anItemDesc(t[0]), t[1]].join("\t"));
+    }
+    return out.join("\n");
+  }
+  function anRow(k, v) {
+    return '<div class="anrow"><dt>' + k + "</dt><dd>" + v + "</dd></div>";
+  }
+  function anFeed(probs) {
+    var slips = anSlips(),
+      rows = [];
+    slips.forEach(function (s) {
+      if (!probs) return rows.push(s);
+      (s.p.rows || []).forEach(function (r, j) {
+        if (s.p.prob && s.p.prob[j] != null) rows.push({ s: s, r: r, note: s.p.prob[j] });
+      });
+    });
+    rows = rows.slice(0, 40);
+    var when = function (ts) {
+      return new Date(ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+    };
+    return (
+      '<section class="ancard anfeed"><header class="anbar"><h4>' +
+      (probs ? "Lines flagged as a problem" : "Recent pick lists") +
+      "</h4><small>Newest first" +
+      (rows.length === 40 ? ", latest 40" : "") +
+      "</small></header>" +
+      (rows.length
+        ? '<div class="tw"><table class="sumtbl"><thead><tr>' +
+          (probs ? "<th>Pick slip</th><th>Item #</th><th>Dept</th><th>Problem</th><th>Submitted</th>" : "<th>Pick slip</th><th>Submitted by</th><th>Submitted</th><th>Lines</th><th>Departments</th>") +
+          "<th></th></tr></thead><tbody>" +
+          rows
+            .map(function (x) {
+              var s = probs ? x.s : x,
+                deps = {};
+              (s.p.rows || []).forEach(function (r) {
+                if (r.dest) deps[r.dest] = 1;
+              });
+              return (
+                "<tr><td><b>" +
+                esc(s.p.no || s.p.name || "–") +
+                "</b></td>" +
+                (probs
+                  ? "<td>" + esc(x.r.n) + "</td><td>" + (esc(x.r.dest) || "–") + "</td><td>" + (esc(x.note) || "Flagged") + "</td><td>" + when(s.ts) + "</td>"
+                  : '<td><span class="anwho">' + avatarHtml(s.by, whoName(s.by)) + esc(whoName(s.by)) + "</span></td><td>" + when(s.ts) + "</td><td>" + (s.p.rows || []).length + "</td><td>" + (esc(Object.keys(deps).join(", ")) || "–") + "</td>") +
+                '<td class="act"><button type="button" data-anslip="' +
+                esc(s.k) +
+                '">Open</button></td></tr>'
+              );
+            })
+            .join("") +
+          "</tbody></table></div>"
+        : '<p class="anempty">' + (probs ? "No pick slip lines have been flagged as a problem." : "No pick lists have been submitted yet.") + "</p>") +
       "</section>"
     );
   }
   function renderAn() {
     var me = curEmail(),
-      a = anStats(anTab),
-      mon = a.m.toLocaleString([], { month: "long", year: "numeric" }),
-      itemD = a.items.map(function (t) {
-        var it = items.find(function (x) {
-          return x.n === t[0];
-        });
-        return it ? it.d.split("|")[1] || it.d : "";
+      feed = anTab > 4,
+      a = anStats(anRange(anTab)),
+      per = anPeriod(a),
+      open = a.to > Date.now(),
+      top = a.deps[0],
+      itop = a.items[0],
+      busy = a.bars.reduce(function (m, b) {
+        return b.n > (m ? m.n : 0) ? b : m;
+      }, null),
+      ct =
+        top &&
+        st.contacts.find(function (c) {
+          return dlfKey(c.dept || "").indexOf(dlfKey(top[0])) >= 0;
+        }),
+      sum = anSummary(a, per),
+      deptNames = a.deps.map(function (t) {
+        return "Dept " + t[0];
       });
+    anTxt = {};
     $("anBox").innerHTML =
-      '<div class="an"><aside class="anside"><div class="anme">' +
+      '<div class="an' +
+      (anSideOff ? " noside" : "") +
+      '"><aside class="anside" aria-label="Analytics menu"><button type="button" class="anme" data-ango="me" aria-label="Open your profile">' +
       avatarHtml(me, whoName(me), "lg") +
       "<b>" +
       esc(whoName(me)) +
-      '</b></div><p class="anlab">Main</p><span class="annav" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="m3 8 9 5 9-5M12 13v8"/></svg>Items</span></aside>' +
-      '<div class="anmain"><header class="anhead"><h3>Who orders what</h3><p>From submitted pick lists in ' +
-      esc(mon) +
-      '.</p><div class="antabs" role="tablist" aria-label="Month">' +
-      ["This month", "Previous month"]
-        .map(function (t, i) {
-          return '<button type="button" role="tab" data-an="' + i + '" aria-selected="' + (i === anTab) + '">' + t + "</button>";
-        })
-        .join("") +
-      '</div></header><div class="anbody" role="tabpanel"><p class="antot"><b>Totals</b> · ' +
-      a.picks +
-      (a.picks === 1 ? " pick list" : " pick lists") +
-      " · " +
-      a.lines +
-      (a.lines === 1 ? " line" : " lines") +
-      "</p>" +
-      anCard(
-        "Top 10 departments",
-        a.deps,
-        "var(--acc1)",
-        a.deps.length,
-        a.deps.length === 1 ? "department" : "departments",
-        a.deps.map(function (t) {
-          return "Dept " + t[0];
-        }),
-        a.deps.map(function (t) {
-          return t[1] === 1 ? "line ordered" : "lines ordered";
-        }),
-        "No pick lists were submitted in " + esc(mon) + "."
-      ) +
-      anCard(
-        "Top 10 items they order",
-        a.items,
-        "var(--acc2)",
-        a.items.length,
-        a.items.length === 1 ? "item" : "items",
-        a.items.map(function (t) {
-          return t[0];
-        }),
-        itemD,
-        "No items were picked for these departments in " + esc(mon) + "."
-      ) +
+      anIc('<path d="m6 9 6 6 6-6"/>') +
+      "</b></button>" +
+      AN_NAV.map(function (g) {
+        return (
+          '<p class="anlab">' +
+          g[0] +
+          '</p><nav class="annavs" aria-label="' +
+          g[0] +
+          '">' +
+          g[1]
+            .map(function (n) {
+              return n[0] === "items"
+                ? '<span class="annav" aria-current="page">' + anIc(n[2]) + n[1] + "</span>"
+                : '<button type="button" class="annav" data-ango="' + n[0] + '">' + anIc(n[2]) + n[1] + "</button>";
+            })
+            .join("") +
+          "</nav>"
+        );
+      }).join("") +
+      '</aside><div class="anmain"><div class="antop"><button type="button" class="anicon" data-anside aria-label="' +
+      (anSideOff ? "Show the menu" : "Hide the menu") +
+      '" aria-pressed="' +
+      !anSideOff +
+      '">' +
+      anIc('<path d="M4 6h16M4 12h16M4 18h10"/>') +
+      '</button><label class="ansearch">' +
+      anIc('<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>') +
+      '<input type="search" id="anQ" placeholder="Search for an item #, description or locator" aria-label="Search items" autocomplete="off"></label>' +
+      '<button type="button" class="anicon on" data-ango="opt:0" aria-label="Add or edit users" title="Add or edit users">' +
+      anIc('<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/>') +
+      '</button><button type="button" class="anicon" data-ango="opt:3" aria-label="Picks and put away by day" title="Picks and put away by day">' +
+      anIc('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>') +
+      '</button><button type="button" class="anicon" data-ango="exit" aria-label="All Manage options" title="All Manage options">' +
+      anIc('<path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/>') +
+      '</button></div><header class="anhead"><div class="antitle"><h3>Who orders what</h3><p>' +
+      anIc('<path d="M12 21s-7-6.5-7-12a7 7 0 0 1 14 0c0 5.5-7 12-7 12z"/><circle cx="12" cy="9" r="2.5"/>') +
+      "Granite City Works, Storeroom · " +
+      (feed ? "All pick lists" : esc(per)) +
+      ' · <button type="button" class="anlink" data-ango="opt:3">View pick lists</button></p></div><div class="anacts">' +
+      (feed ? "" : '<span class="anstate' + (open ? " open" : "") + '"><i></i>' + (open ? "Open" : "Closed") + "</span>") +
+      '<button type="button" class="anround" data-anact="csv" aria-label="Download as a spreadsheet (CSV)" title="Download as a spreadsheet (CSV)">' +
+      anIc('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>') +
+      '</button><button type="button" class="anround" data-ancopy="sum" aria-label="Copy the summary" title="Copy the summary">' +
+      anIc('<rect x="8" y="8" width="13" height="13" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/>') +
+      '</button><button type="button" class="anround" data-anact="sync" aria-label="Check the cloud for new pick lists" title="Check the cloud for new pick lists">' +
+      anIc('<path d="M21 12a9 9 0 1 1-3-6.7L21 8M21 3v5h-5"/>') +
+      '</button></div><div class="antabs" role="tablist" aria-label="Period">' +
+      AN_TABS.map(function (t, i) {
+        return '<button type="button" role="tab" data-an="' + i + '" aria-selected="' + (i === anTab) + '">' + t + "</button>";
+      }).join("") +
+      '</div></header><div class="anbody" role="tabpanel">' +
+      (feed
+        ? anFeed(anTab === 6)
+        : (anFold
+            ? ""
+            : '<div class="anstats"><div class="anrings">' +
+              anRing(a.deps, "var(--acc1)", a.deps.length, a.deps.length === 1 ? "department" : "departments", deptNames) +
+              anRing(
+                a.items,
+                "var(--acc2)",
+                a.items.length,
+                a.items.length === 1 ? "item" : "items",
+                a.items.map(function (t) {
+                  return t[0];
+                })
+              ) +
+              anRing([], "var(--ink)", a.alloced ? Math.round((a.filled / a.alloced) * 100) + "%" : "–", "filled in full", [], a.alloced ? a.filled / a.alloced : 0) +
+              '<p class="anpill"><b>Totals</b> · ' +
+              a.slips.length +
+              (a.slips.length === 1 ? " pick list" : " pick lists") +
+              " · " +
+              a.lines +
+              (a.lines === 1 ? " line" : " lines") +
+              '</p></div><div class="anchart">' +
+              anBars(a) +
+              '<p class="anpill">' +
+              (a.daily ? "Lines per day" : "Lines per month") +
+              "</p></div></div>") +
+          '<div class="anfold"><button type="button" data-anfold aria-expanded="' +
+          !anFold +
+          '" aria-label="' +
+          (anFold ? "Show the charts" : "Hide the charts") +
+          '">' +
+          anIc(anFold ? '<path d="m6 9 6 6 6-6"/>' : '<path d="m18 15-6-6-6 6"/>') +
+          '</button></div><div class="anlow"><div class="anleft"><section class="ancard"><header class="anbar"><h4>At a glance</h4><button type="button" data-ango="opt:3">' +
+          anIc('<path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/>') +
+          'View pick lists</button></header><dl class="anrows">' +
+          anRow("Period", esc(per)) +
+          anRow("Pick lists", a.slips.length + " submitted") +
+          anRow("Lines", a.lines + (a.probs ? " (" + a.probs + " flagged as a problem)" : "")) +
+          anRow("Busiest department", top ? "Dept " + esc(top[0]) + " · " + top[1] + (top[1] === 1 ? " line" : " lines") : "–") +
+          anRow("Most ordered item", itop ? esc(itop[0]) + " · " + itop[1].toLocaleString() + "<small>" + esc(anItemDesc(itop[0])) + "</small>" : "–") +
+          anRow(
+            a.daily ? "Busiest day" : "Busiest month",
+            busy ? esc(a.daily ? busy.t.toLocaleDateString([], { weekday: "long", month: "long", day: "numeric" }) : busy.t.toLocaleString([], { month: "long", year: "numeric" })) + " · " + busy.n + (busy.n === 1 ? " line" : " lines") : "–"
+          ) +
+          anRow("Filled in full", a.alloced ? a.filled + " of " + a.alloced + " lines (" + Math.round((a.filled / a.alloced) * 100) + "%)" : "–") +
+          anRow(
+            "Top picker",
+            a.picker ? '<span class="anwho">' + avatarHtml(a.picker[0], whoName(a.picker[0])) + esc(whoName(a.picker[0])) + "</span> · " + a.picker[1] + (a.picker[1] === 1 ? " pick list" : " pick lists") : "–"
+          ) +
+          anRow("Total picked", "<b>" + a.qty.toLocaleString() + "</b>") +
+          '</dl></section><div class="anpair"><section class="ancard"><h4>Top 10 departments</h4>' +
+          anList(
+            a.deps,
+            "var(--acc1)",
+            deptNames,
+            a.deps.map(function (t) {
+              return t[1] === 1 ? "line ordered" : "lines ordered";
+            }),
+            "No pick lists were submitted in " + esc(per) + "."
+          ) +
+          '</section><section class="ancard"><h4>Top 10 items they order</h4>' +
+          anList(
+            a.items,
+            "var(--acc2)",
+            a.items.map(function (t) {
+              return t[0];
+            }),
+            a.items.map(function (t) {
+              return anItemDesc(t[0]);
+            }),
+            "No items were picked for these departments in " + esc(per) + "."
+          ) +
+          '</section></div></div><aside class="anright"><a class="anshare" href="mailto:?subject=' +
+          encodeURIComponent("Storeroom analytics, " + per) +
+          "&body=" +
+          encodeURIComponent(sum) +
+          '">' +
+          anIc('<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>') +
+          'Email this report</a><a class="anshare" href="sms:?&body=' +
+          encodeURIComponent(sum) +
+          '">' +
+          anIc('<path d="M21 12a8 8 0 0 1-11.6 7.1L4 21l1.9-5.4A8 8 0 1 1 21 12z"/>') +
+          'Text this report</a><button type="button" class="anshare" data-anact="csv">' +
+          anIc('<path d="M12 3v12M7 10l5 5 5-5M4 21h16"/>') +
+          "Download spreadsheet</button>" +
+          '<section class="anside2"><h4>' +
+          anIc('<path d="M10 14a5 5 0 0 0 7 0l3-3a5 5 0 0 0-7-7l-1 1M14 10a5 5 0 0 0-7 0l-3 3a5 5 0 0 0 7 7l1-1"/>') +
+          "Link to this site</h4><p>Share the storeroom site. Analytics opens from Manage.</p>" +
+          anCopy("link", location.origin + location.pathname, "Link to this site") +
+          '</section><section class="anside2"><h4>' +
+          anIc('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18M3 15h18M9 4v16"/>') +
+          "Paste into a spreadsheet</h4><p>Copies both top 10 lists as columns you can paste into Excel.</p>" +
+          anCopy("tsv", anTsv(a), "Both top 10 lists, ready to paste") +
+          '</section><section class="anside2"><h4>' +
+          anIc('<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2z"/>') +
+          "Busiest department contact</h4><p>" +
+          (top
+            ? ct
+              ? esc(ct.name) + " in Important Contacts, for Dept " + esc(top[0]) + "."
+              : "No one in Important Contacts lists Dept " + esc(top[0]) + " yet."
+            : "Shows once a department has ordered.") +
+          "</p>" +
+          (ct && (ct.phone || ct.ext) ? anCopy("ct", [ct.phone, ct.ext && "ext " + ct.ext].filter(Boolean).join(" "), "Phone for " + ct.name) : "") +
+          "</section></aside></div>") +
       "</div></div></div>";
+    anTxt.sum = sum;
+  }
+  function anExit() {
+    mgOpt = -1;
+    renderManage();
   }
   $("anBox").addEventListener("click", function (e) {
-    var b = e.target.closest("[data-an]");
+    var b = e.target.closest("button");
     if (!b) return;
-    anTab = +b.dataset.an;
-    renderAn();
-    $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
+    if (b.dataset.an) {
+      anTab = +b.dataset.an;
+      renderAn();
+      $("anBox").querySelector('[data-an="' + anTab + '"]').focus();
+    } else if (b.hasAttribute("data-anfold")) {
+      anFold = !anFold;
+      renderAn();
+      $("anBox").querySelector("[data-anfold]").focus();
+    } else if (b.hasAttribute("data-anside")) {
+      anSideOff = !anSideOff;
+      renderAn();
+      $("anBox").querySelector("[data-anside]").focus();
+    } else if (b.dataset.ancopy) {
+      var t = anTxt[b.dataset.ancopy] || "";
+      navigator.clipboard.writeText(t).then(
+        function () {
+          toast("Copied.");
+        },
+        function () {
+          toast("Couldn't copy. Select the text and copy it instead.");
+        }
+      );
+    } else if (b.dataset.anslip) pkViewSub(b.dataset.anslip);
+    else if (b.dataset.anact === "sync") {
+      toast("Checking the cloud for new pick lists…");
+      Promise.resolve(cloudSync(true)).then(renderAn, renderAn);
+    } else if (b.dataset.anact === "csv") {
+      var a = anStats(anRange(anTab)),
+        csv = anTsv(a)
+          .split("\n")
+          .map(function (l) {
+            return l
+              .split("\t")
+              .map(function (c) {
+                return '"' + String(c).replace(/"/g, '""') + '"';
+              })
+              .join(",");
+          })
+          .join("\r\n"),
+        lnk = document.createElement("a");
+      lnk.href = URL.createObjectURL(new Blob([csv], { type: "text/csv" }));
+      lnk.download = "Storeroom analytics " + anPeriod(a) + ".csv";
+      lnk.click();
+      setTimeout(function () {
+        URL.revokeObjectURL(lnk.href);
+      }, 1000);
+    } else if (b.dataset.ango) {
+      var g = b.dataset.ango.split(":");
+      if (g[0] === "me") return openProfile();
+      anExit();
+      if (g[0] !== "exit") {
+        var tg = document.querySelector("[data-" + g[0] + '="' + g[1] + '"]');
+        if (tg) tg.click();
+      }
+    }
+  });
+  // Search hands off to the item list.
+  $("anBox").addEventListener("keydown", function (e) {
+    if (e.target.id !== "anQ" || e.key !== "Enter") return;
+    var v = e.target.value;
+    anExit();
+    document.querySelector('[data-top="0"]').click();
+    $("q").value = v;
+    $("q").dispatchEvent(new Event("input", { bubbles: true }));
+    $("q").focus();
+  });
+  // Esc closes full-screen Analytics (not while a pop-up is open).
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape" && mgOpt === 5 && !$("managePanel").hidden && !document.querySelector("dialog[open]") && innerWidth > 900) anExit();
   });
   function renderManage() {
     document.documentElement.style.setProperty("--tab", "#d92d20");
