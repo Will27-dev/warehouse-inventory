@@ -3919,9 +3919,10 @@
   // so it can be finished on another device. This device's unsent change wins; otherwise the cloud's does.
   function grDraftOut() {
     if (!sess || !st.profiles) return;
-    var d = st.grCount || null;
-    if (JSON.stringify(d) === JSON.stringify(profOf(sess.email).grDraft || null)) return;
-    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { grDraft: d });
+    var d = JSON.stringify(st.grCount || null);
+    if (d === JSON.stringify(profOf(sess.email).grDraft || null)) return;
+    // A copy: scans change st.grCount in place, and a shared object would look already sent.
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { grDraft: JSON.parse(d) });
     try {
       localStorage.setItem("wh-prefs-dirty", "1");
     } catch (x) {}
@@ -3930,7 +3931,7 @@
     if (!sess || localStorage.getItem("wh-prefs-dirty")) return false;
     var d = profOf(sess.email).grDraft || null;
     if (JSON.stringify(d) === JSON.stringify(st.grCount || null)) return false;
-    st.grCount = d;
+    st.grCount = d && JSON.parse(JSON.stringify(d)); // a copy, for the same reason as grDraftOut
     grMsg = "";
     return true;
   }
@@ -10190,8 +10191,10 @@
     var changed = false;
     try {
       if (localStorage.getItem("wh-prefs-dirty") && sess.uid) {
-        await cloudPatchProfile(sess.uid, { prefs: profOf(sess.email) });
-        localStorage.removeItem("wh-prefs-dirty");
+        var sent = JSON.stringify(profOf(sess.email));
+        await cloudPatchProfile(sess.uid, { prefs: JSON.parse(sent) });
+        // A change made while sending (a Greens scan) stays unsent, so the pull below can't undo it.
+        if (JSON.stringify(profOf(sess.email)) === sent) localStorage.removeItem("wh-prefs-dirty");
       }
       var snap = snapGet() || snapAdopt();
       cloudErr = "";
