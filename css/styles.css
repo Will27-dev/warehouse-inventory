@@ -4535,3 +4535,39 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 @media (max-width: 640px) {
   .ldnav .dml { display: none; }
 }
+
+/* Greens: Done asks before updating quantities; View shows a count sheet with sizes, counts and barcodes */
+#grAskDlg { width: min(560px, calc(100vw - 32px)); }
+#grAskDlg .actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { #grAskDlg .actions button { flex: 1 1 100%; } }
+.grnoq { display: block; margin-top: 2px; color: var(--mute); font-size: 13px; font-weight: 700; }
+#grShowDlg { width: min(880px, calc(100vw - 32px)); }
+#grShowDlg h3 { margin: 24px 0 12px; font-size: 18px; }
+#grShowB .grcodes { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+#grShowB figcaption { flex-direction: column; align-items: flex-start; gap: 2px; }
+#grShowB .grcode .grtally { color: #111; }
+#grShowDlg .actions { position: sticky; bottom: -24px; margin: 24px -24px -24px; padding: 16px 24px; background: var(--panel); border-top: 1px solid var(--line); }
+
+/* Greens: after Update quantities, ask what happens to items that weren't scanned */
+#grZeroDlg { width: min(560px, calc(100vw - 32px)); }
+#grZeroDlg .actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { #grZeroDlg .actions button { flex: 1 1 100%; } }
+#grZeroL { max-height: 240px; overflow-y: auto; margin: 16px 0 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 12px; }
+#grZeroL li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+#grZeroL li + li { border-top: 1px solid var(--line); }
+#grZeroL span { color: var(--mute); }
+
+/* Greens: counts saved for later */
+#grLater .act button + button { margin-left: 8px; }
+
+/* EWO: the GCW.EWO sheet beside the form, filled in as you type */
+#ewoDlg { width: min(1120px, calc(100vw - 32px)); }
+.ewobody { display: grid; gap: 24px; }
+@media (min-width: 960px) {
+  .ewobody { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+  .ewosheet { position: sticky; top: 0; }
+}
+.ewosheet { margin: 0; }
+.ewoshead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-weight: 700; }
+.ewosheet img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.sumtbl .act button + button { margin-left: 8px; }

@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261125w" />
+    <link rel="stylesheet" href="css/styles.css?v=20261127f" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -436,6 +436,7 @@
                       ><button type="button" class="primary" data-gr="done">Done</button>
                     </div>
                   </div>
+                  <div id="grLater" hidden></div>
                   <div id="grSheets" hidden></div>
                   <div class="anlsoon" id="grSoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
@@ -690,6 +691,7 @@
     <dialog id="ewoDlg">
       <form method="dialog" id="ewoForm">
         <h2 id="ewoDlgTitle">Create EWO</h2>
+        <div class="ewobody"><div>
         <div class="ewoitem" id="ewoItem"></div>
         <label>Location<input name="loc" readonly /></label>
         <div class="two">
@@ -712,6 +714,29 @@
           <label>Badge<input name="badge" maxlength="20" autocomplete="off" /></label>
         </div>
         <label>Area Manager<input name="am" maxlength="80" autocomplete="off" /></label>
+        <div class="two">
+          <label>WO / MO #<input name="wo" maxlength="40" autocomplete="off" /></label>
+          <label>Turn<input name="turn" maxlength="20" autocomplete="off" /></label>
+        </div>
+        <label>Asset item is used on<input name="asset" maxlength="80" autocomplete="off" /></label>
+        <label>Description of the job<textarea name="job" rows="2" maxlength="300"></textarea></label>
+        <label
+          >Reason code<select name="why">
+            <option value="">Choose a reason</option>
+            <option value="1">1. Unscheduled outage</option>
+            <option value="2">2. Breakdown, WO / MO number unavailable</option>
+            <option value="3">3. Breakdown, MO entered, not approved</option>
+            <option value="4">4. Not a breakdown, WO or MO number unavailable</option>
+            <option value="5">5. Not a breakdown, WO or MO in system, but not approved</option>
+          </select></label
+        >
+        </div>
+        <figure class="ewosheet">
+          <div class="ewoshead"><span>GCW.EWO</span><button type="button" id="ewoSheetBtn">View sheet</button></div>
+          <p class="hint" id="ewoSheetNote"></p>
+          <img id="ewoSheetImg" alt="GCW.EWO filled in with this EWO" hidden />
+        </figure>
+        </div>
         <div class="actions">
           <button type="button" class="danger" id="ewoDel" hidden>Delete EWO</button>
           <span class="sp"></span>
@@ -968,6 +993,32 @@
       <div class="actions"><span class="sp"></span><button type="button" id="grDlgX">Cancel</button></div>
     </dialog>
     <div class="grtip" id="grTip" role="tooltip" hidden></div>
+    <dialog id="grAskDlg" aria-labelledby="grAskH">
+      <h2 id="grAskH">Update the quantities?</h2>
+      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View Count Sheets, and you can use it later with Use count sheet for updated Qty.</p>
+      <div class="actions"
+        ><button type="button" data-grask="back">Keep counting</button><button type="button" data-grask="save">Save sheet only</button
+        ><button type="button" class="primary" data-grask="use">Update quantities</button></div
+      >
+    </dialog>
+    <dialog id="grZeroDlg" aria-labelledby="grZeroH">
+      <h2 id="grZeroH">Apply zero quantity to items you didn't scan?</h2>
+      <p id="grZeroP"></p>
+      <ul id="grZeroL"></ul>
+      <div class="actions"
+        ><button type="button" data-grzero="back">Keep counting</button><button type="button" data-grzero="keep">Keep their quantities</button
+        ><button type="button" class="primary" data-grzero="zero">Set them to 0</button></div
+      >
+    </dialog>
+    <dialog id="grShowDlg" class="grshow" aria-labelledby="grShowH">
+      <h2 id="grShowH">Count sheet</h2>
+      <p id="grShowP"></p>
+      <div id="grShowB"></div>
+      <div class="actions"
+        ><button type="button" id="grShowPdf" data-grview="" data-grdl="0">Fill in GCW.GREENS</button><span class="sp"></span
+        ><button type="button" class="primary" id="grShowX">Close</button></div
+      >
+    </dialog>
     <dialog id="grXDlg" aria-labelledby="grXDlgH">
       <h2 id="grXDlgH">Transfer</h2>
       <p>Pick where the items are coming from and where they're going.</p>
@@ -1031,6 +1082,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261125w"></script>
+    <script src="js/app.js?v=20261127f"></script>
   </body>
 </html>

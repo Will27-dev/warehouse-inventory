@@ -4548,6 +4548,42 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 @media (max-width: 640px) {
   .ldnav .dml { display: none; }
 }
+
+/* Greens: Done asks before updating quantities; View shows a count sheet with sizes, counts and barcodes */
+#grAskDlg { width: min(560px, calc(100vw - 32px)); }
+#grAskDlg .actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { #grAskDlg .actions button { flex: 1 1 100%; } }
+.grnoq { display: block; margin-top: 2px; color: var(--mute); font-size: 13px; font-weight: 700; }
+#grShowDlg { width: min(880px, calc(100vw - 32px)); }
+#grShowDlg h3 { margin: 24px 0 12px; font-size: 18px; }
+#grShowB .grcodes { grid-template-columns: repeat(auto-fill, minmax(128px, 1fr)); }
+#grShowB figcaption { flex-direction: column; align-items: flex-start; gap: 2px; }
+#grShowB .grcode .grtally { color: #111; }
+#grShowDlg .actions { position: sticky; bottom: -24px; margin: 24px -24px -24px; padding: 16px 24px; background: var(--panel); border-top: 1px solid var(--line); }
+
+/* Greens: after Update quantities, ask what happens to items that weren't scanned */
+#grZeroDlg { width: min(560px, calc(100vw - 32px)); }
+#grZeroDlg .actions { flex-wrap: wrap; justify-content: flex-end; }
+@media (max-width: 640px) { #grZeroDlg .actions button { flex: 1 1 100%; } }
+#grZeroL { max-height: 240px; overflow-y: auto; margin: 16px 0 0; padding: 0; list-style: none; border: 1px solid var(--line); border-radius: 12px; }
+#grZeroL li { display: flex; justify-content: space-between; gap: 16px; padding: 12px 16px; }
+#grZeroL li + li { border-top: 1px solid var(--line); }
+#grZeroL span { color: var(--mute); }
+
+/* Greens: counts saved for later */
+#grLater .act button + button { margin-left: 8px; }
+
+/* EWO: the GCW.EWO sheet beside the form, filled in as you type */
+#ewoDlg { width: min(1120px, calc(100vw - 32px)); }
+.ewobody { display: grid; gap: 24px; }
+@media (min-width: 960px) {
+  .ewobody { grid-template-columns: minmax(0, 400px) minmax(0, 1fr); align-items: start; }
+  .ewosheet { position: sticky; top: 0; }
+}
+.ewosheet { margin: 0; }
+.ewoshead { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 8px; font-weight: 700; }
+.ewosheet img { display: block; width: 100%; height: auto; border: 1px solid var(--line); border-radius: 8px; background: #fff; }
+.sumtbl .act button + button { margin-left: 8px; }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -4974,6 +5010,7 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
                       ><button type="button" class="primary" data-gr="done">Done</button>
                     </div>
                   </div>
+                  <div id="grLater" hidden></div>
                   <div id="grSheets" hidden></div>
                   <div class="anlsoon" id="grSoon">
                     <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
@@ -5228,6 +5265,7 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
     <dialog id="ewoDlg">
       <form method="dialog" id="ewoForm">
         <h2 id="ewoDlgTitle">Create EWO</h2>
+        <div class="ewobody"><div>
         <div class="ewoitem" id="ewoItem"></div>
         <label>Location<input name="loc" readonly /></label>
         <div class="two">
@@ -5250,6 +5288,29 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
           <label>Badge<input name="badge" maxlength="20" autocomplete="off" /></label>
         </div>
         <label>Area Manager<input name="am" maxlength="80" autocomplete="off" /></label>
+        <div class="two">
+          <label>WO / MO #<input name="wo" maxlength="40" autocomplete="off" /></label>
+          <label>Turn<input name="turn" maxlength="20" autocomplete="off" /></label>
+        </div>
+        <label>Asset item is used on<input name="asset" maxlength="80" autocomplete="off" /></label>
+        <label>Description of the job<textarea name="job" rows="2" maxlength="300"></textarea></label>
+        <label
+          >Reason code<select name="why">
+            <option value="">Choose a reason</option>
+            <option value="1">1. Unscheduled outage</option>
+            <option value="2">2. Breakdown, WO / MO number unavailable</option>
+            <option value="3">3. Breakdown, MO entered, not approved</option>
+            <option value="4">4. Not a breakdown, WO or MO number unavailable</option>
+            <option value="5">5. Not a breakdown, WO or MO in system, but not approved</option>
+          </select></label
+        >
+        </div>
+        <figure class="ewosheet">
+          <div class="ewoshead"><span>GCW.EWO</span><button type="button" id="ewoSheetBtn">View sheet</button></div>
+          <p class="hint" id="ewoSheetNote"></p>
+          <img id="ewoSheetImg" alt="GCW.EWO filled in with this EWO" hidden />
+        </figure>
+        </div>
         <div class="actions">
           <button type="button" class="danger" id="ewoDel" hidden>Delete EWO</button>
           <span class="sp"></span>
@@ -5506,6 +5567,32 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
       <div class="actions"><span class="sp"></span><button type="button" id="grDlgX">Cancel</button></div>
     </dialog>
     <div class="grtip" id="grTip" role="tooltip" hidden></div>
+    <dialog id="grAskDlg" aria-labelledby="grAskH">
+      <h2 id="grAskH">Update the quantities?</h2>
+      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View Count Sheets, and you can use it later with Use count sheet for updated Qty.</p>
+      <div class="actions"
+        ><button type="button" data-grask="back">Keep counting</button><button type="button" data-grask="save">Save sheet only</button
+        ><button type="button" class="primary" data-grask="use">Update quantities</button></div
+      >
+    </dialog>
+    <dialog id="grZeroDlg" aria-labelledby="grZeroH">
+      <h2 id="grZeroH">Apply zero quantity to items you didn't scan?</h2>
+      <p id="grZeroP"></p>
+      <ul id="grZeroL"></ul>
+      <div class="actions"
+        ><button type="button" data-grzero="back">Keep counting</button><button type="button" data-grzero="keep">Keep their quantities</button
+        ><button type="button" class="primary" data-grzero="zero">Set them to 0</button></div
+      >
+    </dialog>
+    <dialog id="grShowDlg" class="grshow" aria-labelledby="grShowH">
+      <h2 id="grShowH">Count sheet</h2>
+      <p id="grShowP"></p>
+      <div id="grShowB"></div>
+      <div class="actions"
+        ><button type="button" id="grShowPdf" data-grview="" data-grdl="0">Fill in GCW.GREENS</button><span class="sp"></span
+        ><button type="button" class="primary" id="grShowX">Close</button></div
+      >
+    </dialog>
     <dialog id="grXDlg" aria-labelledby="grXDlgH">
       <h2 id="grXDlgH">Transfer</h2>
       <p>Pick where the items are coming from and where they're going.</p>
@@ -46784,8 +46871,7 @@ var ZXING_Z = [
   }
   function ewoTableHtml(list, ro) {
     return (
-      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery Location</th><th>How much</th><th>Requester</th>' +
-      (ro ? "" : "<th></th>") +
+      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery Location</th><th>How much</th><th>Requester</th><th></th>' +
       "</tr></thead><tbody>" +
       list
         .map(function (e) {
@@ -46816,7 +46902,9 @@ var ZXING_Z = [
             esc(e.u) +
             "</td>" +
             reqCell(e) +
-            (ro ? "" : '<td class="act"><button data-edit="' + e.eid + '">Edit</button></td>') +
+            '<td class="act"><button data-ewosheet="' + e.eid + '">View sheet</button>' +
+            (ro ? "" : '<button data-edit="' + e.eid + '">Edit</button>') +
+            "</td>" +
             "</tr>"
           );
         })
@@ -46905,8 +46993,13 @@ var ZXING_Z = [
     f.ext.value = "";
     f.badge.value = "";
     f.am.value = "";
+    EWO_MORE.forEach(function (k) {
+      f[k].value = "";
+    });
+    ewoCur = { n: it.n, u: it.u, ts: Date.now() };
     $("ewoAvail").textContent = fmtQ(av) + " " + it.u + " available at this location.";
     $("ewoDlg").showModal();
+    ewoPreview(true);
     f.to.focus();
   };
   function openEwoEdit(eid) {
@@ -46936,6 +47029,10 @@ var ZXING_Z = [
     f.ext.value = e.ext || "";
     f.badge.value = e.badge || "";
     f.am.value = e.mgr || "";
+    EWO_MORE.forEach(function (k) {
+      f[k].value = e[k] || "";
+    });
+    ewoCur = { n: e.n, u: e.u, ts: e.ts };
     if (cur) {
       var av = (Number(cur.q) || 0) + (Number(e.q) || 0);
       f.q.max = av;
@@ -46946,8 +47043,150 @@ var ZXING_Z = [
       $("ewoAvail").textContent = "This item is no longer listed at that location.";
     }
     $("ewoDlg").showModal();
+    ewoPreview(true);
     f.to.focus();
   }
+  /* GCW.EWO (Manage → Templates): the EWO written on the paper form, shown beside the form while it's
+     made or edited, and from View sheet in the EWO lists. Extra form fields the sheet has: */
+  var EWO_MORE = ["wo", "turn", "asset", "job", "why"],
+    // Writing lines on the upright scan, in pt: [left x, right x, line y].
+    // shortcut: fits this one scan of the form; re-measure if the template is rescanned.
+    EWO_MAP = {
+      sub: [27, 285, 116],
+      to: [423, 604, 118],
+      dt: [28, 136, 163],
+      turn: [152, 212, 163],
+      req: [227, 364, 164],
+      ext: [379, 456, 164],
+      badge: [472, 585, 165],
+      mgr: [601, 726, 165],
+      wo: [27, 142, 231],
+      n: [160, 274, 231],
+      q: [280, 328, 232],
+      u: [340, 407, 232],
+      loc: [418, 607, 234],
+      asset: [26, 171, 374],
+      job: [187, 710, 376],
+    },
+    EWO_WHY = [null, [175, 405], [311, 405], [549, 405], [170, 427], [462, 428]], // reason code box centers
+    ewoTplP = null,
+    ewoCur = null, // { n, u, ts } of the EWO in the dialog
+    ewoPrevT = 0;
+  function ewoTpl() {
+    if (!ewoTplP) {
+      ewoTplP = tplRender(/^gcw\.?\s*ewo$/i, "GCW.EWO", 270);
+      ewoTplP.then(
+        function (t) {
+          if (!t) ewoTplP = null; // not uploaded yet: look again next time
+        },
+        function () {
+          ewoTplP = null;
+        }
+      );
+    }
+    return ewoTplP;
+  }
+  // An EWO record (or the form's values shaped like one) as the text for each line of the sheet.
+  function ewoVals(e) {
+    var v = { sub: [e.master, e.sub].filter(function (x) { return x && x !== "–"; }).join(" / "), dt: new Date(e.ts).toLocaleDateString("en-US"), req: e.req, mgr: e.mgr, q: e.q > 0 ? fmtQ(+e.q) : "" };
+    ["to", "ext", "badge", "n", "u", "loc", "wo", "turn", "asset", "job", "why"].forEach(function (k) {
+      v[k] = e[k];
+    });
+    return v;
+  }
+  function ewoFormRec() {
+    var f = $("ewoForm").elements,
+      e = { ts: ewoCur.ts, n: ewoCur.n, u: ewoCur.u, master: f.mst.value, sub: f.sub.value, loc: f.loc.value, to: f.to.value, q: f.q.value, req: f.rn.value, ext: f.ext.value, badge: f.badge.value, mgr: f.am.value };
+    EWO_MORE.forEach(function (k) {
+      e[k] = f[k].value;
+    });
+    return e;
+  }
+  function ewoDraw(t, v) {
+    var S = t.S,
+      cv = document.createElement("canvas");
+    cv.width = t.cv.width;
+    cv.height = t.cv.height;
+    var cx = cv.getContext("2d");
+    cx.drawImage(t.cv, 0, 0);
+    cx.fillStyle = "#1d3fbf";
+    Object.keys(EWO_MAP).forEach(function (k) {
+      var s = String(v[k] == null ? "" : v[k]).replace(/\s+/g, " ").trim(),
+        m = EWO_MAP[k],
+        w = (m[1] - m[0] - 4) * S,
+        pt = 11;
+      if (!s) return;
+      // Shrink long text to fit its line, then cut it short.
+      do cx.font = "bold " + pt * S + "px Helvetica, Arial, sans-serif";
+      while (cx.measureText(s).width > w && --pt > 7);
+      if (cx.measureText(s).width > w) {
+        while (s.length > 1 && cx.measureText(s + "…").width > w) s = s.slice(0, -1);
+        s += "…";
+      }
+      cx.fillText(s, (m[0] + 2) * S, (m[2] - 3) * S);
+    });
+    var b = EWO_WHY[+v.why || 0];
+    if (b) {
+      cx.font = "bold " + 15 * S + "px Helvetica, Arial, sans-serif";
+      cx.textAlign = "center";
+      cx.textBaseline = "middle";
+      cx.fillText("X", b[0] * S, b[1] * S);
+    }
+    return cv;
+  }
+  // The sheet beside the form, redrawn as you type.
+  function ewoPreview(first) {
+    if (first) {
+      $("ewoSheetImg").hidden = true;
+      $("ewoSheetNote").textContent = "Loading GCW.EWO…";
+    }
+    clearTimeout(ewoPrevT);
+    ewoPrevT = setTimeout(async function () {
+      var note = "";
+      try {
+        var t = await ewoTpl();
+        if (!$("ewoDlg").open) return;
+        if (t) $("ewoSheetImg").src = ewoDraw(t, ewoVals(ewoFormRec())).toDataURL("image/jpeg", 0.85);
+        else note = "Upload the GCW.EWO template under Manage → Templates to fill it in here.";
+      } catch (x) {
+        note = x.message || "GCW.EWO could not be loaded.";
+      }
+      $("ewoSheetImg").hidden = !!note;
+      $("ewoSheetNote").textContent = note;
+      $("ewoSheetBtn").hidden = !!note;
+    }, first ? 0 : 150);
+  }
+  $("ewoForm").addEventListener("input", function () {
+    ewoPreview();
+  });
+  $("ewoForm").addEventListener("change", function () {
+    ewoPreview();
+  });
+  async function ewoPdf(e) {
+    toast("Filling in GCW.EWO…");
+    try {
+      var t = await ewoTpl();
+      if (!t) return toast("Upload the GCW.EWO template under Manage → Templates first.");
+      var cv = ewoDraw(t, ewoVals(e)),
+        jb = await new Promise(function (res) {
+          cv.toBlob(res, "image/jpeg", 0.9);
+        });
+      tpShow(imgPdfBytes([{ w: cv.width, h: cv.height, pw: t.pw, ph: t.ph, jpg: new Uint8Array(await jb.arrayBuffer()) }]), "GCW.EWO-" + String(e.n).replace(/[^\w]+/g, "_") + "-" + dayOf(e.ts), false);
+    } catch (x) {
+      toast(x.message || "GCW.EWO could not be filled in.");
+    }
+  }
+  $("ewoSheetBtn").onclick = function () {
+    ewoPdf(ewoFormRec());
+  };
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-ewosheet]");
+    if (!b) return;
+    var e = st.ewos.find(function (x) {
+      return x.eid === b.dataset.ewosheet;
+    });
+    if (e) ewoPdf(e);
+  });
   $("ewoCancel").onclick = function () {
     $("ewoDlg").close();
   };
@@ -46995,6 +47234,9 @@ var ZXING_Z = [
       badge: f.badge.value.trim(),
       mgr: f.am.value.trim(),
     };
+    EWO_MORE.forEach(function (k) {
+      who[k] = f[k].value.trim();
+    });
     if (!who.req) {
       alert("Enter the requester name.");
       ev.preventDefault();
@@ -47057,24 +47299,25 @@ var ZXING_Z = [
       return;
     }
     var ts = Date.now();
-    st.ewos.push({
-      eid: "e" + ts + "-" + st.ewos.length,
-      ts: ts,
-      id: it.id,
-      n: it.n,
-      d: it.d,
-      u: it.u,
-      loc: it.l,
-      master: f.mst.value,
-      sub: f.sub.value,
-      to: to,
-      q: q,
-      req: who.req,
-      ext: who.ext,
-      badge: who.badge,
-      mgr: who.mgr,
-      by: curEmail(),
-    });
+    st.ewos.push(
+      Object.assign(
+        {
+          eid: "e" + ts + "-" + st.ewos.length,
+          ts: ts,
+          id: it.id,
+          n: it.n,
+          d: it.d,
+          u: it.u,
+          loc: it.l,
+          master: f.mst.value,
+          sub: f.sub.value,
+          to: to,
+          q: q,
+          by: curEmail(),
+        },
+        who
+      )
+    );
     audit(
       "EWOs",
       "Created EWO: " +
@@ -50374,16 +50617,20 @@ var ZXING_Z = [
     }
     return ["Other", n, 0];
   }
-  // What's at a location now: its newest count sheet, plus transfers approved after it.
+  // What's at a location now: its newest count sheet that updated quantities, plus transfers approved after it.
   function grStock(site) {
     var last = null,
       q = {};
     grSheets().forEach(function (e) {
-      if (e.gr.site === site && (!last || e.ts > last.ts)) last = e;
+      if (e.gr.site === site && !e.gr.noQty && (!last || e.ts > last.ts)) last = e;
     });
     if (last)
       Object.keys(last.gr.counts).forEach(function (n) {
         q[n] = last.gr.counts[n];
+      });
+    if (last && last.gr.keep)
+      Object.keys(last.gr.keep).forEach(function (n) {
+        if (!(n in q)) q[n] = last.gr.keep[n];
       });
     grXfers()
       .sort(function (a, b) {
@@ -50781,7 +51028,7 @@ var ZXING_Z = [
      (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
   var grMsg = "",
-    grPick = false; // count screen: barcodes shown to tap instead of scanning
+    grTapOn = false; // count screen: barcodes shown to tap instead of scanning
   // Barcodes and Sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
   // Code 128 bar/space widths for values 0-105; digits-only item #s (even length) use code set C, others set B.
   var C128 = (
@@ -50888,6 +51135,9 @@ var ZXING_Z = [
             esc(grView) +
             '</h3><div class="grhbtns"><button type="button" class="gredit" data-gredit>Edit counts</button><button type="button" class="gredit" data-gruse>Use count sheet for updated Qty</button></div></div>' +
             (grUse ? grUseHtml(grView) : grStockHtml(grView) + grPopHtml(grView));
+    var sl = grSavedL();
+    $("grLater").hidden = !!c || !sl.length;
+    $("grLater").innerHTML = c || !sl.length ? "" : grSec("c", "Saved for later", sl.length + " saved", "Counts you saved to finish later. Select Continue to pick up where you left off.", grLaterHtml(sl));
     $("grNew").hidden = $("grXBtn").hidden = !!c;
     if (!c) return;
     var tot = c.order.reduce(function (s, k) {
@@ -50899,14 +51149,15 @@ var ZXING_Z = [
     $("grCountH").textContent = c.to ? "Transfer from " + c.site + " to " + c.to : (c.edit ? "Edit counts: " : "Greens count: ") + c.site;
     $("grCountN").textContent = c.order.length + (c.order.length === 1 ? " item, " : " items, ") + tot + (c.to ? " total" : " counted");
     q("cancel").textContent = c.of ? "Close without saving" : c.to ? "Cancel transfer" : c.edit ? "Cancel edit" : "Cancel count";
-    q("later").hidden = !c.to;
+    q("later").hidden = !c.to && !!c.edit;
+    q("later").textContent = c.to ? "Transfer later" : "Save for later";
     q("done").textContent = c.of ? "Approve transfer" : c.to ? "Transfer now" : c.edit ? "Save counts" : "Done";
     $("grFlash").innerHTML = grMsg;
     $("grFlash").hidden = !grMsg;
-    q("codes").textContent = grPick ? "Hide barcodes" : "Show barcodes";
-    q("codes").setAttribute("aria-expanded", grPick);
-    $("grPick").hidden = !grPick;
-    $("grPick").innerHTML = grPick ? grCodesHtml(c) : "";
+    q("codes").textContent = grTapOn ? "Hide barcodes" : "Show barcodes";
+    q("codes").setAttribute("aria-expanded", grTapOn);
+    $("grPick").hidden = !grTapOn;
+    $("grPick").innerHTML = grTapOn ? grCodesHtml(c) : "";
     $("grList").innerHTML = c.order.length
       ? '<table class="pktab grtab"><thead><tr><th>Item #</th><th>Count</th><th></th></tr></thead><tbody>' +
         c.order
@@ -50981,7 +51232,7 @@ var ZXING_Z = [
       $("grScan").value = "";
     } else if (act === "cam") camOpen(grAdd, true);
     else if (act === "codes") {
-      grPick = !grPick;
+      grTapOn = !grTapOn;
       renderGr();
     } else if (b.dataset.grpick) {
       grAdd(b.dataset.grpick);
@@ -50996,8 +51247,8 @@ var ZXING_Z = [
       grMsg = "";
       save();
       renderGr();
-    } else if (act === "done") c.to ? grXSave(c, true) : grDone(c);
-    else if (act === "later") grXSave(c, false);
+    } else if (act === "done") c.to ? grXSave(c, true) : c.edit ? grDone(c, true) : grAsk(c);
+    else if (act === "later") c.to ? grXSave(c, false) : grLater(c);
     else if (k && b.dataset.grq) {
       c.counts[k] = Math.max(0, c.counts[k] + +b.dataset.grq);
       save();
@@ -51034,6 +51285,71 @@ var ZXING_Z = [
       return e.gr && !gone[e.k] && (!me || e.by === me);
     });
   }
+  // Save for later: a new count is kept on the person's profile (grSaved) until they continue or delete it.
+  function grSavedL() {
+    return (sess && profOf(sess.email).grSaved) || [];
+  }
+  function grSavedSet(l) {
+    if (!st.profiles) st.profiles = {};
+    st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { grSaved: l });
+    cloudSavePrefs();
+  }
+  function grLater(c) {
+    if (!c.order.length) return toast("Scan at least one barcode first.");
+    if (!sess) return toast("Sign in to save a count for later.");
+    grSavedSet(grSavedL().concat([Object.assign(JSON.parse(JSON.stringify(c)), { saved: Date.now() })]));
+    st.grCount = null;
+    grMsg = "";
+    save();
+    renderGr();
+    toast("Count saved for later. Select Continue to pick it up again.");
+  }
+  function grLaterHtml(l) {
+    return (
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Location</th><th>Items</th><th>Saved</th><th></th></tr></thead><tbody>' +
+      l
+        .slice()
+        .reverse()
+        .map(function (s) {
+          var tot = s.order.reduce(function (t, n) {
+            return t + (s.counts[n] || 0);
+          }, 0);
+          return (
+            '<tr><td class="cname">' + esc(s.site) + '</td><td class="ph">' + s.order.length + (s.order.length === 1 ? " item, " : " items, ") + tot + " counted</td><td>" +
+            dvWhen(s.saved) + '</td><td class="act"><button type="button" data-grlater="' + s.saved + '">Continue</button><button type="button" data-grlaterdel="' + s.saved + '">Delete</button></td></tr>'
+          );
+        })
+        .join("") +
+      "</tbody></table></div>"
+    );
+  }
+  document.addEventListener("click", function (ev) {
+    var b = ev.target.closest("button[data-grlater], button[data-grlaterdel]");
+    if (!b) return;
+    var del = !!b.dataset.grlaterdel,
+      ts = +(b.dataset.grlater || b.dataset.grlaterdel),
+      l = grSavedL(),
+      s = l.find(function (x) {
+        return x.saved === ts;
+      });
+    if (!s) return renderGr();
+    if (del && !confirm("Delete the saved count for " + s.site + "? Its " + s.order.length + (s.order.length === 1 ? " scanned item is" : " scanned items are") + " thrown away."))
+      return;
+    if (!del && st.grCount) return toast("Finish or cancel the count that's open first.");
+    grSavedSet(
+      l.filter(function (x) {
+        return x !== s;
+      })
+    );
+    if (!del) {
+      delete s.saved;
+      st.grCount = s;
+      grMsg = "";
+    }
+    save();
+    renderGr();
+    toast(del ? "Saved count deleted." : "Continuing the " + s.site + " count.");
+  });
   // Deleted count sheets and transfers stay in the shared log; list them (view only), newest first.
   function grDelHtml() {
     var rows = (st.audit || [])
@@ -51065,11 +51381,13 @@ var ZXING_Z = [
       })
       .filter(Boolean);
     if (!rows.length) return "";
+    var all = rows.length;
+    rows = rows.slice(0, 3);
     return grSec(
       "del",
       "Deleted",
-      rows.length + " deleted",
-      "Count sheets and transfers that were deleted. They're kept here for the record and no longer count toward stock.",
+      all > 3 ? "last 3 of " + all : all + " deleted",
+      "The most recently deleted count sheets and transfers. They no longer count toward stock.",
       '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>What</th><th>Items</th><th>Deleted by</th><th>Deleted</th><th></th></tr></thead><tbody>' +
         rows.join("") +
         "</tbody></table></div>"
@@ -51109,7 +51427,59 @@ var ZXING_Z = [
     toast("Deleted " + what + ".");
   });
   // Done: save the count as a count sheet and show it under View Count Sheets.
-  function grDone(c) {
+  // Done on a new count: ask whether it should also become the location's current quantities.
+  function grAsk(c) {
+    if (!c.order.some(function (n) {
+      return c.counts[n] > 0;
+    }))
+      return toast("Scan at least one barcode first.");
+    $("grAskH").textContent = "Update the quantities at " + c.site + "?";
+    $("grAskDlg").showModal();
+  }
+  $("grAskDlg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-grask]");
+    if (!b) return;
+    this.close();
+    var c = st.grCount;
+    if (b.dataset.grask === "back" || !c) return;
+    if (b.dataset.grask !== "use") return grDone(c, false);
+    var cur = grStock(c.site).q,
+      miss = Object.keys(cur).filter(function (n) {
+        return cur[n] > 0 && !(c.counts[n] > 0);
+      });
+    if (!miss.length) return grDone(c, true);
+    grZero = {};
+    miss.forEach(function (n) {
+      grZero[n] = cur[n];
+    });
+    $("grZeroP").textContent =
+      miss.length === 1
+        ? "1 item is at " + c.site + " but wasn't scanned. Set it to 0, or keep its current quantity."
+        : miss.length + " items are at " + c.site + " but weren't scanned. Set them to 0, or keep their current quantities.";
+    $("grZeroL").innerHTML = miss
+      .sort(function (a, b) {
+        var x = grSize(a),
+          y = grSize(b);
+        return x[0] < y[0] ? -1 : x[0] > y[0] ? 1 : x[2] - y[2] || (a < b ? -1 : 1);
+      })
+      .map(function (n) {
+        var z = grSize(n);
+        return "<li><b>" + esc(z[1]) + "</b><span>" + cur[n] + " now</span></li>";
+      })
+      .join("");
+    $("grZeroDlg").showModal();
+  });
+  // Items at the location the count missed: { item#: quantity } while the zero question is open.
+  var grZero = null;
+  $("grZeroDlg").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-grzero]");
+    if (!b) return;
+    this.close();
+    if (b.dataset.grzero !== "back" && st.grCount) grDone(st.grCount, true, b.dataset.grzero === "keep" ? grZero : null);
+  });
+  // use: the count becomes the location's current quantities; otherwise it's saved as a count sheet only.
+  // keep: { item#: quantity } for items not scanned that keep their quantities instead of going to 0.
+  function grDone(c, use, keep) {
     var order = c.order.filter(function (n) {
       return c.counts[n] > 0;
     });
@@ -51126,9 +51496,13 @@ var ZXING_Z = [
     audit(
       "Greens",
       (c.edit ? "Edited Greens counts at " : "Greens count at ") + c.site + ": " + order.length + (order.length === 1 ? " item, " : " items, ") + tot + " counted" +
-        (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "")
+        (miss.length ? ", " + miss.length + " not on GCW.GREENS" : "") +
+        (use ? "" : " (quantities not updated)") +
+        (keep ? ", " + Object.keys(keep).length + " not scanned kept their quantities" : "")
     );
     st.audit[st.audit.length - 1].gr = { site: c.site, counts: counts, order: order };
+    if (!use) st.audit[st.audit.length - 1].gr.noQty = true;
+    if (keep) st.audit[st.audit.length - 1].gr.keep = keep;
     st.grCount = null;
     grMsg = "";
     // An edit is saved as a new count sheet, so it becomes the location's current count.
@@ -51141,7 +51515,8 @@ var ZXING_Z = [
     );
     save();
     if (c.edit) toast("Counts saved for " + c.site + ".");
-    else if (miss.length)
+    else if (!miss.length) toast(use ? "Count sheet saved. Quantities updated for " + c.site + "." : "Count sheet saved. Quantities at " + c.site + " weren't changed.");
+    else
       alert(
         "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
           miss
@@ -51150,7 +51525,6 @@ var ZXING_Z = [
             })
             .join("\n")
       );
-    else toast("Count sheet saved under View Count Sheets.");
   }
   function grSheetsHtml(l, mine) {
     if (!l.length)
@@ -51174,7 +51548,9 @@ var ZXING_Z = [
             g.order.length +
             (g.order.length === 1 ? " item, " : " items, ") +
             tot +
-            " counted</td><td>" +
+            " counted" +
+            (g.noQty ? '<small class="grnoq">Quantities not updated</small>' : "") +
+            "</td><td>" +
             dvWhen(e.ts) +
             '</td><td class="act"><button type="button" data-grview="' +
             esc(e.k) +
@@ -51270,8 +51646,62 @@ var ZXING_Z = [
   }
   document.addEventListener("click", function (e) {
     var b = e.target.closest("button[data-grview]");
-    if (b) grOpen(b.dataset.grview, !!b.dataset.grdl);
+    if (!b) return;
+    if (b.dataset.grdl) grOpen(b.dataset.grview, b.dataset.grdl === "1");
+    else grShow(b.dataset.grview);
   });
+  // View a count sheet: every item counted, by size, with its count and barcode.
+  function grShow(key) {
+    var e = (st.audit || []).find(function (x) {
+      return x.k === key && x.gr; // deleted ones too, from the Deleted list
+    });
+    if (!e) return toast("That count sheet could not be found.");
+    var g = e.gr,
+      gs = {},
+      tot = 0;
+    g.order.forEach(function (n) {
+      var z = grSize(n);
+      tot += g.counts[n];
+      (gs[z[0]] = gs[z[0]] || []).push({ n: n, z: z });
+    });
+    $("grShowH").textContent = "Count sheet: " + g.site;
+    $("grShowP").textContent =
+      "Counted by " + whoName(e.by) + ", saved " + dvWhen(e.ts) + ". " + g.order.length + (g.order.length === 1 ? " item, " : " items, ") + tot + " counted." +
+      (g.noQty ? " The quantities at " + g.site + " weren't updated from this sheet." : "") +
+      (g.keep ? " Items not scanned kept their quantities." : "");
+    $("grShowB").innerHTML = ["Pants", "Jackets", "Other"]
+      .filter(function (k) {
+        return gs[k];
+      })
+      .map(function (k) {
+        return (
+          "<h3>" + k + "</h3><div class=\"grcodes\">" +
+          gs[k]
+            .sort(function (a, b) {
+              return a.z[2] - b.z[2] || (a.n < b.n ? -1 : 1);
+            })
+            .map(function (r) {
+              var it = k === "Other" && items.find(function (x) {
+                  return x.n === r.n;
+                }),
+                lb = k === "Other" ? (it ? it.d.split("|")[1] || it.d : "Not in the item list") : r.z[1];
+              return (
+                '<figure class="grcode"><figcaption><b>' + esc(lb) + "</b><span>" + esc(r.n) + "</span></figcaption>" + c128Svg(r.n) +
+                '<span class="grtally">' + g.counts[r.n] + " counted</span></figure>"
+              );
+            })
+            .join("") +
+          "</div>"
+        );
+      })
+      .join("");
+    $("grShowPdf").dataset.grview = key;
+    $("grShowDlg").showModal();
+    $("grShowDlg").scrollTop = 0;
+  }
+  $("grShowX").onclick = function () {
+    $("grShowDlg").close();
+  };
   $("tpUpload").onclick = function () {
     $("tpFile").click();
   };
