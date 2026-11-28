@@ -10,7 +10,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261127f" />
+    <link rel="stylesheet" href="css/styles.css?v=20261127g" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -80,6 +80,24 @@
         </form>
       </dialog>
     </section>
+    <!-- Home: the first screen after signing in -->
+    <section class="home" id="home" aria-labelledby="hmH" hidden>
+      <header class="hmbar">
+        <div class="ldlogo"><span class="ldmark" aria-hidden="true">GC</span><b>Storeroom</b></div>
+        <nav class="hmnav" id="hmNav" aria-label="Sections"></nav>
+        <button type="button" class="hmprof" id="hmProf"></button>
+      </header>
+      <div class="hmbody">
+        <div class="hmleft">
+          <h1 id="hmH">Welcome back.</h1>
+          <p class="hmsub">Pick a section to get started.</p>
+          <div class="hmgrid" id="hmGrid"></div>
+          <h2 class="hmsh">Shortcuts</h2>
+          <ul class="hmside" id="hmSide"></ul>
+        </div>
+        <div class="hmright"><div class="hmcard" id="hmCard" aria-live="polite"></div></div>
+      </div>
+    </section>
     <!-- Guest look-up: items and where they are, nothing else -->
     <section class="guest" id="guest" aria-labelledby="gH" hidden>
       <header class="gtop">
@@ -131,7 +149,7 @@
           </div>
           <div>
             <b role="heading" aria-level="1"
-              ><button class="homebtn" id="homeBtn" title="Back to items">Warehouse inventory</button></b
+              ><button class="homebtn" id="homeBtn" title="Home">Warehouse inventory</button></b
             ><span>Location look-up</span>
           </div>
         </div>
@@ -1082,6 +1100,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261127f"></script>
+    <script src="js/app.js?v=20261127g"></script>
   </body>
 </html>

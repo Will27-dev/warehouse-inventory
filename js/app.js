@@ -485,6 +485,7 @@
     document.body.classList.toggle("onmg", onMg); // Back up / Restore / Export CSV show only here
     renderTop();
     renderAuth();
+    if (!$("home").hidden) sess ? renderHome() : homePage(false);
     if (onSide) {
       renderSide();
       if (st.side === 0) renderLogin();
@@ -766,7 +767,8 @@
   // Wordmark goes back to the items screen (same as the first section tab).
   $("homeBtn").onclick = function () {
     sideMenu(false);
-    $("topnav").children[0].click();
+    if (sess) homePage(true);
+    else $("topnav").children[0].click();
   };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
@@ -4448,10 +4450,130 @@
     b.innerHTML =
       '<form class="lgcard" id="lgForm"><label>Email<input name="em" type="email" required autocomplete="username"></label><label>Password<input name="pw" type="password" required autocomplete="current-password"></label><p class="lgerr" id="lgErr" role="alert"></p><button class="primary lgsubmit">Sign in</button><p class="lglegal">By signing in, you agree to the <a href="terms.html">Terms of service</a>.</p></form>';
   }
+  /* ---------- Home: the first screen after signing in. Top row: every section, and hovering one
+     describes it in the middle; left: the sidebar's options; top right: your profile. ---------- */
+  var HM_DESC = [
+      "Look up any item by number, description or locator. See what's on the shelf, add stock, and move items between locations.",
+      "Request a part on an unplanned or emergency basis. Pick the item, add the requester and where it goes, and print the GCW.EWO sheet.",
+      "Open a USS pick slip and work through it line by line, marking what's picked and flagging anything short.",
+      "Record new stock as it goes onto the shelf, and where it went.",
+      "Load a trip, scan each box onto the truck, and mark every stop delivered.",
+      "See each person's pick lists, put aways, deliveries and Greens moves for any day.",
+      "Count greens at each location by size, move them between sites, and fill in the GCW.GREENS sheet.",
+      "Add people and choose what they can do, upload PDF templates, and see analytics.",
+    ],
+    HM_SVG = function (d) {
+      return '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' + d + "</svg>";
+    },
+    HM_ICON = [
+      '<path d="M2 21h20M4 21V9l8-5 8 5v12"/><path d="M8 21v-8h8v8M8 16h8M8 19h8"/>',
+      '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6M12 12v3M12 18h.01"/>',
+      '<path d="M9 5h10M9 12h10M9 19h10"/><path d="M3 5l1.5 1.5L7 4M3 12l1.5 1.5L7 11M3 19l1.5 1.5L7 18"/>',
+      '<path d="M21 8 12 3 3 8v8l9 5 9-5z"/><path d="M3 8l9 5 9-5M12 13v8"/>',
+      '<path d="M3 7h11v9H3zM14 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="17" cy="18" r="2"/>',
+      '<path d="M3 20h18M6 16v-5M11 16V6M16 16v-8"/>',
+      '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19c3-4 6-7 10-9"/>',
+      '<circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.8-3.5 3.4-5.5 6.5-5.5s5.7 2 6.5 5.5M16 4.5a3.5 3.5 0 0 1 0 7M21.5 20c-.5-2.6-2-4.4-4-5.1"/>',
+    ],
+    HM_SIDE = [
+      '<circle cx="12" cy="8" r="4"/><path d="M4 21c1-4 4.5-6 8-6s7 2 8 6"/>',
+      '<path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2"/>',
+      '<path d="M12 21s-7-6.2-7-11a7 7 0 0 1 14 0c0 4.8-7 11-7 11z"/><circle cx="12" cy="10" r="2.5"/>',
+      '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/>',
+      '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5h.01"/>',
+    ],
+    hmKey = null;
+  // Sections on the top row: [key, name, description, icon]; key 7 is Manage.
+  function hmItems() {
+    return TOPS.map(function (x, i) {
+      return i;
+    })
+      .concat([7])
+      .filter(function (i) {
+        return i !== 6 || can("greens");
+      })
+      .map(function (i) {
+        return [i, i === 7 ? "Manage" : oname(i), HM_DESC[i], HM_ICON[i]];
+      });
+  }
+  function homePage(on) {
+    $("home").hidden = !on;
+    cover();
+    if (on) {
+      hmKey = null;
+      renderHome();
+      $("home").scrollTop = 0;
+    }
+  }
+  // Redraw only on a change, so a background sync doesn't drop keyboard focus.
+  function hmSet(el, h) {
+    if (el._h !== h) el.innerHTML = el._h = h;
+  }
+  function renderHome() {
+    var pr = profOf(sess.email),
+      nm = pr.nick || String(sess.name || sess.email).split(/\s+/)[0],
+      h = new Date().getHours(),
+      l = hmItems();
+    $("hmH").textContent = (h < 12 ? "Good morning, " : h < 17 ? "Good afternoon, " : "Good evening, ") + nm + ".";
+    $("hmProf").innerHTML = avatarHtml(sess.email, sess.name) + '<span class="pl">' + esc(nm) + "</span>";
+    $("hmProf").title = "Your profile";
+    hmSet($("hmNav"), l
+      .map(function (r) {
+        return '<button type="button" data-hm="' + r[0] + '">' + esc(r[1]) + "</button>";
+      })
+      .join(""));
+    hmSet($("hmGrid"), l
+      .map(function (r) {
+        return '<button type="button" data-hm="' + r[0] + '"><span class="hmic">' + HM_SVG(r[3]) + "</span><span><b>" + esc(r[1]) + "</b><small>" + esc(r[2]) + "</small></span></button>";
+      })
+      .join(""));
+    hmSet($("hmSide"), SIDES.map(function (x, i) {
+      return (
+        '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>'
+      );
+    }).join(""));
+    hmShow(hmKey, false);
+  }
+  // The middle card: what the hovered (or focused) section is for.
+  function hmShow(k, anim) {
+    var r = hmItems().find(function (x) {
+        return String(x[0]) === String(k);
+      }),
+      c = $("hmCard");
+    hmKey = r ? r[0] : null;
+    [].forEach.call($("hmNav").children, function (b) {
+      b.classList.toggle("on", !!r && b.dataset.hm === String(r[0]));
+    });
+    c.innerHTML = r
+      ? '<span class="hmic">' + HM_SVG(r[3]) + "</span><h2>" + esc(r[1]) + "</h2><p>" + esc(r[2]) + '</p><button type="button" class="primary" data-hm="' + r[0] + '">Open ' + esc(r[1]) + "</button>"
+      : '<span class="hmic">' + HM_SVG('<path d="M5 3l14 8-6 1.5L9.5 19z"/>') + "</span><h2>What's each section for?</h2><p>Point at a section in the top row to see what it does, then select it to open it.</p>";
+    if (anim) {
+      c.classList.remove("swap");
+      void c.offsetWidth; // restart the fade
+      c.classList.add("swap");
+    }
+  }
+  $("hmNav").addEventListener("mouseover", function (e) {
+    var b = e.target.closest("button[data-hm]");
+    if (b && b.dataset.hm !== String(hmKey)) hmShow(b.dataset.hm, true);
+  });
+  $("hmNav").addEventListener("focusin", function (e) {
+    var b = e.target.closest("button[data-hm]");
+    if (b && b.dataset.hm !== String(hmKey)) hmShow(b.dataset.hm, true);
+  });
+  $("home").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-hm], button[data-hmside], #hmProf");
+    if (!b) return;
+    if (b.id === "hmProf") return openProfile();
+    homePage(false);
+    if (b.dataset.hmside) return $("tabs").querySelector('[data-side="' + b.dataset.hmside + '"]').click();
+    if (b.dataset.hm === "7") $("manageBtn").click();
+    else $("topnav").children[+b.dataset.hm].click();
+  });
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
   // Guests get their own page (items and locations only) instead of the app.
   function cover() {
-    var up = !$("landing").hidden || !$("guest").hidden;
+    var up = !$("landing").hidden || !$("guest").hidden || !$("home").hidden;
     document.querySelector(".app").inert = up;
     document.querySelector(".gcw").inert = up;
     document.body.classList.toggle("onland", up);
@@ -4533,7 +4655,7 @@
     } catch (e) {}
     if (wasGuest) guestPage(true);
     else landing(true);
-  }
+  } else homePage(true);
   // Same sign-in for the Log in panel and the landing form.
   async function signInSubmit(e) {
     e.preventDefault();
@@ -4566,6 +4688,7 @@
     f.pw.value = "";
     landing(false);
     render();
+    homePage(true);
     toast("Signed in as " + sess.email + ".");
   }
   $("lgBody").addEventListener("submit", signInSubmit);
