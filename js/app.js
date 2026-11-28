@@ -141,18 +141,31 @@
       (i === 3 ? (inspKey() === "s3" ? "Inspection Sheet" : "Option 4") : SIDES[i])
     );
   }
+  // The two inspection sheets, shown under Inspection Sheet in the sidebar and on Home.
+  var INSP_SUBS = [
+    ["fork", "Forklift Inspection Sheet"],
+    ["truck", "Truck Inspection Sheet"],
+  ];
   function renderTabs(m) {
     var box = $("tabs");
-    if (box.children.length !== SIDES.length)
+    if (!box.querySelector(".subtabs"))
       box.innerHTML = SIDES.map(function (x, i) {
         return (
           '<button role="tab" data-side="' +
           i +
-          '" style="--c:#f5b335" title="Double-click to rename"><i class="dot"></i><span class="lb"></span></button>'
+          '" style="--c:#f5b335" title="Double-click to rename"><i class="dot"></i><span class="lb"></span></button>' +
+          (i === 3
+            ? '<div class="subtabs">' +
+              INSP_SUBS.map(function (s) {
+                return '<button type="button" data-insp="' + s[0] + '">' + s[1] + "</button>";
+              }).join("") +
+              "</div>"
+            : "")
         );
       }).join("");
+    box.querySelector(".subtabs").hidden = inspKey() !== "s3";
     SIDES.forEach(function (x, i) {
-      var b = box.children[i],
+      var b = box.querySelector('[data-side="' + i + '"]'),
         lb = b.querySelector(".lb");
       if (lb.textContent !== sname(i)) lb.textContent = sname(i);
       b.setAttribute("aria-selected", String(st.side === i));
@@ -744,6 +757,7 @@
   };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
+    if (b && b.dataset.insp) return inspGo(b.dataset.insp);
     if (!b || b.dataset.side === undefined) return;
     sideMenu(false);
     st.side = +b.dataset.side;
@@ -5102,7 +5116,12 @@
       .join(""));
     hmSet($("hmSide"), SIDES.map(function (x, i) {
       return (
-        '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>'
+        '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>' +
+        (i === 3 && inspKey() === "s3"
+          ? INSP_SUBS.map(function (s) {
+              return '<li class="hminsp"><button type="button" data-hminsp="' + s[0] + '"><span>' + s[1] + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>';
+            }).join("")
+          : "")
       );
     }).join("") +
       // Low stock: straight to the items at or below their low stock level.
@@ -5162,6 +5181,11 @@
       $("q").value = "";
       homePage(false);
       return $("topnav").children[1].click();
+    }
+    var hi = e.target.closest("button[data-hminsp]");
+    if (hi) {
+      homePage(false);
+      return inspGo(hi.dataset.hminsp);
     }
     var b = e.target.closest("button[data-hm], button[data-hmside], #hmProf");
     if (!b) return;
@@ -9655,14 +9679,11 @@
       : sess
         ? "Start a new inspection sheet from the template library."
         : "Sign in to create an inspection sheet.";
-    // Only the inspection forms are offered here (other templates, like GCW.GREENS, are for other tabs).
-    var inspTpls = (tpCloud || []).filter(function (cf) {
-      return /^gcw\.?\s*(truck|fork(lift)?)$/i.test(cf.name.replace(/\.pdf$/i, "").trim());
-    });
+    var tpls = inspTpls();
     if (inMenuOn && !ins)
       $("inMenu").innerHTML =
-        inspTpls.length
-          ? inspTpls
+        tpls.length
+          ? tpls
               .map(function (cf) {
                 var f = tpCloudRef(cf);
                 return (
@@ -9685,6 +9706,28 @@
                   ? "Loading templates…"
                   : "GCW.TRUCK and GCW.FORK aren't uploaded yet. A manager can upload them under Manage → Templates.") +
             "</div>";
+  }
+  async function inspGo(kind) {
+    $("tabs").querySelector('[data-side="3"]').click();
+    if (!sess) return toast("Sign in first so your name can be filled in on the sheet.");
+    if (ins) return toast("Finish the sheet you've started, or select Cancel, first.");
+    if (!tpCloud) await tpCloudScan();
+    var cf = inspTpls().find(function (c) {
+      return kind === "fork" ? /fork/i.test(c.name) : /truck/i.test(c.name);
+    });
+    if (!cf)
+      return toast(
+        tpCloudErr === "offline"
+          ? "Offline: the inspection sheets load when you're back online."
+          : "GCW." + kind.toUpperCase() + " isn't uploaded yet. A manager can upload it under Manage → Templates."
+      );
+    startInsp(tpCloudRef(cf).id);
+  }
+  // Only the inspection forms (other templates, like GCW.GREENS, are for other tabs).
+  function inspTpls() {
+    return (tpCloud || []).filter(function (cf) {
+      return /^gcw\.?\s*(truck|fork(lift)?)$/i.test(cf.name.replace(/\.pdf$/i, "").trim());
+    });
   }
   function opDefault() {
     return sess ? sess.name || sess.email : "";
