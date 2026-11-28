@@ -51242,17 +51242,20 @@ var ZXING_Z = [
   function grSec(t, title, n, desc, body) {
     return '<section class="grsec grsec-' + t + '"><h3>' + title + ' <span class="grn">' + n + "</span></h3><p>" + desc + "</p>" + body + "</section>";
   }
-  function grXHtml() {
+  // done false: transfers saved for later (Review, Delete). done true: approved transfers (Delete only),
+  // so a wrong one can be removed and stop counting toward stock.
+  function grXHtml(done) {
     var l = grXfers()
       .filter(function (x) {
-        return !x.e.gt.done;
+        return !x.e.gt.done === !done;
       })
       .sort(function (a, b) {
         return b.e.ts - a.e.ts;
       });
-    if (!l.length) return '<div class="empty">No transfers waiting. Select Transfer, then Transfer later, to save one here.</div>';
+    if (!l.length)
+      return '<div class="empty">' + (done ? "No finished transfers yet." : "No transfers waiting. Select Transfer, then Transfer later, to save one here.") + "</div>";
     return (
-      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Transfer</th><th>Items</th><th>Saved by</th><th>Saved</th><th></th></tr></thead><tbody>' +
+      '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Transfer</th><th>Items</th><th>' + (done ? "Approved by</th><th>Approved" : "Saved by</th><th>Saved") + "</th><th></th></tr></thead><tbody>" +
       l
         .map(function (x) {
           var g = x.e.gt,
@@ -51273,7 +51276,7 @@ var ZXING_Z = [
             "</td><td>" +
             dvWhen(x.e.ts) +
             '</td><td class="act">' +
-            (can("grapprove") ? '<button type="button" data-grxopen="' + esc(x.k) + '">Review</button>' : "") +
+            (!done && can("grapprove") ? '<button type="button" data-grxopen="' + esc(x.k) + '">Review</button>' : "") +
             (can("grdel") ? '<button type="button" class="danger" data-grdel="' + esc(x.k) + '">Delete</button>' : "") +
             "</td></tr>"
           );
@@ -51606,6 +51609,7 @@ var ZXING_Z = [
           ? grCodesHtml()
           : grView === "sheets"
           ? grSec("x", "Transferable", grXfers().filter(function (x) { return !x.e.gt.done; }).length + " waiting", "Transfers saved for later. Review one to approve it.", grXHtml()) +
+            grSec("x", "Finished transfers", grXfers().filter(function (x) { return x.e.gt.done; }).length + " done", "Approved transfers, newest first. They count toward stock at both locations until a newer count. Delete a wrong one to take it out.", grXHtml(true)) +
             grSec("c", "Count sheets", grSheets().length + " saved", "Finished counts for each location.", grSheetsHtml(grSheets().reverse(), false)) +
             grDelHtml()
           : '<div class="grhead"><h3>' +
@@ -51893,7 +51897,7 @@ var ZXING_Z = [
       what = sh
         ? "the " + sh.gr.site + " count sheet from " + dvWhen(sh.ts)
         : x
-        ? "the transfer from " + x.e.gt.from + " to " + x.e.gt.to + " saved " + dvWhen(x.e.ts)
+        ? "the transfer from " + x.e.gt.from + " to " + x.e.gt.to + (x.e.gt.done ? " approved " : " saved ") + dvWhen(x.e.ts)
         : "";
     if (!what) return toast("That was already deleted.");
     if (!confirm("Delete " + what + "? This can't be undone.")) return;
