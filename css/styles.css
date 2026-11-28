@@ -2568,9 +2568,9 @@ body:not(.ontop):not(.onside):not(.onsum) #panel thead th {
   border: 0;
   width: auto;
 }
-body:not(.ontop):not(.onside):not(.onsum) #panel thead th:nth-child(5) {
-  display: block;
-  background: none;
+/* Count and Transfer live in the panel head; the header row only shows Select all while transferring. */
+body:not(.ontop):not(.onside):not(.onsum) #panel:not(.xmode) thead {
+  display: none;
 }
 body:not(.ontop):not(.onside):not(.onsum) #panel.xmode thead th.sel {
   display: block;
@@ -4845,3 +4845,8 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 
 /* Pick List: Add item on a line that is not in the item list (fills the form from the slip). */
 .pkrows .pknew, td .pknew { display: block; min-height: 44px; margin-top: 6px; padding: 0 14px; font-weight: 700; white-space: nowrap; }
+
+/* Items panel: count and Transfer sit top right, beside the title. */
+#panel > .head { align-items: flex-start; }
+.hdside { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
+.hdside .xbtn { min-height: 44px; padding: 0 16px; font-size: 13px; }

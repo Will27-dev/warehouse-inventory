@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128v" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128w" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -205,7 +205,13 @@
                 <p id="status"></p>
                 <label class="catsw"><input type="checkbox" id="catAll" />Show Cat IDs</label>
               </div>
-              <div class="stat"><b id="statN"></b><span id="statL"></span></div>
+              <div class="hdside">
+                <div class="stat"><b id="statN"></b><span id="statL"></span></div>
+                <span class="qh"
+                  ><button id="xferBtn" class="xbtn">Transfer</button
+                  ><button id="xferCancel" class="xbtn ghostbtn" hidden>Cancel</button></span
+                >
+              </div>
             </div>
             <div class="scroll">
               <table>
@@ -217,12 +223,7 @@
                     <th>Item #</th>
                     <th>Description</th>
                     <th>Locator</th>
-                    <th>
-                      <span class="qh"
-                        >Quantity<button id="xferBtn" class="xbtn">Transfer</button
-                        ><button id="xferCancel" class="xbtn ghostbtn" hidden>Cancel</button></span
-                      >
-                    </th>
+                    <th>Quantity</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -1110,6 +1111,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128v"></script>
+    <script src="js/app.js?v=20261128w"></script>
   </body>
 </html>
