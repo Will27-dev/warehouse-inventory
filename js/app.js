@@ -6330,13 +6330,13 @@
     tpCloudScan();
   }
   // Greens Management: View Count Sheets lists transfers waiting and saved counts; a location shows its greens by size.
-  var grView = null; // "sheets", a location name, or null
+  var grView = null; // "sheets", "codes", a location name, or null for All locations
   function grPick(b) {
     [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
       x.classList.toggle("on", x === b);
       x.setAttribute("aria-pressed", String(x === b));
     });
-    grView = b.id === "grSheetsBtn" ? "sheets" : b.id === "grCodesBtn" ? "codes" : b.textContent;
+    grView = b.id === "grAllBtn" ? null : b.id === "grSheetsBtn" ? "sheets" : b.id === "grCodesBtn" ? "codes" : b.textContent;
     grUse = null;
     renderGr();
   }
@@ -6346,7 +6346,7 @@
     if (b) grPick(b);
   };
   // Pointing at a location (mouse only) shows its greens in a small card under the button.
-  [].forEach.call($("grBtns").querySelectorAll(".mbtn:not(#grSheetsBtn):not(#grCodesBtn)"), function (b) {
+  [].forEach.call($("grBtns").querySelectorAll(".mbtn:not(#grAllBtn):not(#grSheetsBtn):not(#grCodesBtn)"), function (b) {
     b.onmouseenter = function () {
       if (!matchMedia("(hover: hover)").matches) return;
       var t = $("grTip"),
@@ -6878,11 +6878,137 @@
       })
       .join("");
   }
+  // Greens Management with no button picked: every location at a glance, every size by location, and recent changes.
+  function grSites() {
+    return [].map.call($("grBtns").querySelectorAll(".mbtn:not(#grAllBtn):not(#grSheetsBtn):not(#grCodesBtn)"), function (b) {
+      return b.textContent;
+    });
+  }
+  function grSum(o) {
+    return Object.keys(o).reduce(function (s, n) {
+      return s + (o[n] || 0);
+    }, 0);
+  }
+  function grAllHtml() {
+    var sites = grSites(),
+      stock = sites.map(grStock),
+      xf = grXfers(),
+      all = 0;
+    var cards = sites
+      .map(function (site, i) {
+        var s = stock[i],
+          g = { Pants: 0, Jackets: 0, Other: 0 },
+          inn = 0,
+          out = 0;
+        Object.keys(s.q).forEach(function (n) {
+          g[grSize(n)[0]] += s.q[n];
+        });
+        var tot = g.Pants + g.Jackets + g.Other;
+        all += tot;
+        // Transfers approved since the last count are what changed here.
+        xf.forEach(function (x) {
+          var t = x.e.gt;
+          if (!t.done || (s.last && x.e.ts <= s.last.ts)) return;
+          if (t.to === site) inn += grSum(t.counts);
+          if (t.from === site) out += grSum(t.counts);
+        });
+        return (
+          '<button type="button" class="grloc" data-grloc="' + esc(site) + '"><h4>' + esc(site) + "</h4><b>" + tot + "</b><span>" +
+          (tot === 1 ? "piece" : "pieces") + "</span><ul><li>Pants <b>" + g.Pants + "</b></li><li>Jackets <b>" + g.Jackets + "</b></li>" +
+          (g.Other ? "<li>Other <b>" + g.Other + "</b></li>" : "") + "</ul><small>" +
+          (s.last ? "Last count " + dvWhen(s.last.ts) : "No count yet") + "</small><small>" +
+          (inn || out ? (inn ? inn + " in" : "") + (inn && out ? ", " : "") + (out ? out + " out" : "") + " by transfer" + (s.last ? " since then" : "") : s.last ? "No transfers since then" : "No transfers yet") +
+          "</small></button>"
+        );
+      })
+      .join("");
+    // Every size that any location has, one column per location.
+    var rows = {};
+    stock.forEach(function (s, i) {
+      Object.keys(s.q).forEach(function (n) {
+        if (!s.q[n]) return;
+        var z = grSize(n),
+          k = z[0] + "|" + z[1];
+        rows[k] = rows[k] || { g: z[0], sz: z[1], o: z[2], q: sites.map(function () { return 0; }) };
+        rows[k].q[i] += s.q[n];
+      });
+    });
+    var rl = Object.keys(rows)
+        .map(function (k) {
+          return rows[k];
+        })
+        .sort(function (a, b) {
+          return ["Pants", "Jackets", "Other"].indexOf(a.g) - ["Pants", "Jackets", "Other"].indexOf(b.g) || a.o - b.o || (a.sz < b.sz ? -1 : 1);
+        }),
+      lastG = "";
+    var mat = rl.length
+      ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
+        sites
+          .map(function (s) {
+            return "<th>" + esc(s) + "</th>";
+          })
+          .join("") +
+        "<th>Total</th></tr></thead><tbody>" +
+        rl
+          .map(function (r) {
+            var head = r.g !== lastG ? '<tr class="grgrp"><th colspan="' + (sites.length + 2) + '">' + r.g + "</th></tr>" : "";
+            lastG = r.g;
+            return (
+              head + "<tr><td>" + esc(r.sz) + "</td>" +
+              r.q
+                .map(function (v) {
+                  return '<td class="ph">' + (v || "–") + "</td>";
+                })
+                .join("") +
+              '<td class="ph"><b>' + grSum(r.q) + "</b></td></tr>"
+            );
+          })
+          .join("") +
+        "</tbody></table></div>"
+      : '<div class="empty">No greens counted at any location yet. Select Create Greens Count to start.</div>';
+    // Counts and transfers, newest first.
+    var ev = grSheets()
+      .map(function (e) {
+        return { ts: e.ts, by: e.by, what: "Count at " + e.gr.site + (e.gr.noQty ? " (quantities not applied)" : ""), n: grSum(e.gr.counts) };
+      })
+      .concat(
+        xf.map(function (x) {
+          var t = x.e.gt;
+          return { ts: x.e.ts, by: x.e.by, what: (t.done ? "Transfer " : "Transfer waiting: ") + t.from + " to " + t.to, n: grSum(t.counts) };
+        })
+      )
+      .sort(function (a, b) {
+        return b.ts - a.ts;
+      });
+    var chg = ev.length
+      ? '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>What changed</th><th>Pieces</th><th>By</th><th>When</th></tr></thead><tbody>' +
+        ev
+          .slice(0, 8)
+          .map(function (v) {
+            return '<tr><td class="cname">' + esc(v.what) + '</td><td class="ph">' + v.n + "</td><td>" + esc(whoName(v.by)) + "</td><td>" + dvWhen(v.ts) + "</td></tr>";
+          })
+          .join("") +
+        "</tbody></table></div>"
+      : '<div class="empty">No counts or transfers yet.</div>';
+    return (
+      grSec("c", "All locations", all + (all === 1 ? " piece" : " pieces"), "What each location has now. Select one to see it by size and count it.", '<div class="grlocs">' + cards + "</div>" + mat) +
+      grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View Count Sheets has the full list.", chg)
+    );
+  }
+  document.addEventListener("click", function (e) {
+    var c = e.target.closest("button[data-grloc]");
+    if (!c) return;
+    var b = [].find.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
+      return x.textContent === c.dataset.grloc;
+    });
+    if (b) grPick(b);
+  });
   function renderGr() {
     var c = st.grCount,
       pan = !c && grView;
     $("grCount").hidden = !c;
-    $("grSoon").hidden = !!c || !!grView;
+    $("grAll").hidden = !!c || !!grView;
+    if (!c && !grView) $("grAll").innerHTML = grAllHtml();
     // #grSheets holds the panel for the picked button: transfers and count sheets, or a location's greens.
     $("grSheets").hidden = !pan;
     if (pan)

@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128i" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128j" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -415,7 +415,8 @@
               <div id="mgOpt6" hidden>
                 <div class="mgpad" id="grBox">
                   <div class="mbtns" id="grBtns">
-                    <button class="mbtn" aria-pressed="false">Main Warehouse</button
+                    <button class="mbtn on" aria-pressed="true" id="grAllBtn">All locations</button
+                    ><button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
                     ><button class="mbtn" aria-pressed="false">GO4</button
                     ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View Count Sheets</button
@@ -444,11 +445,7 @@
                   </div>
                   <div id="grLater" hidden></div>
                   <div id="grSheets" hidden></div>
-                  <div class="anlsoon" id="grSoon">
-                    <svg viewBox="0 0 24 24" width="40" height="40" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z" /><path d="M5 19c3-4 6-7 10-9" /></svg>
-                    <h3 id="grH">Greens Management</h3>
-                    <p id="grP">Select a location to see its greens by size.</p>
-                  </div>
+                  <div id="grAll"></div>
                 </div>
               </div>
             </div>
@@ -1088,6 +1085,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128i"></script>
+    <script src="js/app.js?v=20261128j"></script>
   </body>
 </html>
