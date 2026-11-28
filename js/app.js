@@ -6938,10 +6938,26 @@
           return rows[k];
         })
         .sort(function (a, b) {
-          return ["Pants", "Jackets", "Other"].indexOf(a.g) - ["Pants", "Jackets", "Other"].indexOf(b.g) || a.o - b.o || (a.sz < b.sz ? -1 : 1);
+          return a.o - b.o || (a.sz < b.sz ? -1 : 1);
         }),
-      lastG = "";
-    var mat = rl.length
+      // One group at a time (Pants or Jackets), picked with the buttons above the table.
+      grps = ["Pants", "Jackets", "Other"].filter(function (g) {
+        return g !== "Other" || rl.some(function (r) { return r.g === g; });
+      });
+    if (grps.indexOf(grAllG) < 0) grAllG = "Pants";
+    var tot = function (g) {
+        return rl.reduce(function (s, r) { return s + (r.g === g ? grSum(r.q) : 0); }, 0);
+      },
+      sw = '<div class="grgs" role="group" aria-label="Show sizes for">' +
+        grps.map(function (g) {
+          return '<button type="button" data-grg="' + g + '" aria-pressed="' + (g === grAllG) + '">' + g + " <b>" + tot(g) + "</b></button>";
+        }).join("") + "</div>";
+    rl = rl.filter(function (r) {
+      return r.g === grAllG;
+    });
+    var mat = !Object.keys(rows).length
+      ? '<div class="empty">No greens counted at any location yet. Select Create Greens Count to start.</div>'
+      : sw + (rl.length
       ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
         sites
           .map(function (s) {
@@ -6951,10 +6967,8 @@
         "<th>Total</th></tr></thead><tbody>" +
         rl
           .map(function (r) {
-            var head = r.g !== lastG ? '<tr class="grgrp"><th colspan="' + (sites.length + 2) + '">' + r.g + "</th></tr>" : "";
-            lastG = r.g;
             return (
-              head + "<tr><td>" + esc(r.sz) + "</td>" +
+              "<tr><td>" + esc(r.sz) + "</td>" +
               r.q
                 .map(function (v) {
                   return '<td class="ph">' + (v || "–") + "</td>";
@@ -6965,7 +6979,7 @@
           })
           .join("") +
         "</tbody></table></div>"
-      : '<div class="empty">No greens counted at any location yet. Select Create Greens Count to start.</div>';
+      : '<div class="empty">No ' + grAllG.toLowerCase() + " at any location.</div>");
     // Counts and transfers, newest first.
     var ev = grSheets()
       .map(function (e) {
@@ -6995,6 +7009,13 @@
       grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View Count Sheets has the full list.", chg)
     );
   }
+  var grAllG = "Pants";
+  document.addEventListener("click", function (e) {
+    var g = e.target.closest("button[data-grg]");
+    if (!g) return;
+    grAllG = g.dataset.grg;
+    renderGr();
+  });
   document.addEventListener("click", function (e) {
     var c = e.target.closest("button[data-grloc]");
     if (!c) return;
