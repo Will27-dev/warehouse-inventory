@@ -3935,9 +3935,8 @@ body.onland { overflow: hidden; }
 @keyframes ldUp { from { opacity: 0; transform: translateY(14px); } }
 .ldnav { position: relative; z-index: 2; display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px clamp(16px, 5vw, 72px); background: var(--head); box-shadow: 0 1px 0 var(--line); }
 .ldlogo { display: flex; align-items: center; gap: 10px; font-family: var(--disp); font-size: 20px; }
-.ldmark { display: grid; place-items: center; width: 36px; height: 36px; background: var(--char); color: #fff; font-size: 14px; font-weight: 700; letter-spacing: .02em; }
-html.dark .ldmark { background: var(--acc1); color: var(--on-acc); }
-.ldnavr { display: flex; align-items: center; gap: 8px; }
+.ldmark { display: block; width: 44px; height: 44px; }
+.ldnavr { flex: none; display: flex; align-items: center; gap: 8px; }
 .ldlink { min-height: 44px; padding: 0 14px; border: 0; background: none; font-weight: 700; color: var(--ink); }
 .ldlink:hover { background: var(--sel); }
 .ldcta, .ldbtns button { min-height: 48px; padding: 0 22px; font-weight: 700; }
@@ -4576,8 +4575,10 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
    shortcuts on the left, and a card in the middle describing the section you point at. */
 .home { position: fixed; inset: 0; z-index: 55; display: flex; flex-direction: column; overflow: auto; background: var(--canvas); color: var(--ink); }
 .home[hidden] { display: none; }
-.hmbar { position: sticky; top: 16px; z-index: 2; display: flex; align-items: center; gap: clamp(16px, 3vw, 48px); margin: 16px clamp(16px, 4vw, 48px) 0; padding: 8px 8px 8px 20px; background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 12px 28px rgba(19, 35, 63, .08); }
+.hmbar { position: sticky; top: 16px; z-index: 2; display: flex; align-items: center; gap: clamp(16px, 1.5vw, 48px); margin: 16px clamp(16px, 4vw, 48px) 0; padding: 8px 8px 8px 20px; background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 12px 28px rgba(19, 35, 63, .08); }
 .hmbar .ldlogo { flex: none; }
+/* Two lines ("Granite City" over "Steel") so the top row stays on one line. */
+.hmbar .ldlogo b { max-width: 6.5em; font-size: 18px; line-height: 1.1; }
 .hmnav { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 4px 8px; }
 .hmnav button { min-height: 44px; padding: 0 clamp(10px, 1.1vw, 18px); border: 0; border-radius: 999px; background: none; color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap; }
 .hmnav button:hover, .hmnav button.on { background: var(--sel); }
@@ -4742,3 +4743,6 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .sc-pill { fill-opacity: 0; animation: scPill 4.5s infinite; }
 @keyframes scPill { 0%, 30%, 100% { fill-opacity: 0; } 5%, 25% { fill-opacity: .35; } }
 @media (prefers-reduced-motion: reduce) { .hmscene * { animation: none !important; } }
+/* Logo wordmark wraps to "Granite City" over "Steel" on narrow screens. */
+.ldlogo b { line-height: 1.1; }
+@media (max-width: 400px) { .ldlogo b { max-width: 6.5em; font-size: 17px; } }

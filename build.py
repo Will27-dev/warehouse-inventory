@@ -14,6 +14,9 @@ html = re.sub(r'<link\s+rel="stylesheet"\s+href="(?!https?:)([^"]+)"\s*/?>',
               lambda m: "<style>\n" + read(m.group(1)) + "</style>", html)
 html = re.sub(r'<script\s+src="([^"]+)"\s*></script>',
               lambda m: "<script>\n" + read(m.group(1)) + "\n</script>", html)
+# Images under img/ (the logo and tab icon) go in as data URIs.
+import base64
+html = re.sub(r'(src|href)="(img/[^"]+\.svg)"', lambda m: '%s="data:image/svg+xml;base64,%s"' % (m.group(1), base64.b64encode(read(m.group(2)).encode()).decode()), html)
 os.makedirs(os.path.join(root, "dist"), exist_ok=True)
 open(os.path.join(root, "dist", "inventory.html"), "w", encoding="utf8").write(html)
 print("wrote dist/inventory.html", len(html), "bytes")
