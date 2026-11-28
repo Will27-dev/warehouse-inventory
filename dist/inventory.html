@@ -4676,6 +4676,85 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
   .ldcopy h1 { font-size: 48px; }
   .ldcopy p { font-size: 20px; }
 }
+
+/* Home: an animated scene per section at the top of the description card */
+.hmscene { width: 100%; max-width: 480px; padding: 12px; background: var(--canvas); border-radius: var(--r-lg); }
+.hmscene svg { display: block; width: 100%; height: auto; overflow: hidden; }
+.hmscene * { transform-box: fill-box; transform-origin: center; }
+.hmscene .k, .hmscene .ks, .hmscene .ka, .hmscene .kr, .hmscene .kh, .hmscene .kg { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.hmscene .k { fill: none; }
+.hmscene .ks { fill: var(--sel); }
+.hmscene .ka { fill: var(--acc1); }
+.hmscene .kr { fill: var(--acc2); }
+.hmscene .kh { fill: var(--head); }
+.hmscene .kg { fill: var(--pie3); }
+.hmscene .kbeam { fill: var(--acc2); opacity: .28; }
+.hmcard h2 { margin-top: 24px; }
+/* 0 Items/Locations */
+.sc-mag { animation: scMag 5s ease-in-out infinite; }
+@keyframes scMag { 0%, 100% { transform: translate(140px, 62px); } 30% { transform: translate(340px, 62px); } 55%, 80% { transform: translate(186px, 114px); } }
+.sc-hit { animation: scHit 5s infinite; }
+@keyframes scHit { 0%, 52%, 86%, 100% { fill: var(--sel); } 58%, 80% { fill: var(--acc1); } }
+/* 1 EWO */
+.sc-bl, .sc-br { animation: scBeam 1.2s ease-in-out infinite; }
+.sc-br { animation-delay: .6s; }
+@keyframes scBeam { 0%, 100% { opacity: 0; } 50% { opacity: .4; } }
+.sc-ring { fill: none; stroke: var(--acc2); stroke-width: 3; animation: scRing 1.2s ease-out infinite; }
+@keyframes scRing { from { transform: scale(.5); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
+.sc-rays { stroke: var(--acc2); animation: scFlash .6s steps(1) infinite; }
+.sc-dome { animation: scFlash .6s steps(1) infinite; }
+@keyframes scFlash { 50% { opacity: .45; } }
+/* 2 Pick List */
+.sc-pk { animation: scPick 7s ease-in-out infinite; }
+@keyframes scPick {
+  0% { transform: translate(0, 0); opacity: 0; }
+  5%, 12% { transform: translate(0, 0); opacity: 1; }
+  28% { transform: translate(var(--hx), -10px); }
+  42%, 86% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  94%, 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+/* 3 Put Away */
+.sc-drive { animation: scDrive 6s ease-in-out infinite; }
+@keyframes scDrive { 0% { transform: translateX(-140px); opacity: 0; } 6% { opacity: 1; } 28%, 90% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(0); opacity: 0; } }
+.sc-fork { animation: scFork 6s ease-in-out infinite; }
+@keyframes scFork { 0%, 30% { transform: translateY(0); } 52%, 100% { transform: translateY(-72px); } }
+.sc-pbox { animation: scPbox 6s ease-in-out infinite; }
+@keyframes scPbox { 0%, 56% { transform: translateX(0); } 70%, 100% { transform: translateX(60px); } }
+/* 4 Delivery */
+.sc-road { animation: scRoad .6s linear infinite; }
+@keyframes scRoad { to { stroke-dashoffset: 48; } }
+.sc-truck { animation: scTruck 5s infinite; }
+@keyframes scTruck {
+  0% { transform: translateX(-380px); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  22%, 58% { transform: translateX(0); }
+  64% { transform: translateX(-14px); animation-timing-function: cubic-bezier(.7, 0, .9, .5); }
+  82%, 100% { transform: translateX(460px); }
+}
+.sc-speed { opacity: 0; animation: scSpeed 5s infinite; }
+@keyframes scSpeed { 0%, 64%, 86%, 100% { opacity: 0; } 70%, 82% { opacity: 1; } }
+.sc-bump { animation: scBump .35s ease-in-out infinite alternate; }
+@keyframes scBump { to { transform: translateY(-3px); } }
+/* 5 Summary */
+.sc-bar { transform-origin: 50% 100%; animation: scBar 5s ease-in-out infinite; }
+@keyframes scBar { 0%, 100% { transform: scaleY(.05); } 30%, 85% { transform: scaleY(1); } }
+.sc-line { stroke: var(--acc2); stroke-dasharray: 100; animation: scLine 5s ease-in-out infinite; }
+@keyframes scLine { 0%, 35% { stroke-dashoffset: 100; } 55%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 100; } }
+/* 6 Greens */
+.sc-drop { animation: scDrop 4s ease-in infinite; }
+@keyframes scDrop { 0% { transform: translateY(-80px); opacity: 0; } 15% { opacity: 1; } 30%, 85% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(0); opacity: 0; } }
+.sc-plus { fill: var(--acc1); font: 700 22px var(--disp); opacity: 0; animation: scPlus 4s ease-out infinite; }
+@keyframes scPlus { 0%, 28% { opacity: 0; transform: translateY(0); } 35% { opacity: 1; } 60%, 100% { opacity: 0; transform: translateY(-30px); } }
+/* 7 Manage */
+.sc-on { opacity: 0; animation: scOn 4.5s infinite; }
+@keyframes scOn { 0%, 20%, 95%, 100% { opacity: 0; } 30%, 85% { opacity: 1; } }
+.sc-knob { animation: scKnob 4.5s ease-in-out infinite; }
+@keyframes scKnob { 0%, 20%, 95%, 100% { transform: translateX(0); } 30%, 85% { transform: translateX(24px); } }
+/* Nothing pointed at yet */
+.sc-ptr { animation: scPtr 4.5s ease-in-out infinite; }
+@keyframes scPtr { 0%, 20%, 100% { transform: translate(135px, 96px); } 33%, 53% { transform: translate(240px, 96px); } 66%, 86% { transform: translate(345px, 96px); } }
+.sc-pill { fill-opacity: 0; animation: scPill 4.5s infinite; }
+@keyframes scPill { 0%, 30%, 100% { fill-opacity: 0; } 5%, 25% { fill-opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .hmscene * { animation: none !important; } }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -48941,7 +49020,22 @@ var ZXING_Z = [
       '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V3h6v1M9 13l2 2 4-4"/>',
       '<circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6V14M12 17.5h.01"/>',
     ],
+    // A little animated scene for each section, at the top of the card (8: nothing pointed at yet).
+    HM_SCENE = [
+      '<path class="k" d="M20 186h440"/><path class="k" d="M100 28v158M380 28v158M100 76h280M100 130h280"/><rect class="ks" x="114" y="48" width="44" height="28" rx="3"/><rect class="ks" x="166" y="54" width="34" height="22" rx="3"/><rect class="ks" x="210" y="44" width="50" height="32" rx="3"/><rect class="ks" x="270" y="52" width="38" height="24" rx="3"/><rect class="ks" x="318" y="56" width="48" height="20" rx="3"/><rect class="ks" x="114" y="104" width="36" height="26" rx="3"/><rect class="ks sc-hit" x="160" y="98" width="52" height="32" rx="3"/><rect class="ks" x="222" y="108" width="34" height="22" rx="3"/><rect class="ks" x="266" y="100" width="44" height="30" rx="3"/><rect class="ks" x="320" y="106" width="40" height="24" rx="3"/><rect class="ks" x="114" y="156" width="56" height="30" rx="3"/><rect class="ks" x="182" y="162" width="40" height="24" rx="3"/><rect class="ks" x="300" y="154" width="50" height="32" rx="3"/><g class="sc-mag" transform="translate(186 114)"><circle class="kh" r="24" fill-opacity=".6"/><path class="k" d="M17 17l22 22" stroke-width="7"/></g>',
+      '<path class="k" d="M20 186h440"/><path class="kbeam sc-bl" d="M222 116L60 46v140z"/><path class="kbeam sc-br" d="M258 116L420 46v140z"/><circle class="sc-ring" cx="240" cy="122" r="44"/><path class="k sc-rays" d="M240 64v-18M196 84l-14-12M284 84l14-12"/><rect class="kh" x="190" y="150" width="100" height="36" rx="6"/><path class="kr sc-dome" d="M202 150a38 38 0 0 1 76 0z"/><path class="k" d="M240 158v12M240 178v1"/>',
+      '<path class="k" d="M20 186h440"/><path class="k" d="M40 40v146M210 40v146M40 90h170M40 140h170"/><rect class="ks" x="56" y="112" width="40" height="28" rx="3"/><rect class="ks" x="56" y="62" width="34" height="28" rx="3"/><rect class="kr sc-pk" style="--hx:70px;--dx:150px;--dy:80px" x="150" y="60" width="44" height="30" rx="3"/><rect class="ks sc-pk" style="--hx:80px;--dx:212px;--dy:30px;animation-delay:1.2s" x="140" y="110" width="48" height="30" rx="3"/><rect class="ka sc-pk" style="--hx:116px;--dx:222px;--dy:50px;animation-delay:2.4s" x="104" y="64" width="40" height="26" rx="3"/><rect class="kh" x="290" y="170" width="130" height="8" rx="2"/><path class="k" d="M296 178v8M355 178v8M414 178v8"/>',
+      '<path class="k" d="M20 186h440"/><path class="k" d="M250 40v146M440 40v146M250 100h190M250 150h190"/><rect class="ks" x="330" y="72" width="40" height="28" rx="3"/><rect class="ks" x="384" y="122" width="44" height="28" rx="3"/><rect class="ks" x="270" y="122" width="36" height="28" rx="3"/><g class="sc-drive"><g class="sc-fork"><path class="k" d="M196 172h40"/><rect class="ka sc-pbox" x="200" y="142" width="36" height="30" rx="3"/></g><path class="k" d="M192 56v124"/><path class="kr" d="M100 168v-42h40l20-34h28v76z"/><path class="kh" d="M146 126l14-24h20v24z"/><circle class="kh" cx="122" cy="174" r="12"/><circle class="kh" cx="168" cy="174" r="12"/></g>',
+      '<path class="k sc-road" d="M0 186h480" stroke-dasharray="28 20"/><g class="sc-truck"><path class="k sc-speed" d="M60 110h50M40 132h70M70 154h40"/><g class="sc-bump"><rect class="ks" x="130" y="80" width="150" height="80" rx="4"/><path class="ka" d="M280 160v-60h44l26 30v30z"/><path class="kh" d="M292 112h26l18 20h-44z"/><circle class="kh" cx="170" cy="168" r="16"/><circle class="kh" cx="310" cy="168" r="16"/></g></g>',
+      '<path class="k" d="M70 30v156h360"/><rect class="ks sc-bar" x="100" y="120" width="40" height="66" rx="3"/><rect class="ks sc-bar" style="animation-delay:.15s" x="160" y="90" width="40" height="96" rx="3"/><rect class="ks sc-bar" style="animation-delay:.3s" x="220" y="130" width="40" height="56" rx="3"/><rect class="ka sc-bar" style="animation-delay:.45s" x="280" y="70" width="40" height="116" rx="3"/><rect class="ks sc-bar" style="animation-delay:.6s" x="340" y="100" width="40" height="86" rx="3"/><path class="k sc-line" pathLength="100" d="M120 104L180 74L240 112L300 50L360 82"/>',
+      '<path class="k" d="M20 186h440"/><rect class="kg" x="110" y="170" width="80" height="16" rx="4"/><rect class="kg" x="110" y="154" width="80" height="16" rx="4"/><rect class="kg sc-drop" x="110" y="138" width="80" height="16" rx="4"/><rect class="kg" x="210" y="170" width="80" height="16" rx="4"/><rect class="kg" x="210" y="154" width="80" height="16" rx="4"/><rect class="kg" x="210" y="138" width="80" height="16" rx="4"/><rect class="kg sc-drop" style="animation-delay:1.3s" x="210" y="122" width="80" height="16" rx="4"/><rect class="kg" x="310" y="170" width="80" height="16" rx="4"/><rect class="kg sc-drop" style="animation-delay:2.6s" x="310" y="154" width="80" height="16" rx="4"/><text class="sc-plus" x="150" y="122">+1</text><text class="sc-plus" style="animation-delay:1.3s" x="250" y="106">+1</text><text class="sc-plus" style="animation-delay:2.6s" x="350" y="138">+1</text>',
+      '<g transform="translate(0 0)"><rect class="kh" x="80" y="40" width="96" height="134" rx="10"/><circle class="ks" cx="128" cy="82" r="18"/><path class="k" d="M100 132c4-18 16-26 28-26s24 8 28 26"/><rect class="kh" x="106" y="146" width="44" height="20" rx="10"/><rect class="ka sc-on" style="animation-delay:0s" x="106" y="146" width="44" height="20" rx="10"/><circle class="kh sc-knob" style="animation-delay:0s" cx="116" cy="156" r="7"/></g><g transform="translate(112 0)"><rect class="kh" x="80" y="40" width="96" height="134" rx="10"/><circle class="ks" cx="128" cy="82" r="18"/><path class="k" d="M100 132c4-18 16-26 28-26s24 8 28 26"/><rect class="kh" x="106" y="146" width="44" height="20" rx="10"/><rect class="ka sc-on" style="animation-delay:.5s" x="106" y="146" width="44" height="20" rx="10"/><circle class="kh sc-knob" style="animation-delay:.5s" cx="116" cy="156" r="7"/></g><g transform="translate(224 0)"><rect class="kh" x="80" y="40" width="96" height="134" rx="10"/><circle class="ks" cx="128" cy="82" r="18"/><path class="k" d="M100 132c4-18 16-26 28-26s24 8 28 26"/><rect class="kh" x="106" y="146" width="44" height="20" rx="10"/><rect class="ka sc-on" style="animation-delay:1s" x="106" y="146" width="44" height="20" rx="10"/><circle class="kh sc-knob" style="animation-delay:1s" cx="116" cy="156" r="7"/></g>',
+      '<rect class="kh" x="60" y="66" width="360" height="56" rx="28"/><rect class="ka sc-pill" x="90" y="80" width="90" height="28" rx="14"/><rect class="ka sc-pill" style="animation-delay:1.5s" x="195" y="80" width="90" height="28" rx="14"/><rect class="ka sc-pill" style="animation-delay:3s" x="300" y="80" width="90" height="28" rx="14"/><g class="sc-ptr" transform="translate(135 96)"><path class="kh" d="M0 0v34l9-9 7 15 7-3-7-15h12z"/></g>',
+    ],
     hmKey = null;
+  function hmScene(i) {
+    return '<div class="hmscene" aria-hidden="true"><svg viewBox="0 0 480 200">' + HM_SCENE[i] + "</svg></div>";
+  }
   // Sections on the top row: [key, name, description, icon]; key 7 is Manage.
   function hmItems() {
     return TOPS.map(function (x, i) {
@@ -49004,8 +49098,8 @@ var ZXING_Z = [
       b.classList.toggle("on", !!r && b.dataset.hm === String(r[0]));
     });
     var h = r
-      ? '<span class="hmic">' + HM_SVG(r[3]) + "</span><h2>" + esc(r[1]) + "</h2><p>" + esc(r[2]) + '</p><button type="button" class="primary" data-hm="' + r[0] + '">Open ' + esc(r[1]) + "</button>"
-      : '<span class="hmic">' + HM_SVG('<path d="M5 3l14 8-6 1.5L9.5 19z"/>') + "</span><h2>What's each section for?</h2><p>Point at a section in the top row to see what it does, then select it to open it.</p>";
+      ? hmScene(r[0]) + "<h2>" + esc(r[1]) + "</h2><p>" + esc(r[2]) + '</p><button type="button" class="primary" data-hm="' + r[0] + '">Open ' + esc(r[1]) + "</button>"
+      : hmScene(8) + "<h2>What's each section for?</h2><p>Point at a section in the top row to see what it does, then select it to open it.</p>";
     if (!anim) {
       // A redraw (sync, rename) leaves a card that's already showing, or mid-slide, alone.
       if (c._h !== h && !c.classList.contains("out")) c.innerHTML = c._h = h;

@@ -4663,3 +4663,82 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
   .ldcopy h1 { font-size: 48px; }
   .ldcopy p { font-size: 20px; }
 }
+
+/* Home: an animated scene per section at the top of the description card */
+.hmscene { width: 100%; max-width: 480px; padding: 12px; background: var(--canvas); border-radius: var(--r-lg); }
+.hmscene svg { display: block; width: 100%; height: auto; overflow: hidden; }
+.hmscene * { transform-box: fill-box; transform-origin: center; }
+.hmscene .k, .hmscene .ks, .hmscene .ka, .hmscene .kr, .hmscene .kh, .hmscene .kg { stroke: var(--ink); stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.hmscene .k { fill: none; }
+.hmscene .ks { fill: var(--sel); }
+.hmscene .ka { fill: var(--acc1); }
+.hmscene .kr { fill: var(--acc2); }
+.hmscene .kh { fill: var(--head); }
+.hmscene .kg { fill: var(--pie3); }
+.hmscene .kbeam { fill: var(--acc2); opacity: .28; }
+.hmcard h2 { margin-top: 24px; }
+/* 0 Items/Locations */
+.sc-mag { animation: scMag 5s ease-in-out infinite; }
+@keyframes scMag { 0%, 100% { transform: translate(140px, 62px); } 30% { transform: translate(340px, 62px); } 55%, 80% { transform: translate(186px, 114px); } }
+.sc-hit { animation: scHit 5s infinite; }
+@keyframes scHit { 0%, 52%, 86%, 100% { fill: var(--sel); } 58%, 80% { fill: var(--acc1); } }
+/* 1 EWO */
+.sc-bl, .sc-br { animation: scBeam 1.2s ease-in-out infinite; }
+.sc-br { animation-delay: .6s; }
+@keyframes scBeam { 0%, 100% { opacity: 0; } 50% { opacity: .4; } }
+.sc-ring { fill: none; stroke: var(--acc2); stroke-width: 3; animation: scRing 1.2s ease-out infinite; }
+@keyframes scRing { from { transform: scale(.5); opacity: .9; } to { transform: scale(1.6); opacity: 0; } }
+.sc-rays { stroke: var(--acc2); animation: scFlash .6s steps(1) infinite; }
+.sc-dome { animation: scFlash .6s steps(1) infinite; }
+@keyframes scFlash { 50% { opacity: .45; } }
+/* 2 Pick List */
+.sc-pk { animation: scPick 7s ease-in-out infinite; }
+@keyframes scPick {
+  0% { transform: translate(0, 0); opacity: 0; }
+  5%, 12% { transform: translate(0, 0); opacity: 1; }
+  28% { transform: translate(var(--hx), -10px); }
+  42%, 86% { transform: translate(var(--dx), var(--dy)); opacity: 1; }
+  94%, 100% { transform: translate(var(--dx), var(--dy)); opacity: 0; }
+}
+/* 3 Put Away */
+.sc-drive { animation: scDrive 6s ease-in-out infinite; }
+@keyframes scDrive { 0% { transform: translateX(-140px); opacity: 0; } 6% { opacity: 1; } 28%, 90% { transform: translateX(0); opacity: 1; } 100% { transform: translateX(0); opacity: 0; } }
+.sc-fork { animation: scFork 6s ease-in-out infinite; }
+@keyframes scFork { 0%, 30% { transform: translateY(0); } 52%, 100% { transform: translateY(-72px); } }
+.sc-pbox { animation: scPbox 6s ease-in-out infinite; }
+@keyframes scPbox { 0%, 56% { transform: translateX(0); } 70%, 100% { transform: translateX(60px); } }
+/* 4 Delivery */
+.sc-road { animation: scRoad .6s linear infinite; }
+@keyframes scRoad { to { stroke-dashoffset: 48; } }
+.sc-truck { animation: scTruck 5s infinite; }
+@keyframes scTruck {
+  0% { transform: translateX(-380px); animation-timing-function: cubic-bezier(.2, .7, .3, 1); }
+  22%, 58% { transform: translateX(0); }
+  64% { transform: translateX(-14px); animation-timing-function: cubic-bezier(.7, 0, .9, .5); }
+  82%, 100% { transform: translateX(460px); }
+}
+.sc-speed { opacity: 0; animation: scSpeed 5s infinite; }
+@keyframes scSpeed { 0%, 64%, 86%, 100% { opacity: 0; } 70%, 82% { opacity: 1; } }
+.sc-bump { animation: scBump .35s ease-in-out infinite alternate; }
+@keyframes scBump { to { transform: translateY(-3px); } }
+/* 5 Summary */
+.sc-bar { transform-origin: 50% 100%; animation: scBar 5s ease-in-out infinite; }
+@keyframes scBar { 0%, 100% { transform: scaleY(.05); } 30%, 85% { transform: scaleY(1); } }
+.sc-line { stroke: var(--acc2); stroke-dasharray: 100; animation: scLine 5s ease-in-out infinite; }
+@keyframes scLine { 0%, 35% { stroke-dashoffset: 100; } 55%, 85% { stroke-dashoffset: 0; } 100% { stroke-dashoffset: 100; } }
+/* 6 Greens */
+.sc-drop { animation: scDrop 4s ease-in infinite; }
+@keyframes scDrop { 0% { transform: translateY(-80px); opacity: 0; } 15% { opacity: 1; } 30%, 85% { transform: translateY(0); opacity: 1; } 100% { transform: translateY(0); opacity: 0; } }
+.sc-plus { fill: var(--acc1); font: 700 22px var(--disp); opacity: 0; animation: scPlus 4s ease-out infinite; }
+@keyframes scPlus { 0%, 28% { opacity: 0; transform: translateY(0); } 35% { opacity: 1; } 60%, 100% { opacity: 0; transform: translateY(-30px); } }
+/* 7 Manage */
+.sc-on { opacity: 0; animation: scOn 4.5s infinite; }
+@keyframes scOn { 0%, 20%, 95%, 100% { opacity: 0; } 30%, 85% { opacity: 1; } }
+.sc-knob { animation: scKnob 4.5s ease-in-out infinite; }
+@keyframes scKnob { 0%, 20%, 95%, 100% { transform: translateX(0); } 30%, 85% { transform: translateX(24px); } }
+/* Nothing pointed at yet */
+.sc-ptr { animation: scPtr 4.5s ease-in-out infinite; }
+@keyframes scPtr { 0%, 20%, 100% { transform: translate(135px, 96px); } 33%, 53% { transform: translate(240px, 96px); } 66%, 86% { transform: translate(345px, 96px); } }
+.sc-pill { fill-opacity: 0; animation: scPill 4.5s infinite; }
+@keyframes scPill { 0%, 30%, 100% { fill-opacity: 0; } 5%, 25% { fill-opacity: .35; } }
+@media (prefers-reduced-motion: reduce) { .hmscene * { animation: none !important; } }
