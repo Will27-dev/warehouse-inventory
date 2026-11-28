@@ -4908,7 +4908,9 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .panel, dialog { border-radius: 20px; }
 #panel tbody tr { border-radius: 16px; }
 .search, select, input:not([type=checkbox]):not([type=radio]), textarea, #panel tbody td.loc { border-radius: 12px; }
-button, .schip, .lowtag { border-radius: 999px; }
+/* 24px, not 999px: one-line buttons (44px tall) stay pills; ones that wrap on phones become rounded boxes. */
+button { border-radius: 24px; }
+.schip, .lowtag { border-radius: 999px; }
 #status, .catsw #lowN, .head .eyebrow, #statL { font-size: 14px; }
 #panel tbody td.desc { line-height: 1.55; font-size: 14px; }
 #panel .qty span { align-self: center; font-size: 15px; font-weight: 700; color: var(--mute); }
