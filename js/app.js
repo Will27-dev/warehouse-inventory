@@ -3942,7 +3942,8 @@
   var sess = null,
     mgTab = "users",
     userEd = null,
-    mgOpt = -1, // -1: no option open, every Manage button showing
+    mgOpt = -1, // -1: none picked yet; the rail then opens the last section (mgLast)
+    mgLast = 0, // last Manage section open other than Analytics: where leaving Analytics goes
     MGOPTS = [
       "Add/Edit user",
       "View Delivery Manifests",
@@ -5166,7 +5167,7 @@
       anIc('<circle cx="9" cy="8" r="4"/><path d="M2 21c0-4 3-6 7-6s7 2 7 6M19 8v6M16 11h6"/>') +
       '</button><button type="button" class="anicon" data-ango="opt:3" aria-label="Picks and put away by day" title="Picks and put away by day">' +
       anIc('<rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/>') +
-      '</button><button type="button" class="anicon" data-ango="exit" aria-label="All Manage options" title="All Manage options">' +
+      '</button><button type="button" class="anicon" data-ango="exit" aria-label="Back to Manage" title="Back to Manage">' +
       anIc('<path d="M4 4h4v4H4zM10 4h4v4h-4zM16 4h4v4h-4zM4 10h4v4H4zM10 10h4v4h-4zM16 10h4v4h-4zM4 16h4v4H4zM10 16h4v4h-4zM16 16h4v4h-4z"/>') +
       '</button></div><header class="anhead"><div class="antitle"><button type="button" class="anback" data-ango="exit">' +
       anIc('<path d="M15 18l-6-6 6-6"/>') +
@@ -5461,11 +5462,11 @@
     $("mgN").textContent = ok ? st.users.length : "–";
     $("mgN").nextElementSibling.textContent = ok && st.users.length === 1 ? "user" : "users";
     if (!ok) return;
+    if (mgOpt < 0) mgOpt = mgLast;
+    if (mgOpt !== 5) mgLast = mgOpt;
     var nav = $("mgNav");
     if (!nav.querySelector("[data-opt]"))
       nav.innerHTML =
-        '<button class="mgback" data-back><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" ' +
-        'stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Back</button>' +
         MGORDER.map(function (i) {
         return (
           '<button data-opt="' +
@@ -5482,6 +5483,8 @@
       var b = nav.querySelector('[data-opt="' + i + '"]');
       var lb = b.querySelector(".mgl");
       if (lb.textContent !== x) lb.textContent = x;
+      b.setAttribute("aria-label", x);
+      b.setAttribute("aria-current", i === mgOpt ? "page" : "false");
       b.classList.toggle("on", i === mgOpt);
       $("mgOpt" + i).hidden = i !== mgOpt;
       var s = mgStatus(i);
@@ -5489,8 +5492,7 @@
       b.querySelector(".mgst small").textContent = s[1];
       b.classList.toggle("warn", !!s[2]);
     });
-    nav.classList.toggle("picked", mgOpt >= 0);
-    $("mgBody").querySelector(".mgbar").hidden = mgOpt < 0;
+    $("mgH").textContent = MGOPTS[mgOpt];
     $("mgHidCount").textContent = "(" + hiddenList().length + ")";
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
@@ -5653,54 +5655,13 @@
       rg.closest(".mgdbody").innerHTML = matBodyHtml(em);
     }
   });
-  // Picking an option: the other buttons fade out, the picked one glides to the left and its page opens.
-  // Back reverses it. The glide keeps the button where it was on screen while the layout changes,
-  // then lets it move to its new spot (transform only).
-  var mgBusy = false;
-  function mgGlide(b, change) {
-    var r0 = b.getBoundingClientRect();
-    change();
-    var r1 = b.getBoundingClientRect();
-    b.style.transition = "none";
-    b.style.transform = "translate(" + (r0.left - r1.left) + "px," + (r0.top - r1.top) + "px)";
-    b.offsetWidth; // apply the start position before animating
-    b.style.transition = b.style.transform = "";
-  }
+  // Icon rail: a click opens that section.
   $("mgNav").addEventListener("click", function (e) {
-    var b = e.target.closest("button"),
-      nav = $("mgNav"),
-      calm = matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (!b || mgBusy) return;
-    if (b.hasAttribute("data-back")) {
-      var cur = nav.querySelector("button.on");
-      mgBusy = true;
-      nav.classList.add("returning");
-      mgGlide(cur, function () {
-        mgOpt = -1;
-        renderManage();
-      });
-      setTimeout(function () {
-        nav.classList.remove("returning");
-        mgBusy = false;
-        cur.focus();
-      }, calm ? 0 : 300);
-      return;
-    }
-    var next = +b.dataset.opt;
-    if (next === mgOpt) return;
-    mgBusy = true;
-    b.classList.add("going");
-    nav.classList.add("leaving");
-    setTimeout(function () {
-      nav.classList.remove("leaving");
-      b.classList.remove("going");
-      $("mgBody").dataset.dir = "fwd";
-      mgGlide(b, function () {
-        mgOpt = next;
-        renderManage();
-      });
-      mgBusy = false;
-    }, calm ? 0 : 150);
+    var b = e.target.closest("button[data-opt]");
+    if (!b || +b.dataset.opt === mgOpt) return;
+    mgOpt = +b.dataset.opt;
+    $("mgBody").dataset.dir = "fwd";
+    renderManage();
   });
 
   var mgShowHid = false,
