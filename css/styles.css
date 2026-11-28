@@ -3943,16 +3943,16 @@ body.onland { overflow: hidden; }
 .ldcta, .ldbtns button { min-height: 48px; padding: 0 22px; font-weight: 700; }
 .ldnav .ldcta, .ldbtns .primary { border: 0; background: var(--acc1); color: var(--on-acc); }
 .ldnav .ldcta:hover, .ldbtns .primary:hover { background: var(--acc1-hover); }
-.ldhero { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; gap: 24px; min-height: min(640px, 78vh); padding: 40px 0 0 clamp(16px, 5vw, 72px); background: var(--canvas); overflow: hidden; }
-.ldcopy { position: relative; z-index: 1; padding: 32px 0 72px; animation: ldUp .6s cubic-bezier(.16,1,.3,1) both; }
+.ldhero { position: relative; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 6fr); align-items: center; gap: 24px; padding: 16px 0 0 clamp(16px, 5vw, 72px); background: var(--canvas); overflow: hidden; }
+.ldcopy { position: relative; z-index: 1; padding: 0 0 40px; animation: ldUp .6s cubic-bezier(.16,1,.3,1) both; }
 .ldcopy h1 { margin: 0; font-family: var(--disp); font-size: clamp(40px, 4.8vw, 64px); line-height: 1.04; letter-spacing: -.03em; font-weight: 700; }
 .ldcopy h1 span { color: var(--acc1); }
-.ldcopy p { margin: 20px 0 32px; max-width: 30ch; font-size: 20px; line-height: 1.45; color: var(--mute); }
+.ldcopy p { margin: 16px 0 24px; max-width: 30ch; font-size: 20px; line-height: 1.45; color: var(--mute); }
 .ldbtns { display: flex; flex-wrap: wrap; gap: 12px; }
 .ldbtns .ldsec { border: 2px solid var(--acc1); background: var(--head); color: var(--acc1); }
 .ldbtns .ldsec:hover { background: var(--sel); }
 /* The collage: three columns of mock screens, tilted, running off the right edge. */
-.ldart { position: relative; align-self: stretch; min-height: 520px; }
+.ldart { position: relative; align-self: stretch; min-height: min(520px, 50vh); }
 .ldtilt { position: absolute; top: 34%; left: 2%; display: flex; gap: 22px; width: 900px; transform: rotateX(42deg) rotateZ(-28deg); transform-origin: top left; animation: ldUp .8s cubic-bezier(.16,1,.3,1) .1s both; }
 .ldcol { display: flex; flex-direction: column; gap: 22px; width: 260px; }
 .ldcol2 { margin-top: 90px; }
@@ -3972,8 +3972,8 @@ body.onland { overflow: hidden; }
 .ldsizes span:nth-child(3n + 2) { background: var(--canvas); box-shadow: inset 0 0 0 2px var(--line); }
 /* A barcode drawn with stripes; not scannable, it only stands for one. */
 .ldcode { height: 46px; margin-bottom: 4px; background: #fff repeating-linear-gradient(90deg, #13233F 0 2px, transparent 2px 5px, #13233F 5px 6px, transparent 6px 9px, #13233F 9px 12px, transparent 12px 14px); box-shadow: inset 0 0 0 6px #fff; }
-.ldwave { display: block; width: 100%; height: clamp(36px, 6vw, 80px); margin-top: -1px; background: var(--canvas); fill: var(--head); }
-.ldfeat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; max-width: 1080px; margin: 0 auto; padding: 24px clamp(16px, 5vw, 48px) 64px; text-align: center; }
+.ldwave { display: block; width: 100%; height: clamp(24px, 3vw, 48px); margin-top: -1px; background: var(--canvas); fill: var(--head); }
+.ldfeat { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 32px; max-width: 1080px; margin: 0 auto; padding: 8px clamp(16px, 5vw, 48px) 64px; text-align: center; }
 .ldf h2 { margin: 16px 0 8px; font-family: var(--disp); font-size: 22px; letter-spacing: -.01em; }
 .ldf p { margin: 0 auto; max-width: 30ch; font-size: 16px; color: var(--mute); }
 .ldic { display: inline-grid; place-items: center; width: 64px; height: 64px; border-radius: 50% !important; background: var(--sel); color: var(--acc1); } /* round, like the reference; everything else in the app is square */
@@ -4641,7 +4641,8 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
    (columns drift, rows get checked off, a barcode gets scanned, a trip fills up).
    Stand-in until a background video is made; reduce motion stops it (global rule above). */
 .ldhero { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
-.ldcopy h1 { font-size: clamp(56px, 7.2vw, 120px); line-height: .98; }
+/* Height caps the headline too, so Deliver / Pick / Put Away show without scrolling. */
+.ldcopy h1 { font-size: clamp(48px, min(7.2vw, 9vh), 120px); line-height: .98; }
 .ldcopy p { max-width: 30ch; font-size: clamp(22px, 2vw, 30px); }
 .ldcol { animation: ldDrift 24s ease-in-out infinite alternate; }
 .ldcol2 { animation-duration: 28s; animation-direction: alternate-reverse; }
