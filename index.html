@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261129q" />
+    <link rel="stylesheet" href="css/styles.css?v=20261129r" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -431,11 +431,11 @@
                     ><button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
                     ><button class="mbtn" aria-pressed="false">GO4</button
-                    ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View Count Sheets</button
-                    ><button class="mbtn" aria-pressed="false" id="grCodesBtn">Barcodes and Sizes</button
+                    ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View count sheets</button
+                    ><button class="mbtn" aria-pressed="false" id="grCodesBtn">Barcodes and sizes</button
                     ><span class="gracts"
                       ><button type="button" class="grnew grx" id="grXBtn">Transfer</button
-                      ><button type="button" class="primary grnew" id="grNew">Create Greens Count</button></span
+                      ><button type="button" class="primary grnew" id="grNew">Create greens count</button></span
                     >
                   </div>
                   <div id="grCount" hidden>
@@ -480,9 +480,9 @@
                   <tr>
                     <th>Name</th>
                     <th>Department</th>
-                    <th>Phone Number</th>
+                    <th>Phone number</th>
                     <th>Extension</th>
-                    <th>Fax Number</th>
+                    <th>Fax number</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -527,8 +527,8 @@
               </div>
             </div>
             <div class="inhome" id="inHome">
-              <button class="redbtn" data-insp="fork">Forklift Inspection Sheet</button>
-              <button class="redbtn" data-insp="truck">Truck Inspection Sheet</button>
+              <button class="primary" data-insp="fork">Forklift Inspection Sheet</button>
+              <button class="primary" data-insp="truck">Truck Inspection Sheet</button>
             </div>
             <div id="inWork" hidden>
               <div class="inbar">
@@ -741,7 +741,7 @@
           <label>Sub-tab<input name="sub" readonly /></label>
         </div>
         <label
-          >Delivery Location<input
+          >Delivery location<input
             name="to"
             required
             maxlength="120"
@@ -750,12 +750,12 @@
         /></label>
         <label>How much<input name="q" type="number" min="0" step="any" required /></label>
         <p class="hint" id="ewoAvail"></p>
-        <label>Requester Name<input name="rn" required maxlength="80" autocomplete="off" /></label>
+        <label>Requester name<input name="rn" required maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label>Extension<input name="ext" maxlength="20" autocomplete="off" /></label>
           <label>Badge<input name="badge" maxlength="20" autocomplete="off" /></label>
         </div>
-        <label>Area Manager<input name="am" maxlength="80" autocomplete="off" /></label>
+        <label>Area manager<input name="am" maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label>WO / MO #<input name="wo" maxlength="40" autocomplete="off" /></label>
           <label>Turn<input name="turn" maxlength="20" autocomplete="off" /></label>
@@ -831,13 +831,13 @@
         <label>Department<input name="dept" maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label
-            >Phone Number<input name="ph" type="tel" maxlength="30" autocomplete="off"
+            >Phone number<input name="ph" type="tel" maxlength="30" autocomplete="off"
           /></label>
           <label
-            >Phone Extension<input name="ext" maxlength="12" inputmode="numeric" autocomplete="off"
+            >Phone extension<input name="ext" maxlength="12" inputmode="numeric" autocomplete="off"
           /></label>
         </div>
-        <label>Fax Number<input name="fax" type="tel" maxlength="30" autocomplete="off" /></label>
+        <label>Fax number<input name="fax" type="tel" maxlength="30" autocomplete="off" /></label>
         <div class="actions">
           <button type="button" class="danger" id="ctDel" hidden>Delete</button>
           <span class="sp"></span>
@@ -1071,7 +1071,7 @@
       </form>
     </dialog>
     <dialog id="grDlg" aria-labelledby="grDlgH">
-      <h2 id="grDlgH">Create Greens Count</h2>
+      <h2 id="grDlgH">Create greens count</h2>
       <p>Pick the location you're counting.</p>
       <div class="grsites" id="grSites">
         <button type="button" data-site="Main Warehouse">Main Warehouse</button
@@ -1083,7 +1083,7 @@
     <div class="grtip" id="grTip" role="tooltip" hidden></div>
     <dialog id="grAskDlg" aria-labelledby="grAskH">
       <h2 id="grAskH">Update the quantities?</h2>
-      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View Count Sheets, and you can use it later with Use count sheet for updated Qty.</p>
+      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View count sheets, and you can use it later with Use count sheet for updated Qty.</p>
       <div class="actions"
         ><button type="button" data-grask="back">Keep counting</button><button type="button" data-grask="save">Save sheet only</button
         ><button type="button" class="primary" data-grask="use">Update quantities</button></div
@@ -1178,6 +1178,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261129q"></script>
+    <script src="js/app.js?v=20261129r"></script>
   </body>
 </html>

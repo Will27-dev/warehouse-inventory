@@ -2199,11 +2199,10 @@ tr.hid td,
   justify-content: center;
   gap: 16px;
 }
-.inhome .redbtn {
+.inhome .primary {
   min-width: min(100%, 300px);
   padding: 16px 34px;
   font-size: 17px;
-  border-radius: 14px;
 }
 .inbar {
   display: flex;
@@ -3931,7 +3930,7 @@ main { grid-area: main; width: 100%; }
   .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "topbar" "bar" "main"; grid-template-rows: auto auto auto 1fr; }
   .topbar { grid-area: topbar; }
   .bar { grid-area: bar; }
-  .side { flex-direction: column; align-items: flex-start; padding: 14px 16px 16px; gap: 10px; }
+  .side { flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 16px; gap: 12px; }
   .sidemenu { width: calc(100vw - 32px); left: 16px; }
 }
 
@@ -5020,6 +5019,21 @@ html.dark .slipsol { --bar: #5fd68c; }
   .slipbtn { transition: none; }
   .slipbtn:hover { transform: none; }
 }
+
+/* Templates table: its four buttons wrap rather than push the table past the page edge. */
+.tpacts { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.sumtbl .tpacts button + button { margin-left: 0; }
+/* Daily summary on phones: the date and button go under the title, full width. */
+@media (max-width: 640px) {
+  #sumPanel > .head { flex-direction: column; align-items: stretch; gap: 12px; }
+  #sumPanel .sumctl { flex-wrap: nowrap; }
+  #sumPanel .sumctl label { flex: 1 1 0; min-width: 0; }
+  #sumPanel .sumctl input { width: 100%; min-height: 44px; }
+  #sumPanel .sumctl button { flex: 1 1 0; min-height: 44px; }
+}
+/* Quick solution form: all three fields share one surface, with readable placeholders. */
+.soladd select, .soladd input, .soladd textarea { border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.soladd ::placeholder, #slipDlg ::placeholder { color: var(--mute); opacity: 1; }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -5440,11 +5454,11 @@ html.dark .slipsol { --bar: #5fd68c; }
                     ><button class="mbtn" aria-pressed="false">Main Warehouse</button
                     ><button class="mbtn" aria-pressed="false">Greens Trailer</button
                     ><button class="mbtn" aria-pressed="false">GO4</button
-                    ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View Count Sheets</button
-                    ><button class="mbtn" aria-pressed="false" id="grCodesBtn">Barcodes and Sizes</button
+                    ><button class="mbtn" aria-pressed="false" id="grSheetsBtn">View count sheets</button
+                    ><button class="mbtn" aria-pressed="false" id="grCodesBtn">Barcodes and sizes</button
                     ><span class="gracts"
                       ><button type="button" class="grnew grx" id="grXBtn">Transfer</button
-                      ><button type="button" class="primary grnew" id="grNew">Create Greens Count</button></span
+                      ><button type="button" class="primary grnew" id="grNew">Create greens count</button></span
                     >
                   </div>
                   <div id="grCount" hidden>
@@ -5489,9 +5503,9 @@ html.dark .slipsol { --bar: #5fd68c; }
                   <tr>
                     <th>Name</th>
                     <th>Department</th>
-                    <th>Phone Number</th>
+                    <th>Phone number</th>
                     <th>Extension</th>
-                    <th>Fax Number</th>
+                    <th>Fax number</th>
                     <th></th>
                   </tr>
                 </thead>
@@ -5536,8 +5550,8 @@ html.dark .slipsol { --bar: #5fd68c; }
               </div>
             </div>
             <div class="inhome" id="inHome">
-              <button class="redbtn" data-insp="fork">Forklift Inspection Sheet</button>
-              <button class="redbtn" data-insp="truck">Truck Inspection Sheet</button>
+              <button class="primary" data-insp="fork">Forklift Inspection Sheet</button>
+              <button class="primary" data-insp="truck">Truck Inspection Sheet</button>
             </div>
             <div id="inWork" hidden>
               <div class="inbar">
@@ -5750,7 +5764,7 @@ html.dark .slipsol { --bar: #5fd68c; }
           <label>Sub-tab<input name="sub" readonly /></label>
         </div>
         <label
-          >Delivery Location<input
+          >Delivery location<input
             name="to"
             required
             maxlength="120"
@@ -5759,12 +5773,12 @@ html.dark .slipsol { --bar: #5fd68c; }
         /></label>
         <label>How much<input name="q" type="number" min="0" step="any" required /></label>
         <p class="hint" id="ewoAvail"></p>
-        <label>Requester Name<input name="rn" required maxlength="80" autocomplete="off" /></label>
+        <label>Requester name<input name="rn" required maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label>Extension<input name="ext" maxlength="20" autocomplete="off" /></label>
           <label>Badge<input name="badge" maxlength="20" autocomplete="off" /></label>
         </div>
-        <label>Area Manager<input name="am" maxlength="80" autocomplete="off" /></label>
+        <label>Area manager<input name="am" maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label>WO / MO #<input name="wo" maxlength="40" autocomplete="off" /></label>
           <label>Turn<input name="turn" maxlength="20" autocomplete="off" /></label>
@@ -5840,13 +5854,13 @@ html.dark .slipsol { --bar: #5fd68c; }
         <label>Department<input name="dept" maxlength="80" autocomplete="off" /></label>
         <div class="two">
           <label
-            >Phone Number<input name="ph" type="tel" maxlength="30" autocomplete="off"
+            >Phone number<input name="ph" type="tel" maxlength="30" autocomplete="off"
           /></label>
           <label
-            >Phone Extension<input name="ext" maxlength="12" inputmode="numeric" autocomplete="off"
+            >Phone extension<input name="ext" maxlength="12" inputmode="numeric" autocomplete="off"
           /></label>
         </div>
-        <label>Fax Number<input name="fax" type="tel" maxlength="30" autocomplete="off" /></label>
+        <label>Fax number<input name="fax" type="tel" maxlength="30" autocomplete="off" /></label>
         <div class="actions">
           <button type="button" class="danger" id="ctDel" hidden>Delete</button>
           <span class="sp"></span>
@@ -6080,7 +6094,7 @@ html.dark .slipsol { --bar: #5fd68c; }
       </form>
     </dialog>
     <dialog id="grDlg" aria-labelledby="grDlgH">
-      <h2 id="grDlgH">Create Greens Count</h2>
+      <h2 id="grDlgH">Create greens count</h2>
       <p>Pick the location you're counting.</p>
       <div class="grsites" id="grSites">
         <button type="button" data-site="Main Warehouse">Main Warehouse</button
@@ -6092,7 +6106,7 @@ html.dark .slipsol { --bar: #5fd68c; }
     <div class="grtip" id="grTip" role="tooltip" hidden></div>
     <dialog id="grAskDlg" aria-labelledby="grAskH">
       <h2 id="grAskH">Update the quantities?</h2>
-      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View Count Sheets, and you can use it later with Use count sheet for updated Qty.</p>
+      <p>Update quantities makes this count the location's current quantities. Save sheet only keeps it under View count sheets, and you can use it later with Use count sheet for updated Qty.</p>
       <div class="actions"
         ><button type="button" data-grask="back">Keep counting</button><button type="button" data-grask="save">Save sheet only</button
         ><button type="button" class="primary" data-grask="use">Update quantities</button></div
@@ -47469,7 +47483,7 @@ var ZXING_Z = [
   }
   function ewoTableHtml(list, ro) {
     return (
-      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery Location</th><th>How much</th><th>Requester</th><th></th>' +
+      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery location</th><th>How much</th><th>Requester</th><th></th>' +
       "</tr></thead><tbody>" +
       list
         .map(function (e) {
@@ -48892,7 +48906,7 @@ var ZXING_Z = [
     mgLast = 0, // last Manage section open other than Analytics: where leaving Analytics goes
     MGOPTS = [
       "Add/Edit user",
-      "View Delivery Manifests",
+      "View delivery manifests",
       "Templates",
       "Picks and Put Away",
       "Inspection Sheets",
@@ -51758,7 +51772,7 @@ var ZXING_Z = [
             }) +
             "<small>" +
             esc(whoName(f.by)) +
-            '</small></td><td class="act"><button data-v="' +
+            '</small></td><td class="act"><div class="tpacts"><button data-v="' +
             f.id +
             '">View</button><button data-d="' +
             f.id +
@@ -51766,7 +51780,7 @@ var ZXING_Z = [
             f.id +
             '">Edit</button><button data-r="' +
             f.id +
-            '">Remove</button></td></tr>'
+            '">Remove</button></div></td></tr>'
           );
         })
         .join("") +
@@ -51793,7 +51807,7 @@ var ZXING_Z = [
     }
     tpCloudScan();
   }
-  // Greens Management: View Count Sheets lists transfers waiting and saved counts; a location shows its greens by size.
+  // Greens Management: View count sheets lists transfers waiting and saved counts; a location shows its greens by size.
   var grView = null; // "sheets", "codes", a location name, or null for All locations
   function grPick(b) {
     [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
@@ -51905,7 +51919,7 @@ var ZXING_Z = [
               })
               .join("") +
             "</tbody></table></div>"
-          : '<div class="empty">No count sheets yet. Select Create Greens Count to make one.</div>') +
+          : '<div class="empty">No count sheets yet. Select Create greens count to make one.</div>') +
         '<div class="grubtns"><button type="button" data-grusex>Cancel</button></div></div>'
       );
     }
@@ -52091,7 +52105,7 @@ var ZXING_Z = [
       return gs[g];
     });
     if (!names.length)
-      return '<p class="grnone">' + (s.last ? "Nothing here at the last count." : "No count here yet. Select Create Greens Count to make one.") + "</p>";
+      return '<p class="grnone">' + (s.last ? "Nothing here at the last count." : "No count here yet. Select Create greens count to make one.") + "</p>";
     return (
       '<div class="grstock">' +
       names
@@ -52134,7 +52148,7 @@ var ZXING_Z = [
       return { k: k, e: by[k] };
     });
   }
-  // One tinted card per list in View Count Sheets, so Transferable and Count sheets read apart.
+  // One tinted card per list in View count sheets, so Transferable and Count sheets read apart.
   function grSec(t, title, n, desc, body) {
     return '<section class="grsec grsec-' + t + '"><h3>' + title + ' <span class="grn">' + n + "</span></h3><p>" + desc + "</p>" + body + "</section>";
   }
@@ -52200,7 +52214,7 @@ var ZXING_Z = [
     grMsg = "";
     grPick($("grSheetsBtn"));
     save();
-    toast(now ? "Transferred " + what + "." : "Saved under View Count Sheets, Transferable.");
+    toast(now ? "Transferred " + what + "." : "Saved under View count sheets, Transferable.");
   }
   $("grXBtn").onclick = function () {
     var o =
@@ -52250,15 +52264,15 @@ var ZXING_Z = [
     renderGr();
   });
 
-  /* ---------- Greens Management: Create Greens Count ----------
+  /* ---------- Greens Management: Create greens count ----------
      Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
-     View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
+     View count sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
      st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept until Done or Cancel
      (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
   var grMsg = "",
     grTapOn = false; // count screen: barcodes shown to tap instead of scanning
-  // Barcodes and Sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
+  // Barcodes and sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
   // Code 128 bar/space widths for values 0-105; digits-only item #s (even length) use code set C, others set B.
   var C128 = (
     "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 " +
@@ -52423,7 +52437,7 @@ var ZXING_Z = [
       return r.g === grAllG;
     });
     var mat = !Object.keys(rows).length
-      ? '<div class="empty">No greens counted at any location yet. Select Create Greens Count to start.</div>'
+      ? '<div class="empty">No greens counted at any location yet. Select Create greens count to start.</div>'
       : sw + (rl.length
       ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
         sites
@@ -52473,7 +52487,7 @@ var ZXING_Z = [
       : '<div class="empty">No counts or transfers yet.</div>';
     return (
       grSec("c", "All locations", all + (all === 1 ? " piece" : " pieces"), "What each location has now. Select one to see it by size and count it.", '<div class="grlocs">' + cards + "</div>" + mat) +
-      grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View Count Sheets has the full list.", chg)
+      grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View count sheets has the full list.", chg)
     );
   }
   var grAllG = "Pants";
@@ -52803,7 +52817,7 @@ var ZXING_Z = [
     renderGr();
     toast("Deleted " + what + ".");
   });
-  // Done: save the count as a count sheet and show it under View Count Sheets.
+  // Done: save the count as a count sheet and show it under View count sheets.
   // Done on a new count: ask whether it should also become the location's current quantities.
   function grAsk(c) {
     if (!c.order.some(function (n) {
@@ -52895,7 +52909,7 @@ var ZXING_Z = [
     else if (!miss.length) toast(use ? "Count sheet saved. Quantities updated for " + c.site + "." : "Count sheet saved. Quantities at " + c.site + " weren't changed.");
     else
       alert(
-        "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
+        "Count sheet saved under View count sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
           miss
             .map(function (n) {
               return n + ": " + counts[n];
@@ -52905,7 +52919,7 @@ var ZXING_Z = [
   }
   function grSheetsHtml(l, mine) {
     if (!l.length)
-      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create Greens Count to make one.") + "</div>";
+      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create greens count to make one.") + "</div>";
     return (
       '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Location</th>' +
       (mine ? "" : "<th>Counted by</th>") +
@@ -56456,7 +56470,7 @@ var ZXING_Z = [
      A trip moves through three modes:
        loading    – scan receipts onto the trip (same receipt again = one more box)
        delivering – receipts listed by department #; tap one, press Delivered to take it off
-       submitted  – everything delivered and sent to Manage → View Delivery Manifests
+       submitted  – everything delivered and sent to Manage → View delivery manifests
      Deliveries are not taken out of current stock, so inventory never changes here.
      st.manifests: [{ id, no, trip, by, ts, upd, status, notes, curDept, curLoc,
                       lines:[{ id, rc, dept, loc, boxes, at, deliv, delivBy }],
@@ -57186,7 +57200,7 @@ var ZXING_Z = [
       toast("Mark every receipt delivered before submitting.");
       return;
     }
-    if (!confirm("Submit " + dvTripName(m) + " (" + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes)? It will be sent to Manage → View Delivery Manifests and locked.")) return;
+    if (!confirm("Submit " + dvTripName(m) + " (" + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes)? It will be sent to Manage → View delivery manifests and locked.")) return;
     m.status = "submitted";
     m.subBy = curEmail();
     m.subTs = Date.now();

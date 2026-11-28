@@ -2589,7 +2589,7 @@
   }
   function ewoTableHtml(list, ro) {
     return (
-      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery Location</th><th>How much</th><th>Requester</th><th></th>' +
+      '<div class="tw"><table class="sumtbl"><thead><tr><th>Created</th><th>Item #</th><th>Description</th><th>From</th><th>Delivery location</th><th>How much</th><th>Requester</th><th></th>' +
       "</tr></thead><tbody>" +
       list
         .map(function (e) {
@@ -4012,7 +4012,7 @@
     mgLast = 0, // last Manage section open other than Analytics: where leaving Analytics goes
     MGOPTS = [
       "Add/Edit user",
-      "View Delivery Manifests",
+      "View delivery manifests",
       "Templates",
       "Picks and Put Away",
       "Inspection Sheets",
@@ -6878,7 +6878,7 @@
             }) +
             "<small>" +
             esc(whoName(f.by)) +
-            '</small></td><td class="act"><button data-v="' +
+            '</small></td><td class="act"><div class="tpacts"><button data-v="' +
             f.id +
             '">View</button><button data-d="' +
             f.id +
@@ -6886,7 +6886,7 @@
             f.id +
             '">Edit</button><button data-r="' +
             f.id +
-            '">Remove</button></td></tr>'
+            '">Remove</button></div></td></tr>'
           );
         })
         .join("") +
@@ -6913,7 +6913,7 @@
     }
     tpCloudScan();
   }
-  // Greens Management: View Count Sheets lists transfers waiting and saved counts; a location shows its greens by size.
+  // Greens Management: View count sheets lists transfers waiting and saved counts; a location shows its greens by size.
   var grView = null; // "sheets", "codes", a location name, or null for All locations
   function grPick(b) {
     [].forEach.call($("grBtns").querySelectorAll(".mbtn"), function (x) {
@@ -7025,7 +7025,7 @@
               })
               .join("") +
             "</tbody></table></div>"
-          : '<div class="empty">No count sheets yet. Select Create Greens Count to make one.</div>') +
+          : '<div class="empty">No count sheets yet. Select Create greens count to make one.</div>') +
         '<div class="grubtns"><button type="button" data-grusex>Cancel</button></div></div>'
       );
     }
@@ -7211,7 +7211,7 @@
       return gs[g];
     });
     if (!names.length)
-      return '<p class="grnone">' + (s.last ? "Nothing here at the last count." : "No count here yet. Select Create Greens Count to make one.") + "</p>";
+      return '<p class="grnone">' + (s.last ? "Nothing here at the last count." : "No count here yet. Select Create greens count to make one.") + "</p>";
     return (
       '<div class="grstock">' +
       names
@@ -7254,7 +7254,7 @@
       return { k: k, e: by[k] };
     });
   }
-  // One tinted card per list in View Count Sheets, so Transferable and Count sheets read apart.
+  // One tinted card per list in View count sheets, so Transferable and Count sheets read apart.
   function grSec(t, title, n, desc, body) {
     return '<section class="grsec grsec-' + t + '"><h3>' + title + ' <span class="grn">' + n + "</span></h3><p>" + desc + "</p>" + body + "</section>";
   }
@@ -7320,7 +7320,7 @@
     grMsg = "";
     grPick($("grSheetsBtn"));
     save();
-    toast(now ? "Transferred " + what + "." : "Saved under View Count Sheets, Transferable.");
+    toast(now ? "Transferred " + what + "." : "Saved under View count sheets, Transferable.");
   }
   $("grXBtn").onclick = function () {
     var o =
@@ -7370,15 +7370,15 @@
     renderGr();
   });
 
-  /* ---------- Greens Management: Create Greens Count ----------
+  /* ---------- Greens Management: Create greens count ----------
      Pick a site, scan each item's barcode (one scan = 1), then Done saves it as a count sheet.
-     View Count Sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
+     View count sheets and the profile's Green Count tab fill GCW.GREENS from it on demand.
      st.grCount: { site, ts, counts: { code: n }, order: [code], to?, of? }, kept until Done or Cancel
      (also on the person's profile as grDraft, so another device can pick it up).
      A transfer sets to (and of when reviewing a saved one); see Transfer above. */
   var grMsg = "",
     grTapOn = false; // count screen: barcodes shown to tap instead of scanning
-  // Barcodes and Sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
+  // Barcodes and sizes: every item on GCW.GREENS with its size and a Code 128 barcode of its item #.
   // Code 128 bar/space widths for values 0-105; digits-only item #s (even length) use code set C, others set B.
   var C128 = (
     "212222 222122 222221 121223 121322 131222 122213 122312 132212 221213 221312 231212 112232 122132 122231 113222 " +
@@ -7543,7 +7543,7 @@
       return r.g === grAllG;
     });
     var mat = !Object.keys(rows).length
-      ? '<div class="empty">No greens counted at any location yet. Select Create Greens Count to start.</div>'
+      ? '<div class="empty">No greens counted at any location yet. Select Create greens count to start.</div>'
       : sw + (rl.length
       ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
         sites
@@ -7593,7 +7593,7 @@
       : '<div class="empty">No counts or transfers yet.</div>';
     return (
       grSec("c", "All locations", all + (all === 1 ? " piece" : " pieces"), "What each location has now. Select one to see it by size and count it.", '<div class="grlocs">' + cards + "</div>" + mat) +
-      grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View Count Sheets has the full list.", chg)
+      grSec("x", "Recent changes", ev.length > 8 ? "last 8 of " + ev.length : ev.length, "Counts and transfers at every location, newest first. View count sheets has the full list.", chg)
     );
   }
   var grAllG = "Pants";
@@ -7923,7 +7923,7 @@
     renderGr();
     toast("Deleted " + what + ".");
   });
-  // Done: save the count as a count sheet and show it under View Count Sheets.
+  // Done: save the count as a count sheet and show it under View count sheets.
   // Done on a new count: ask whether it should also become the location's current quantities.
   function grAsk(c) {
     if (!c.order.some(function (n) {
@@ -8015,7 +8015,7 @@
     else if (!miss.length) toast(use ? "Count sheet saved. Quantities updated for " + c.site + "." : "Count sheet saved. Quantities at " + c.site + " weren't changed.");
     else
       alert(
-        "Count sheet saved under View Count Sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
+        "Count sheet saved under View count sheets. These item #s aren't on GCW.GREENS, so their counts won't show on the sheet:\n\n" +
           miss
             .map(function (n) {
               return n + ": " + counts[n];
@@ -8025,7 +8025,7 @@
   }
   function grSheetsHtml(l, mine) {
     if (!l.length)
-      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create Greens Count to make one.") + "</div>";
+      return '<div class="empty">' + (mine ? "You haven't made a Green Count yet." : "No count sheets yet. Select Create greens count to make one.") + "</div>";
     return (
       '<div class="tw"><table class="sumtbl grsheets"><thead><tr><th>Location</th>' +
       (mine ? "" : "<th>Counted by</th>") +
@@ -11576,7 +11576,7 @@
      A trip moves through three modes:
        loading    – scan receipts onto the trip (same receipt again = one more box)
        delivering – receipts listed by department #; tap one, press Delivered to take it off
-       submitted  – everything delivered and sent to Manage → View Delivery Manifests
+       submitted  – everything delivered and sent to Manage → View delivery manifests
      Deliveries are not taken out of current stock, so inventory never changes here.
      st.manifests: [{ id, no, trip, by, ts, upd, status, notes, curDept, curLoc,
                       lines:[{ id, rc, dept, loc, boxes, at, deliv, delivBy }],
@@ -12306,7 +12306,7 @@
       toast("Mark every receipt delivered before submitting.");
       return;
     }
-    if (!confirm("Submit " + dvTripName(m) + " (" + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes)? It will be sent to Manage → View Delivery Manifests and locked.")) return;
+    if (!confirm("Submit " + dvTripName(m) + " (" + m.lines.length + " receipts, " + dvBoxes(m.lines) + " boxes)? It will be sent to Manage → View delivery manifests and locked.")) return;
     m.status = "submitted";
     m.subBy = curEmail();
     m.subTs = Date.now();

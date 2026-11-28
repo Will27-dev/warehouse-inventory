@@ -2185,11 +2185,10 @@ tr.hid td,
   justify-content: center;
   gap: 16px;
 }
-.inhome .redbtn {
+.inhome .primary {
   min-width: min(100%, 300px);
   padding: 16px 34px;
   font-size: 17px;
-  border-radius: 14px;
 }
 .inbar {
   display: flex;
@@ -3917,7 +3916,7 @@ main { grid-area: main; width: 100%; }
   .app { grid-template-columns: minmax(0, 1fr); grid-template-areas: "side" "topbar" "bar" "main"; grid-template-rows: auto auto auto 1fr; }
   .topbar { grid-area: topbar; }
   .bar { grid-area: bar; }
-  .side { flex-direction: column; align-items: flex-start; padding: 14px 16px 16px; gap: 10px; }
+  .side { flex-direction: row; align-items: center; justify-content: space-between; padding: 10px 16px; gap: 12px; }
   .sidemenu { width: calc(100vw - 32px); left: 16px; }
 }
 
@@ -5006,3 +5005,18 @@ html.dark .slipsol { --bar: #5fd68c; }
   .slipbtn { transition: none; }
   .slipbtn:hover { transform: none; }
 }
+
+/* Templates table: its four buttons wrap rather than push the table past the page edge. */
+.tpacts { display: flex; flex-wrap: wrap; gap: 6px 8px; }
+.sumtbl .tpacts button + button { margin-left: 0; }
+/* Daily summary on phones: the date and button go under the title, full width. */
+@media (max-width: 640px) {
+  #sumPanel > .head { flex-direction: column; align-items: stretch; gap: 12px; }
+  #sumPanel .sumctl { flex-wrap: nowrap; }
+  #sumPanel .sumctl label { flex: 1 1 0; min-width: 0; }
+  #sumPanel .sumctl input { width: 100%; min-height: 44px; }
+  #sumPanel .sumctl button { flex: 1 1 0; min-height: 44px; }
+}
+/* Quick solution form: all three fields share one surface, with readable placeholders. */
+.soladd select, .soladd input, .soladd textarea { border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
+.soladd ::placeholder, #slipDlg ::placeholder { color: var(--mute); opacity: 1; }
