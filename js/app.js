@@ -340,7 +340,7 @@
     }
     return best;
   }
-  function mk(id, n, d, l, q, u, notes, c) {
+  function mk(id, n, d, l, q, u, notes, c, mn) {
     n = String(n == null ? "" : n);
     c = String(c == null ? (window.CATID || {})[n] || "" : c); // Cat ID: saved one, else from the Excel
     d = String(d || "");
@@ -355,6 +355,8 @@
       u: u || "",
       notes: notes,
       c: c,
+      mn: mn == null || mn === "" ? null : Number(mn),
+      low: mn != null && mn !== "" && (Number(q) || 0) <= Number(mn),
       t: tabOf(l),
       h: (n + " " + d + " " + l + " " + notes + " " + c).toLowerCase(),
     };
@@ -366,11 +368,11 @@
       if (st.deleted[id]) return;
       var e = st.edits[id];
       items.push(
-        e ? mk(id, e.n, e.d, e.l, e.q, e.u, e.notes, e.c) : mk(id, r[0], r[1], r[2], r[3], r[4], "")
+        e ? mk(id, e.n, e.d, e.l, e.q, e.u, e.notes, e.c, e.mn) : mk(id, r[0], r[1], r[2], r[3], r[4], "")
       );
     });
     st.added.forEach(function (a) {
-      items.push(mk(a.id, a.n, a.d, a.l, a.q, a.u, a.notes, a.c));
+      items.push(mk(a.id, a.n, a.d, a.l, a.q, a.u, a.notes, a.c, a.mn));
     });
     items.sort(function (a, b) {
       return a.l < b.l ? -1 : a.l > b.l ? 1 : a.n < b.n ? -1 : a.n > b.n ? 1 : 0;
@@ -383,14 +385,17 @@
         return 0;
       }),
       list = [],
+      lowN = 0,
       sel = selTabs();
     items.forEach(function (i) {
       if (i.t < 0) return;
+      if (i.low) lowN++;
+      if (st.lowOnly && !i.low) return;
       for (var k = 0; k < terms.length; k++) if (i.h.indexOf(terms[k]) < 0) return;
       counts[i.t]++;
       if (sel.indexOf(i.t) >= 0) list.push(i);
     });
-    return { counts: counts, list: list, searching: terms.length > 0 };
+    return { counts: counts, list: list, lowN: lowN, searching: terms.length > 0 || !!st.lowOnly };
   }
 
   /* =====================================================================
@@ -479,6 +484,7 @@
               (st.catAll || catOne[i.id] ? '<small class="catid">Cat ID ' + esc(i.c) + "</small>" : "")
             : "") +
           '</td><td class="desc">' +
+          (i.low ? '<span class="lowtag">Low stock: ' + esc(i.q) + " left, reorder at " + fmtQ(i.mn) + "</span>" : "") +
           esc(i.d) +
           (i.notes ? "<small>" + esc(i.notes) + "</small>" : "") +
           "</td>" +
@@ -490,11 +496,13 @@
           '</b><button data-act="inc" aria-label="Add one">+</button><span>' +
           esc(i.u) +
           "</span></div></td>" +
-          '<td class="act"><button data-act="edit">Edit</button></td></tr>'
+          '<td class="act"><button data-act="edit">Edit</button></td><td class="act hist"><button data-act="hist">History</button></td></tr>'
         );
       })
       .join("");
     $("catAll").checked = !!st.catAll;
+    $("lowOnly").checked = !!st.lowOnly;
+    $("lowN").textContent = "(" + m.lowN.toLocaleString() + ")";
     var sel = selTabs(),
       isG = st.sel === "a" || st.sel.charAt(0) === "g";
     document.documentElement.style.setProperty(
@@ -522,7 +530,9 @@
         : "Locator prefix <code>" + esc(TABS[sel[0]].p) + "</code>");
     var e = $("empty");
     e.hidden = list.length > 0;
-    e.textContent = m.searching
+    e.textContent = st.lowOnly && !$("q").value.trim()
+      ? "Nothing here is low on stock. Set a low stock level in an item's Edit form."
+      : m.searching
       ? "No items in this tab match your search. The numbers on the other tabs show where matches are."
       : sel.length
         ? "No items in this tab yet."
@@ -536,6 +546,12 @@
       " left)";
   }
 
+  $("lowOnly").addEventListener("change", function () {
+    st.lowOnly = this.checked;
+    shown = PAGE;
+    save();
+    render();
+  });
   var catOne = {}; // items whose Cat ID was opened with the triangle (this visit only)
   $("catAll").addEventListener("change", function () {
     st.catAll = this.checked;
@@ -559,6 +575,7 @@
     f.u.value = item ? item.u : "EA";
     f.notes.value = item ? item.notes : "";
     f.c.value = item ? item.c : "";
+    f.mn.value = item && item.mn != null ? item.mn : "";
     $("locPick").hidden = !!item;
     if (!item) {
       var t0 = selTabs().length === 1 ? selTabs()[0] : -1;
@@ -612,7 +629,7 @@
     } else st.edits[id] = data;
   }
   function fieldsOf(i) {
-    return { n: i.n, d: i.d, l: i.l, q: i.q, u: i.u, notes: i.notes, c: i.c };
+    return { n: i.n, d: i.d, l: i.l, q: i.q, u: i.u, notes: i.notes, c: i.c, mn: i.mn == null ? undefined : i.mn };
   }
 
   $("form").addEventListener("submit", function (ev) {
@@ -626,6 +643,7 @@
       u: f.u.value.trim(),
       notes: f.notes.value.trim(),
       c: f.c.value.trim().replace(/^0+/, "") || undefined, // blank: use the Excel's Cat ID, if any
+      mn: f.mn.value.trim() === "" ? undefined : Math.max(0, parseFloat(f.mn.value) || 0),
     };
     if (
       tabOf(d.l) < 0 &&
@@ -978,6 +996,7 @@
       render();
       return;
     }
+    if (b.dataset.act === "hist") return openHist(it);
     if (!can("qty")) {
       deny("add or edit quantities");
       return;
@@ -996,6 +1015,39 @@
     it.q = d.q;
     render();
   });
+
+  // Item history: every quantity change, transfer and EWO use synced in the quantity log, newest first.
+  function openHist(it) {
+    var list = st.log
+      .filter(function (e) {
+        return e.id === it.id;
+      })
+      .slice(-100)
+      .reverse();
+    $("histH").textContent = "History of " + it.n;
+    $("histSub").textContent = String(it.d).slice(0, 120);
+    $("histList").innerHTML = list.length
+      ? list
+          .map(function (e) {
+            var how = fmtQ(e.q) + " " + esc(e.u);
+            return (
+              "<li><b>" +
+              (e.a === "move"
+                ? "Moved " + how + " from " + esc(e.from) + " to " + esc(e.to)
+                : (e.a === "add" ? "Added " : "Subtracted ") + how + " at " + esc(e.l)) +
+              "</b>" +
+              (e.note ? "<span>" + esc(e.note) + "</span>" : "") +
+              "<small>" +
+              esc(whoName(e.by) || "Unknown") +
+              ", " +
+              dvWhen(e.ts) +
+              "</small></li>"
+            );
+          })
+          .join("")
+      : '<li class="m">No quantity changes recorded for this item yet.</li>';
+    $("histDlg").showModal();
+  }
 
   function download(name, text, type) {
     var a = document.createElement("a");
@@ -4707,6 +4759,12 @@
         '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>'
       );
     }).join("") +
+      // Low stock: straight to the items at or below their low stock level.
+      (function (n) {
+        return n ? '<li><button type="button" data-hmlow>' + HM_SVG('<path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/>') + "<span>Low stock (" + n.toLocaleString() + ")</span>" + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>' : "";
+      })(items.filter(function (i) {
+        return i.low && i.t >= 0;
+      }).length) +
       // App problems? (signed in only): report a bug to the owner.
       (sess ? '<li><button type="button" data-hmap>' + HM_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/>') + "<span>App problems?</span>" + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>' : ""));
     hmShow(hmKey, false);
@@ -4752,6 +4810,13 @@
   });
   $("home").addEventListener("click", function (e) {
     if (e.target.closest("button[data-hmap]")) return $("apBtn").click();
+    if (e.target.closest("button[data-hmlow]")) {
+      st.lowOnly = true;
+      st.sel = "a";
+      $("q").value = "";
+      homePage(false);
+      return $("topnav").children[1].click();
+    }
     var b = e.target.closest("button[data-hm], button[data-hmside], #hmProf");
     if (!b) return;
     if (b.id === "hmProf") return openProfile();

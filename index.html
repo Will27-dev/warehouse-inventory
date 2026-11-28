@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128w" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128z" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -203,7 +203,10 @@
                 <div class="eyebrow" id="eyebrow"></div>
                 <h2 id="title"></h2>
                 <p id="status"></p>
-                <label class="catsw"><input type="checkbox" id="catAll" />Show Cat IDs</label>
+                <div class="catrow">
+                  <label class="catsw"><input type="checkbox" id="catAll" />Show Cat IDs</label>
+                  <label class="catsw"><input type="checkbox" id="lowOnly" />Low stock only <span id="lowN"></span></label>
+                </div>
               </div>
               <div class="hdside">
                 <div class="stat"><b id="statN"></b><span id="statL"></span></div>
@@ -875,6 +878,14 @@
         </div>
       </form>
     </dialog>
+    <dialog id="histDlg">
+      <form method="dialog">
+        <h2 id="histH">History</h2>
+        <p class="aphint" id="histSub"></p>
+        <ul class="histlist" id="histList"></ul>
+        <div class="actions"><span class="sp"></span><button class="primary" value="close">Close</button></div>
+      </form>
+    </dialog>
     <dialog id="apDlg">
       <form method="dialog" id="apForm">
         <h2>App problems?</h2>
@@ -1098,6 +1109,14 @@
             autocomplete="off"
             placeholder="Add a Cat ID for this item?"
         /></label>
+        <label
+          >Low stock at (optional)<input
+            name="mn"
+            type="number"
+            min="0"
+            step="any"
+            placeholder="Warn when the quantity is this or less"
+        /></label>
         <label>Notes<textarea name="notes" rows="2"></textarea></label>
         <div class="actions">
           <button type="button" class="danger" id="del" hidden>Delete</button>
@@ -1111,6 +1130,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128w"></script>
+    <script src="js/app.js?v=20261128z"></script>
   </body>
 </html>

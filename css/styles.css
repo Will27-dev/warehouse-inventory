@@ -2595,10 +2595,10 @@ body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr {
   border-radius: var(--r-md);
   padding: 20px;
   box-shadow: inset 0 0 0 1px var(--hair);
-  grid-template-areas: "num edit" "desc desc" "loc loc" "qty qty";
+  grid-template-areas: "num edit" "desc desc" "loc loc" "qty qty" "hist hist";
 }
 body:not(.ontop):not(.onside):not(.onsum) #panel.xmode tbody tr {
-  grid-template-areas: "sel sel" "num edit" "desc desc" "loc loc" "qty qty";
+  grid-template-areas: "sel sel" "num edit" "desc desc" "loc loc" "qty qty" "hist hist";
 }
 body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr.picked {
   border-color: #15803d;
@@ -4850,3 +4850,16 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 #panel > .head { align-items: flex-start; }
 .hdside { display: flex; flex-direction: column; align-items: flex-end; gap: 8px; flex-shrink: 0; }
 .hdside .xbtn { min-height: 44px; padding: 0 16px; font-size: 13px; }
+
+/* Item history dialog */
+#histDlg { width: min(560px, calc(100vw - 32px)); }
+.histlist { list-style: none; margin: 0 0 16px; padding: 0; max-height: 55vh; overflow: auto; border-top: 1px solid var(--line); }
+.histlist li { display: flex; flex-direction: column; gap: 4px; padding: 12px 0; border-bottom: 1px solid var(--line); }
+.histlist span, .histlist small, .histlist .m { color: var(--mute); }
+
+/* Low stock */
+.catrow { display: flex; flex-wrap: wrap; gap: 0 24px; margin-top: 4px; }
+.catrow .catsw { margin-top: 0; }
+.catsw #lowN { color: var(--mute); font-weight: 500; }
+.lowtag { display: block; width: fit-content; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--warn); }
+#panel tbody td.hist { grid-area: hist; justify-self: start; }
