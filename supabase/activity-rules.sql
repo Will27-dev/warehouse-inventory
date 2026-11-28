@@ -24,7 +24,8 @@ create or replace function public.activity_ok(v jsonb) returns boolean
   language sql stable security definer set search_path = '' as $$
   select
     (public.app_role() = 'owner'
-      or lower(coalesce(v ->> 'by', '')) = (select lower(email) from public.profiles where id = auth.uid()))
+      or coalesce(v ->> 'by', '') = ''  -- made while signed out: names nobody
+      or lower(v ->> 'by') = (select lower(email) from public.profiles where id = auth.uid()))
     and (not (v ? 'issueRes') or public.app_role() = 'owner')
     and (not (v ? 'grdel') or public.mgr_or_perm('grdel'))
     and (not (v ? 'gt') or (v -> 'gt' ->> 'of') is null or public.mgr_or_perm('grapprove'))
