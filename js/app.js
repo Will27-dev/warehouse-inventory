@@ -424,7 +424,8 @@
     var ck = onSide ? "s" + st.side : tp >= 2 && tp <= 4 ? "p" + tp : null,
       onInsp = !!ck && ck === inspKey() && (!onSide || st.side > 2);
     var onDv = tp === 4 && !onInsp;
-    $("topPanel").hidden = !(((onSide && st.side > 2) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
+    $("topPanel").hidden = !(((onSide && st.side === 3) || (tp >= 2 && tp <= 4)) && !onInsp && !onDv);
+    $("solPanel").hidden = !(onSide && st.side === 4 && !onInsp);
     $("pkPdf").hidden = !(tp === 2 && !onSide);
     $("topEmpty").hidden = !$("pkPdf").hidden;
     $("topNote").hidden = !$("pkPdf").hidden;
@@ -459,6 +460,7 @@
       cloudSync();
     }
     if (onSide && st.side === 2) renderMap();
+    if (!$("solPanel").hidden) renderSol();
     if (tp === 5) renderSummary();
     if (onEwos) renderEwosPage();
     if (!onInv) return;
@@ -3997,6 +3999,7 @@
     ["grapprove", "Approve Greens transfers", 1],
     ["grdel", "Delete Greens count sheets and transfers", 1],
     ["inspall", "View everyone's inspection sheets", 1],
+    ["solnew", "Create solution sheets", 1],
   ];
   var ROLE_LABEL = { owner: "Owner", admin: "Admin", user: "User" };
   /* =====================================================================
@@ -4311,6 +4314,114 @@
   });
   $("apForm").elements.msg.addEventListener("input", function () {
     $("apMsg").textContent = "";
+  });
+  /* ---------- Common Problems/Solutions: pick a topic tile to list its solutions; people with
+     "Create solution sheets" add new ones. Solutions ride the activity log (e.sol), like App problems,
+     so they sync to every device. */
+  var SOL_TAGS = [
+    ["Front Receiving", '<path d="M3 21V9l9-6 9 6v12"/><path d="M8 21v-8h8v8"/>'],
+    ["Back Receiving", '<rect x="2" y="7" width="13" height="9" rx="1"/><path d="M15 10h4l3 3v3h-7"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/>'],
+    ["Consignments", '<path d="M21 8l-9-5-9 5 9 5 9-5z"/><path d="M3 8v8l9 5 9-5V8M12 13v8"/>'],
+    ["Shipping", '<path d="M3 12h13M12 7l5 5-5 5"/><path d="M21 4v16"/>'],
+    ["Inventory Counts", '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h3"/>'],
+    ["Pick Lists", '<path d="M9 6h11M9 12h11M9 18h11"/><path d="M4 6l1 1 2-2M4 12l1 1 2-2M4 18l1 1 2-2"/>'],
+    ["Put Away", '<path d="M12 3v12M7 10l5 5 5-5"/><path d="M4 21h16"/>'],
+    ["Equipment", '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>'],
+    ["Other", '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01"/>'],
+  ];
+  var solTag = -1; // the open topic tile (index into SOL_TAGS), -1: none
+  function solAll() {
+    return (st.audit || [])
+      .filter(function (e) {
+        return e.sol;
+      })
+      .map(function (e) {
+        return { tag: e.sol.tag, t: e.sol.t, s: e.sol.s, by: e.by, ts: e.ts };
+      })
+      .sort(function (a, b) {
+        return b.ts - a.ts;
+      });
+  }
+  function renderSol() {
+    var all = solAll(),
+      q = $("solQ").value.trim().toLowerCase(),
+      ok = can("solnew"),
+      f = $("solForm");
+    $("solTiles").innerHTML = SOL_TAGS.map(function (g, i) {
+      var n = all.filter(function (x) {
+          return x.tag === g[0];
+        }).length,
+        on = i === solTag && !q; // a search lists every topic, so no tile is open
+      return (
+        '<button type="button" class="soltile' + (on ? " on" : "") + '" data-sol="' + i + '" aria-pressed="' + on + '">' +
+        '<span class="dvic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+        g[1] + "</svg></span><b>" + g[0] + "</b><small>" + n + (n === 1 ? " solution" : " solutions") + "</small></button>"
+      );
+    }).join("");
+    // Searching looks through every topic; otherwise the open tile's topic.
+    var list = all.filter(function (x) {
+        return q ? (x.t + " " + x.s + " " + x.tag).toLowerCase().indexOf(q) >= 0 : solTag >= 0 && x.tag === SOL_TAGS[solTag][0];
+      }),
+      head = q ? "Solutions matching “" + esc($("solQ").value.trim()) + "”" : solTag >= 0 ? SOL_TAGS[solTag][0] : "";
+    $("solList").innerHTML = !head
+      ? ""
+      : '<h3 class="solh">' + head + "</h3>" +
+        (list.length
+          ? '<div class="sollist">' +
+            list.map(function (x) {
+              return (
+                '<details class="solitem"><summary><b>' + esc(x.t) + "</b>" + (q ? "<small>" + esc(x.tag) + "</small>" : "") + "</summary>" +
+                '<p class="solsteps">' + esc(x.s) + '</p><p class="solby">Added by ' + esc(whoName(x.by) || "someone signed out") + ", " + dvWhen(x.ts) + "</p></details>"
+              );
+            }).join("") + "</div>"
+          : '<div class="empty">' +
+            (q ? "No solutions match that. Try fewer or different words." : "No solutions for this topic yet." + (ok ? " Add the first one with the form." : "")) +
+            "</div>");
+    $("solPanel").classList.toggle("solcan", ok);
+    $("solAdd").hidden = !ok;
+    if (!f.tag.options.length)
+      f.tag.innerHTML = SOL_TAGS.map(function (g) {
+        return "<option>" + g[0] + "</option>";
+      }).join("");
+  }
+  $("solTiles").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-sol]");
+    if (!b) return;
+    var i = +b.dataset.sol;
+    solTag = solTag === i ? -1 : i;
+    $("solQ").value = "";
+    renderSol();
+    $("solTiles").children[i].focus(); // the tiles were redrawn
+    if (solTag < 0) return;
+    $("solForm").tag.value = SOL_TAGS[i][0];
+    $("solList").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
+  });
+  $("solQ").addEventListener("input", renderSol);
+  $("solForm").addEventListener("input", function () {
+    $("solMsg").textContent = "";
+  });
+  $("solForm").addEventListener("submit", function (e) {
+    e.preventDefault();
+    if (!can("solnew")) return deny("add solutions");
+    var f = this,
+      t = f.t.value.trim(),
+      s = f.s.value.trim();
+    if (!t || !s) {
+      $("solMsg").textContent = t ? "Write the steps that fix it." : "Name the problem first.";
+      return (t ? f.s : f.t).focus();
+    }
+    audit("Solutions", "Added a solution: " + t);
+    st.audit[st.audit.length - 1].sol = { id: nid("so"), tag: f.tag.value, t: t, s: s };
+    save();
+    solTag = SOL_TAGS.findIndex(function (g) {
+      return g[0] === f.tag.value;
+    });
+    $("solQ").value = "";
+    $("solMsg").textContent = "";
+    f.t.value = "";
+    f.s.value = "";
+    renderSol();
+    toast("Added “" + t + "” to " + SOL_TAGS[solTag][0] + ".");
   });
   function renderIssues() {
     var list = issAll().sort(function (a, b) {
@@ -10389,7 +10500,7 @@
     if (st.audit.length > 2000) {
       var cut = st.audit.length - 2000;
       st.audit = st.audit.filter(function (e, i) {
-        return i >= cut || e.insp || e.inspdel || e.gr || e.gt || e.grdel || e.ms || e.pick || e.issue || e.issueRes;
+        return i >= cut || e.insp || e.inspdel || e.gr || e.gt || e.grdel || e.ms || e.pick || e.issue || e.issueRes || e.sol;
       });
     }
   }
