@@ -4956,3 +4956,55 @@ html.dark #panel tbody tr { background: #44587D; box-shadow: inset 0 0 0 1px rgb
   .soltile { transition: none; }
   .soltile:hover { transform: none; }
 }
+
+/* Solution slips: the Create button, the dialog, and a slip in a list. The problem and the solution
+   sit in their own tinted boxes (orange bar, green bar) split by a dashed tear line with notches. */
+.slipbtn { display: flex; align-items: center; gap: 16px; width: 100%; max-width: 760px; margin: 0 auto 16px; padding: 16px 20px; border: 2px dashed var(--acc1); border-radius: 22px; background: var(--head); color: var(--ink); text-align: left; cursor: pointer; transition: transform .18s ease, box-shadow .18s ease; }
+.slipbtn:hover { transform: translateY(-2px); box-shadow: 0 0 0 2px var(--acc2); }
+.slipbtn .dvic { flex: none; margin: 0; }
+.slipbtn b { display: block; font-size: 17px; font-weight: 800; }
+.slipbtn small { display: block; margin-top: 2px; color: var(--mute); font-size: 13px; line-height: 1.4; }
+.slipbtn[hidden] { display: none; }
+#slipDlg { width: min(620px, calc(100vw - 24px)); }
+#slipDlg select { display: block; width: 100%; min-height: 44px; margin-top: 5px; }
+#slipDlg input:not([type=file]), #slipDlg textarea { min-height: 44px; }
+.sliptags { display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin: -4px 0 16px; }
+.sliptags:empty { display: none; }
+.sliptags small { color: var(--mute); font-size: 13px; }
+.soltag { display: inline-flex; align-items: center; min-height: 28px; padding: 2px 12px; border: 1px solid var(--line); border-radius: 999px; background: var(--panel); color: var(--ink); font-size: 13px; font-weight: 700; }
+.soltag.over { border-color: var(--acc1); color: var(--acc1); text-decoration: line-through; }
+button.soltag { min-height: 32px; cursor: pointer; }
+button.soltag:hover { border-color: var(--acc1); }
+.soltags { display: flex; flex-wrap: wrap; gap: 8px; padding: 0 18px 12px; }
+.slipsec { --bar: var(--acc1); margin: 0 18px; padding: 16px 16px 12px 20px; border: 0; border-radius: 16px; border-left: 5px solid var(--bar); background: color-mix(in srgb, var(--bar) 9%, var(--panel)); }
+.slipsol { --bar: #15803D; }
+html.dark .slipsol { --bar: #5fd68c; }
+#slipDlg .slipsec { margin: 0; }
+.sliplbl { display: inline-block; margin-bottom: 8px; padding: 0; color: var(--ink); font-size: 13px; font-weight: 800; letter-spacing: .02em; }
+.sliplbl::before { content: ""; display: inline-block; width: 8px; height: 8px; margin-right: 8px; border-radius: 50%; background: var(--bar); vertical-align: 1px; }
+.slipsec .solsteps { padding: 0 0 8px; }
+.slipsplit { position: relative; height: 28px; margin: 4px 0; }
+.slipsplit::before { content: ""; position: absolute; left: 14px; right: 14px; top: 50%; border-top: 2px dashed var(--mute); opacity: .6; }
+.slipsplit::after { content: ""; position: absolute; inset: 50% 0 auto; height: 18px; margin-top: -9px; background: radial-gradient(circle at 0 50%, var(--panel) 8px, transparent 9px), radial-gradient(circle at 100% 50%, var(--panel) 8px, transparent 9px); }
+#slipDlg .slipsplit::after { display: none; }
+.solitem .slipsplit::before { left: 32px; right: 32px; }
+.slipadd { display: inline-flex !important; align-items: center; min-height: 44px; margin: 4px 0 8px !important; padding: 0 18px; border: 1px solid var(--line); border-radius: 24px; background: var(--panel); color: var(--ink) !important; font-size: 14px !important; font-weight: 700 !important; cursor: pointer; }
+.slipadd input { position: absolute; width: 1px; height: 1px; opacity: 0; }
+.slipadd:focus-within { outline: 2px solid var(--acc1); outline-offset: 2px; }
+.slipfl { margin: 0; padding: 0; list-style: none; }
+.slipfl li { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 6px 0; border-top: 1px solid var(--line); font-size: 14px; overflow-wrap: anywhere; }
+.slipfl li small { color: var(--mute); }
+.slipfl button { flex: none; min-height: 36px; }
+.solfiles { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 8px; padding: 0; list-style: none; font-size: 14px; color: var(--mute); }
+.solfiles li { overflow-wrap: anywhere; }
+.solfiles img { display: block; width: 112px; height: 112px; object-fit: cover; border-radius: 12px; background: var(--panel); }
+.solfiles a { color: var(--ink); font-weight: 700; }
+@media (max-width: 600px) {
+  .slipbtn { padding: 14px; gap: 12px; }
+  .slipsec { margin: 0 12px; padding: 14px 12px 10px 14px; }
+  .solfiles img { width: 88px; height: 88px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .slipbtn { transition: none; }
+  .slipbtn:hover { transform: none; }
+}

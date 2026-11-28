@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261129k" />
+    <link rel="stylesheet" href="css/styles.css?v=20261129l" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -500,11 +500,15 @@
             </div>
             <div class="solbody">
               <div class="solmain">
+                <button type="button" class="slipbtn" id="slipBtn" hidden>
+                  <span class="dvic"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 3h9l4 4v14H6z"/><path d="M14 3v5h5M12.5 11v6M9.5 14h6"/></svg></span>
+                  <span><b>Create a solution slip</b><small>Topic, hashtags, the problem and how to fix it, with photos or files.</small></span>
+                </button>
                 <div class="soltiles" id="solTiles"></div>
                 <div id="solList" aria-live="polite"></div>
               </div>
               <aside class="soladd" id="solAdd" hidden>
-                <h3>Add a solution</h3>
+                <h3>Add a quick solution</h3>
                 <form id="solForm" novalidate>
                   <label>Topic<select name="tag"></select></label>
                   <label>Problem<input name="t" maxlength="120" placeholder="What goes wrong" /></label>
@@ -900,6 +904,30 @@
         </div>
       </form>
     </dialog>
+    <dialog id="slipDlg">
+      <form method="dialog" id="slipForm" novalidate>
+        <h2>Create a solution slip</h2>
+        <p class="aphint">Work from top to bottom. People find it under its topic, in All Problems &amp; Solutions, and by its hashtags.</p>
+        <label>Topic<select name="tag"></select></label>
+        <label>Hashtags (up to 4)<input name="hs" autocomplete="off" placeholder="forklift battery dock2" /></label>
+        <div class="sliptags" id="slipTagsPrev" aria-live="polite"></div>
+        <fieldset class="slipsec slipprob">
+          <legend class="sliplbl">Problem</legend>
+          <label>What's going wrong?<textarea name="d" rows="4" maxlength="4000" placeholder="Describe it in general: what happens, where, and when. The first line becomes its title."></textarea></label>
+          <label class="slipadd"><input type="file" multiple data-for="p" />Add photos or files</label>
+          <ul class="slipfl" id="slipPf"></ul>
+        </fieldset>
+        <div class="slipsplit" aria-hidden="true"></div>
+        <fieldset class="slipsec slipsol">
+          <legend class="sliplbl">Solution</legend>
+          <label>How do you fix it?<textarea name="s" rows="5" maxlength="4000" placeholder="The steps that fix it, one per line."></textarea></label>
+          <label class="slipadd"><input type="file" multiple data-for="s" />Add photos or files</label>
+          <ul class="slipfl" id="slipSf"></ul>
+        </fieldset>
+        <p class="solmsg" id="slipMsg" role="status"></p>
+        <div class="actions"><span class="sp"></span><button type="button" id="slipCancel">Cancel</button><button class="primary" type="submit">Save slip</button></div>
+      </form>
+    </dialog>
     <dialog id="histDlg">
       <form method="dialog">
         <h2 id="histH">History</h2>
@@ -1152,6 +1180,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261129k"></script>
+    <script src="js/app.js?v=20261129l"></script>
   </body>
 </html>

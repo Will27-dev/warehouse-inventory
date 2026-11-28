@@ -4329,14 +4329,25 @@
     ["Equipment", '<path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/>'],
     ["Other", '<circle cx="12" cy="12" r="9"/><path d="M9.5 9a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6M12 17h.01"/>'],
   ];
-  var solTag = -1; // the open topic tile (index into SOL_TAGS), -1: none
+  // Tiles: everything first, then the topics. "Other" has no tile; its solutions show under All.
+  var SOL_TILES = [
+    ["All Problems & Solutions", '<rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/>'],
+  ].concat(SOL_TAGS.slice(0, 8));
+  var solTag = -1; // the open tile (index into SOL_TILES; 0 = all), -1: none
+  function solTileOf(tag) {
+    var i = SOL_TILES.findIndex(function (g) {
+      return g[0] === tag;
+    });
+    return i < 0 ? 0 : i;
+  }
   function solAll() {
     return (st.audit || [])
       .filter(function (e) {
         return e.sol;
       })
       .map(function (e) {
-        return { tag: e.sol.tag, t: e.sol.t, s: e.sol.s, by: e.by, ts: e.ts };
+        var o = e.sol;
+        return { id: o.id, tag: o.tag, t: o.t, s: o.s, d: o.d, tags: o.tags || [], pf: o.pf || [], sf: o.sf || [], by: e.by, ts: e.ts };
       })
       .sort(function (a, b) {
         return b.ts - a.ts;
@@ -4347,10 +4358,12 @@
       q = $("solQ").value.trim().toLowerCase(),
       ok = can("solnew"),
       f = $("solForm");
-    $("solTiles").innerHTML = SOL_TAGS.map(function (g, i) {
-      var n = all.filter(function (x) {
-          return x.tag === g[0];
-        }).length,
+    $("solTiles").innerHTML = SOL_TILES.map(function (g, i) {
+      var n = i
+          ? all.filter(function (x) {
+              return x.tag === g[0];
+            }).length
+          : all.length,
         on = i === solTag && !q; // a search lists every topic, so no tile is open
       return (
         '<button type="button" class="soltile' + (on ? " on" : "") + '" data-sol="' + i + '" aria-pressed="' + on + '">' +
@@ -4358,27 +4371,29 @@
         g[1] + "</svg></span><b>" + g[0] + "</b><small>" + n + (n === 1 ? " solution" : " solutions") + "</small></button>"
       );
     }).join("");
-    // Searching looks through every topic; otherwise the open tile's topic.
+    // Searching looks through every topic (hashtags too, with or without #); otherwise the open tile.
     var list = all.filter(function (x) {
-        return q ? (x.t + " " + x.s + " " + x.tag).toLowerCase().indexOf(q) >= 0 : solTag >= 0 && x.tag === SOL_TAGS[solTag][0];
+        if (q)
+          return (x.t + " " + x.s + " " + (x.d || "") + " " + x.tag + " #" + x.tags.join(" #")).toLowerCase().indexOf(q) >= 0;
+        return solTag === 0 || (solTag > 0 && x.tag === SOL_TILES[solTag][0]);
       }),
-      head = q ? "Solutions matching “" + esc($("solQ").value.trim()) + "”" : solTag >= 0 ? SOL_TAGS[solTag][0] : "";
+      head = q ? "Solutions matching “" + esc($("solQ").value.trim()) + "”" : solTag >= 0 ? esc(SOL_TILES[solTag][0]) : "";
     $("solList").innerHTML = !head
       ? ""
       : '<h3 class="solh">' + head + "</h3>" +
         (list.length
           ? '<div class="sollist">' +
             list.map(function (x) {
-              return (
-                '<details class="solitem"><summary><b>' + esc(x.t) + "</b>" + (q ? "<small>" + esc(x.tag) + "</small>" : "") + "</summary>" +
-                '<p class="solsteps">' + esc(x.s) + '</p><p class="solby">Added by ' + esc(whoName(x.by) || "someone signed out") + ", " + dvWhen(x.ts) + "</p></details>"
-              );
+              return solItem(x, q || solTag === 0);
             }).join("") + "</div>"
           : '<div class="empty">' +
-            (q ? "No solutions match that. Try fewer or different words." : "No solutions for this topic yet." + (ok ? " Add the first one with the form." : "")) +
+            (q
+              ? "No solutions match that. Try fewer or different words."
+              : (solTag ? "No solutions for this topic yet." : "No solutions yet.") + (ok ? " Add the first one with the form." : "")) +
             "</div>");
     $("solPanel").classList.toggle("solcan", ok);
     $("solAdd").hidden = !ok;
+    $("slipBtn").hidden = !ok;
     if (!f.tag.options.length)
       f.tag.innerHTML = SOL_TAGS.map(function (g) {
         return "<option>" + g[0] + "</option>";
@@ -4393,7 +4408,7 @@
     renderSol();
     $("solTiles").children[i].focus(); // the tiles were redrawn
     if (solTag < 0) return;
-    $("solForm").tag.value = SOL_TAGS[i][0];
+    if (i) $("solForm").tag.value = SOL_TILES[i][0];
     $("solList").scrollIntoView({ behavior: matchMedia("(prefers-reduced-motion: reduce)").matches ? "auto" : "smooth", block: "nearest" });
   });
   $("solQ").addEventListener("input", renderSol);
@@ -4413,15 +4428,225 @@
     audit("Solutions", "Added a solution: " + t);
     st.audit[st.audit.length - 1].sol = { id: nid("so"), tag: f.tag.value, t: t, s: s };
     save();
-    solTag = SOL_TAGS.findIndex(function (g) {
-      return g[0] === f.tag.value;
-    });
+    solTag = solTileOf(f.tag.value);
     $("solQ").value = "";
     $("solMsg").textContent = "";
     f.t.value = "";
     f.s.value = "";
     renderSol();
-    toast("Added “" + t + "” to " + SOL_TAGS[solTag][0] + ".");
+    toast("Added “" + t + "” to " + f.tag.value + ".");
+  });
+  // One solution in a list. A solution slip shows its problem, a tear line, then its solution, each with files.
+  function solItem(x, showTag) {
+    var files = function (fs) {
+        return fs.length
+          ? '<ul class="solfiles">' +
+              fs.map(function (f) {
+                return '<li data-solf="' + esc(f.p) + '" data-n="' + esc(f.n) + '" data-ty="' + esc(f.ty) + '">' + esc(f.n) + "</li>";
+              }).join("") + "</ul>"
+          : "";
+      },
+      tags = x.tags.map(function (h) {
+        return '<button type="button" class="soltag" data-soltag="' + esc(h) + '" aria-label="Search #' + esc(h) + '">#' + esc(h) + "</button>";
+      }).join("");
+    return (
+      '<details class="solitem"><summary><b>' + esc(x.t) + "</b>" + (showTag ? "<small>" + esc(x.tag) + "</small>" : "") + "</summary>" +
+      (tags ? '<div class="soltags">' + tags + "</div>" : "") +
+      (x.d
+        ? '<div class="slipsec slipprob"><span class="sliplbl">Problem</span><p class="solsteps">' + esc(x.d) + "</p>" + files(x.pf) + "</div>" +
+          '<div class="slipsplit" aria-hidden="true"></div>' +
+          '<div class="slipsec slipsol"><span class="sliplbl">Solution</span><p class="solsteps">' + esc(x.s) + "</p>" + files(x.sf) + "</div>"
+        : '<p class="solsteps">' + esc(x.s) + "</p>") +
+      '<p class="solby">Added by ' + esc(whoName(x.by) || "someone signed out") + ", " + dvWhen(x.ts) + "</p></details>"
+    );
+  }
+  // Opening a slip loads its photos and files from the cloud (photos as thumbnails, the rest as downloads).
+  var solUrls = {};
+  $("solList").addEventListener(
+    "toggle",
+    function (e) {
+      if (!e.target.open) return;
+      [].forEach.call(e.target.querySelectorAll("li[data-solf]:not(.ld)"), async function (li) {
+        li.classList.add("ld");
+        var p = li.dataset.solf,
+          n = li.dataset.n,
+          img = /^image\//.test(li.dataset.ty);
+        try {
+          if (!solUrls[p]) solUrls[p] = URL.createObjectURL(await sbDownload("solution-files", p));
+          li.innerHTML = img
+            ? '<a href="' + solUrls[p] + '" target="_blank" rel="noopener"><img src="' + solUrls[p] + '" alt="' + esc(n) + '"></a>'
+            : '<a href="' + solUrls[p] + '" download="' + esc(n) + '">' + esc(n) + "</a>";
+        } catch (x) {
+          li.classList.remove("ld");
+          li.textContent = n + ": couldn't load. Check your signal, then close and open this again.";
+        }
+      });
+    },
+    true
+  );
+  $("solList").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-soltag]");
+    if (!b) return;
+    $("solQ").value = "#" + b.dataset.soltag;
+    renderSol();
+    $("solQ").focus();
+  });
+
+  /* ---------- Create a solution slip: topic, up to 4 hashtags, the problem and the solution, each with
+     photos or files (uploaded to the "solution-files" bucket under slips/<id>/). ---------- */
+  var slipF = { p: [], s: [] }, // picked files: p = problem, s = solution
+    slipId = "";
+  function slipTags() {
+    return $("slipForm")
+      .hs.value.toLowerCase()
+      .split(/[\s,#]+/)
+      .filter(function (h, i, a) {
+        return h && a.indexOf(h) === i;
+      });
+  }
+  function slipDraw() {
+    var hs = slipTags();
+    $("slipTagsPrev").innerHTML =
+      hs.map(function (h, i) {
+        return '<span class="soltag' + (i > 3 ? " over" : "") + '">#' + esc(h) + "</span>";
+      }).join("") + (hs.length ? "<small>" + hs.length + " of 4</small>" : "");
+    ["p", "s"].forEach(function (k) {
+      $(k === "p" ? "slipPf" : "slipSf").innerHTML = slipF[k]
+        .map(function (f, i) {
+          return (
+            "<li><span>" + esc(f.name) + " <small>" + fmtSize(f.size) + '</small></span><button type="button" data-slipx="' + k + i +
+            '" aria-label="Remove ' + esc(f.name) + '">Remove</button></li>'
+          );
+        })
+        .join("");
+    });
+  }
+  $("slipBtn").onclick = function () {
+    if (!can("solnew")) return deny("create solution slips");
+    var f = $("slipForm");
+    f.reset();
+    f.tag.innerHTML = '<option value="">Choose a topic</option>' + SOL_TAGS.map(function (g) {
+      return "<option>" + g[0] + "</option>";
+    }).join("");
+    if (solTag > 0) f.tag.value = SOL_TILES[solTag][0];
+    slipF = { p: [], s: [] };
+    slipId = nid("so");
+    $("slipMsg").textContent = "";
+    slipDraw();
+    $("slipDlg").showModal();
+  };
+  $("slipCancel").onclick = function () {
+    $("slipDlg").close();
+  };
+  $("slipForm").addEventListener("input", function (e) {
+    $("slipMsg").textContent = "";
+    if (e.target.name === "hs") slipDraw();
+  });
+  [].forEach.call($("slipForm").querySelectorAll("input[type=file]"), function (inp) {
+    inp.addEventListener("change", function () {
+      var k = inp.dataset.for,
+        big = 0;
+      [].forEach.call(inp.files, function (f) {
+        if (f.size > 20 * 1048576) big++;
+        else if (slipF[k].length < 8) slipF[k].push(f);
+      });
+      inp.value = "";
+      slipDraw();
+      $("slipMsg").textContent = big ? big + (big === 1 ? " file is" : " files are") + " over 20 MB, so it wasn't added." : "";
+    });
+  });
+  $("slipForm").addEventListener("click", function (e) {
+    var b = e.target.closest("[data-slipx]");
+    if (!b) return;
+    slipF[b.dataset.slipx.charAt(0)].splice(+b.dataset.slipx.slice(1), 1);
+    slipDraw();
+  });
+  // Phone photos are large: big pictures are scaled to 1920px before they upload.
+  function slipShrink(file) {
+    if (!/^image\/(jpeg|png|webp)$/.test(file.type) || file.size < 1.5 * 1048576) return Promise.resolve(file);
+    return new Promise(function (res) {
+      var img = new Image(),
+        u = URL.createObjectURL(file);
+      img.onload = function () {
+        var sc = Math.min(1, 1920 / Math.max(img.width, img.height)),
+          c = document.createElement("canvas");
+        c.width = Math.round(img.width * sc);
+        c.height = Math.round(img.height * sc);
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        URL.revokeObjectURL(u);
+        c.toBlob(function (b) {
+          res(b || file);
+        }, "image/jpeg", 0.85);
+      };
+      img.onerror = function () {
+        URL.revokeObjectURL(u);
+        res(file);
+      };
+      img.src = u;
+    });
+  }
+  $("slipForm").addEventListener("submit", async function (e) {
+    e.preventDefault();
+    if (!can("solnew")) return deny("create solution slips");
+    var f = this,
+      hs = slipTags(),
+      d = f.d.value.trim(),
+      s = f.s.value.trim(),
+      msg = $("slipMsg"),
+      bad = !f.tag.value
+        ? [f.tag, "Choose a topic first."]
+        : hs.length > 4
+        ? [f.hs, "Use 4 hashtags at most."]
+        : !d
+        ? [f.d, "Describe the problem first."]
+        : !s
+        ? [f.s, "Write how to fix it."]
+        : null;
+    if (bad) {
+      msg.textContent = bad[1];
+      return bad[0].focus();
+    }
+    var btn = f.querySelector("[type=submit]"),
+      out = { p: [], s: [] },
+      total = slipF.p.length + slipF.s.length,
+      n = 0,
+      failed = 0;
+    btn.disabled = true;
+    for (var k of ["p", "s"]) {
+      for (var i = 0; i < slipF[k].length; i++) {
+        var file = await slipShrink(slipF[k][i]),
+          path = "slips/" + slipId + "/" + k + i + "-" + slipF[k][i].name.replace(/[^\w.-]+/g, "_").slice(-80);
+        msg.textContent = "Uploading file " + ++n + " of " + total + "…";
+        try {
+          // Add only (no x-upsert): the same path again (a retry) is already there.
+          await sbFetch("/storage/v1/object/solution-files/" + sbPath(path), {
+            method: "POST",
+            headers: { "Content-Type": file.type || "application/octet-stream" },
+            body: file,
+          });
+        } catch (x) {
+          if (!(x.status === 409 || /exist|duplicate/i.test(x.message))) {
+            failed++;
+            continue;
+          }
+        }
+        out[k].push({ p: path, n: slipF[k][i].name, ty: file.type || "" });
+      }
+    }
+    btn.disabled = false;
+    if (failed) {
+      msg.textContent = failed + (failed === 1 ? " file" : " files") + " didn't upload. Check your signal, then select Save slip again.";
+      return;
+    }
+    var t = d.split("\n")[0].slice(0, 100);
+    audit("Solutions", "Created a solution slip: " + t);
+    st.audit[st.audit.length - 1].sol = { id: slipId, tag: f.tag.value, t: t, d: d, s: s, tags: hs.slice(0, 4), pf: out.p, sf: out.s };
+    save();
+    $("slipDlg").close();
+    solTag = solTileOf(f.tag.value);
+    $("solQ").value = "";
+    renderSol();
+    toast("Saved your solution slip to " + f.tag.value + ".");
   });
   function renderIssues() {
     var list = issAll().sort(function (a, b) {

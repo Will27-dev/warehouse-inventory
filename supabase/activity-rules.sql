@@ -11,7 +11,8 @@
 --   - only the owner marks App problems resolved;
 --   - only the owner/admins, or people with the permission, delete Greens records
 --     and approve Greens transfers;
---   - only the owner/admins remove finished inspection sheets.
+--   - only the owner/admins remove finished inspection sheets;
+--   - only the owner/admins, or people with "Create solution sheets", add solutions.
 -- =====================================================================
 
 -- Matches the app's permsOf() for grdel and grapprove: always on for the owner and admins.
@@ -30,6 +31,7 @@ create or replace function public.activity_ok(v jsonb) returns boolean
     and (not (v ? 'grdel') or public.mgr_or_perm('grdel'))
     and (not (v ? 'gt') or (v -> 'gt' ->> 'of') is null or public.mgr_or_perm('grapprove'))
     and (not (v ? 'inspdel') or public.app_role() in ('owner', 'admin'))
+    and (not (v ? 'sol') or public.mgr_or_perm('solnew'))
 $$;
 
 drop policy if exists "permitted staff add data" on public.app_data;
