@@ -1499,6 +1499,11 @@
           },
           to = cell(465, 540),
           m = /^36K-([^-\s]+)/i.exec(to),
+          nb = its.filter(function (t) {
+            return t.s === "Need by Date" && t.y < a.y;
+          }).sort(function (u, v) {
+            return v.y - u.y;
+          })[0],
           c1 = vp.convertToViewportPoint(a.x - 6, a.y - 4),
           c2 = vp.convertToViewportPoint(a.x + a.w + 6, a.y + a.h + 3);
         rows.push({
@@ -1516,6 +1521,7 @@
           dest: m ? m[1] : to,
           to: to,
           oh: cell(725, 790),
+          d: pkDesc(its, a.y, nb ? nb.y : a.y - 120),
           loc: near(0, 110, 12)
             .sort(function (u, v) {
               return v.y - u.y;
@@ -1528,6 +1534,35 @@
       });
     }
     return { rows: rows, meta: meta };
+  }
+  // The Item Description column (x 225–325), from the item's row down to its "Need by Date" row.
+  // The report wraps it at about 84pt: a line that fills the column with no space in it broke
+  // mid-word (LENGT + H), so it joins without a space; so do lines ending in "-" or "|".
+  function pkDesc(its, top, stop) {
+    var rows = {};
+    its.forEach(function (t) {
+      if (t.x >= 225 && t.x < 325 && t.y <= top + 3 && t.y > stop + 3) (rows[Math.round(t.y)] = rows[Math.round(t.y)] || []).push(t);
+    });
+    return Object.keys(rows)
+      .sort(function (u, v) {
+        return v - u;
+      })
+      .map(function (k) {
+        var r = rows[k].sort(function (u, v) {
+          return u.x - v.x;
+        });
+        // pieces of one line that touch (IMPRES + ™) join without a space
+        return {
+          s: r.reduce(function (s, t, i) {
+            return s + (i && t.x - r[i - 1].x - r[i - 1].w > 1.5 ? " " : "") + t.s;
+          }, ""),
+          w: r[r.length - 1].x + r[r.length - 1].w - r[0].x,
+        };
+      })
+      .reduce(function (out, l, i, all) {
+        var p = all[i - 1];
+        return !p ? l.s : out + (/[-|]$/.test(p.s) || /^[|,]/.test(l.s) || (p.w >= 79.5 && p.s.indexOf(" ") < 0) ? "" : " ") + l.s;
+      }, "");
   }
   // The one saved record Update qty changes: the slip's bin, or the only bin holding that item #.
   function pkTarget(r) {
@@ -1740,7 +1775,9 @@
             '</td><td data-l="On hand now"' +
             (off ? ' class="pkoff"' : "") +
             ">" +
-            (now == null ? '<span class="m">Not in list</span>' : now + (off ? "<small>Differs</small>" : "")) +
+            (now == null
+              ? '<span class="m">Not in list</span>' + (ed ? "" : '<button type="button" class="pknew" data-pknew="' + j + '">Add item</button>')
+              : now + (off ? "<small>Differs</small>" : "")) +
             "</td>" +
             pkLeftTd(now, pkNum(p.picked[j])) +
             '<td data-l="Check" class="pkchk">' +
@@ -2161,8 +2198,28 @@
   $("pkRows").addEventListener("click", function (e) {
     if (e.target.closest("#pkSubmit") && pkPdfs[pkOpen]) pkSubmit(pkPdfs[pkOpen]);
     if (e.target.closest("#pkDiscard") && pkPdfs[pkOpen]) pkDiscard(pkPdfs[pkOpen]);
-    // An item the slip has that the item list doesn't: create it at a location (same form and rules as Add item).
-    if (e.target.closest("#pkNewItem")) $("add").onclick();
+    // An item the slip has that the item list doesn't: create it at a location (same form and rules as Add item),
+    // filled in from the slip. The bottom button fills it in when only one line is missing.
+    var nb = e.target.closest("button[data-pknew], #pkNewItem"),
+      pp = pkPdfs[pkOpen];
+    if (!nb || !pp) return;
+    var miss = pp.rows.filter(function (r) {
+        return pkNow(r) == null;
+      }),
+      r = nb.dataset.pknew != null ? pp.rows[+nb.dataset.pknew] : miss.length === 1 ? miss[0] : null;
+    $("add").onclick();
+    if ($("dlg").open) $("dlg").addEventListener("close", function () { renderPk(); }, { once: true }); // the new item shows on its line
+    if (!r || !$("dlg").open) return;
+    var f = $("form").elements,
+      t = tabOf(r.loc),
+      oh = pkNum(r.oh);
+    f.n.value = r.n;
+    f.d.value = r.d || "";
+    if (r.loc) f.l.value = r.loc;
+    if (r.uom) f.u.value = r.uom;
+    if (oh != null) f.q.value = oh;
+    if (t >= 0) locFill(TABS[t].g, t);
+    f.d.focus();
   });
   $("pkRows").addEventListener("input", function (e) {
     var p = pkPdfs[pkOpen];

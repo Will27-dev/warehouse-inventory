@@ -4842,3 +4842,6 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .pfnotes p { margin: 0; color: var(--mute); }
 .profilebtn { position: relative; }
 .pfdot { position: absolute; top: 4px; right: 6px; width: 10px; height: 10px; border-radius: 50% !important; background: var(--acc1); box-shadow: 0 0 0 2px var(--tile); }
+
+/* Pick List: Add item on a line that is not in the item list (fills the form from the slip). */
+.pkrows .pknew, td .pknew { display: block; min-height: 44px; margin-top: 6px; padding: 0 14px; font-weight: 700; white-space: nowrap; }
