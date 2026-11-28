@@ -768,7 +768,7 @@
   $("homeBtn").onclick = function () {
     sideMenu(false);
     if (sess) homePage(true);
-    else $("topnav").children[0].click();
+    else $("topnav").children[1].click();
   };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
@@ -1473,12 +1473,13 @@
   function renderTop() {
     $("manageBtn").classList.toggle("on", !!st.manage);
     var nav = $("topnav");
-    if (nav.children.length !== TOPS.length)
-      nav.innerHTML = TOPS.map(function (x, i) {
+    if (nav.children.length !== TOPS.length + 1)
+      nav.innerHTML = '<button data-home>Home</button>' + TOPS.map(function (x, i) {
         return '<button data-top="' + i + '" title="Double-click to rename"></button>';
       }).join("");
+    nav.children[0].hidden = !sess;
     TOPS.forEach(function (x, i) {
-      var b = nav.children[i],
+      var b = nav.children[i + 1],
         on = i === 0 ? st.top == null && st.side == null && !st.manage : st.top === i;
       if (b.textContent !== oname(i)) b.textContent = oname(i);
       b.classList.toggle("on", on);
@@ -1488,7 +1489,8 @@
     if (st.top != null) $("topTitle").textContent = oname(st.top);
   }
   $("topnav").addEventListener("click", function (e) {
-    var b = e.target.closest("button");
+    if (e.target.closest("button[data-home]")) return homePage(true);
+    var b = e.target.closest("button[data-top]");
     if (!b) return;
     var i = +b.dataset.top;
     st.side = null;
@@ -1499,7 +1501,7 @@
     render();
   });
   $("topnav").addEventListener("dblclick", function (e) {
-    var b = e.target.closest("button");
+    var b = e.target.closest("button[data-top]");
     if (!b) return;
     var i = +b.dataset.top,
       v = prompt("Rename this option:", oname(i));
@@ -4525,9 +4527,22 @@
   function hmSet(el, h) {
     if (el._h !== h) el.innerHTML = el._h = h;
   }
+  function myName() {
+    return profOf(sess.email).nick || String(sess.name || sess.email).split(/\s+/)[0];
+  }
+  // After signing in: "Welcome, Name" for 3 seconds, then Home.
+  function welcome() {
+    $("wlName").textContent = myName();
+    $("welcome").hidden = false;
+    cover();
+    setTimeout(function () {
+      $("welcome").hidden = true;
+      homePage(!!sess);
+      if (sess) toast("Signed in as " + sess.email + ".");
+    }, 3000);
+  }
   function renderHome() {
-    var pr = profOf(sess.email),
-      nm = pr.nick || String(sess.name || sess.email).split(/\s+/)[0],
+    var nm = myName(),
       h = new Date().getHours(),
       l = hmItems();
     $("hmH").textContent = (h < 12 ? "Good morning, " : h < 17 ? "Good afternoon, " : "Good evening, ") + nm + ".";
@@ -4596,12 +4611,12 @@
     homePage(false);
     if (b.dataset.hmside) return $("tabs").querySelector('[data-side="' + b.dataset.hmside + '"]').click();
     if (b.dataset.hm === "7") $("manageBtn").click();
-    else $("topnav").children[+b.dataset.hm].click();
+    else $("topnav").children[+b.dataset.hm + 1].click();
   });
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
   // Guests get their own page (items and locations only) instead of the app.
   function cover() {
-    var up = !$("landing").hidden || !$("guest").hidden || !$("home").hidden;
+    var up = !$("landing").hidden || !$("guest").hidden || !$("home").hidden || !$("welcome").hidden;
     document.querySelector(".app").inert = up;
     document.querySelector(".gcw").inert = up;
     document.body.classList.toggle("onland", up);
@@ -4716,8 +4731,7 @@
     f.pw.value = "";
     landing(false);
     render();
-    homePage(true);
-    toast("Signed in as " + sess.email + ".");
+    welcome();
   }
   $("lgBody").addEventListener("submit", signInSubmit);
   $("ldForm").addEventListener("submit", signInSubmit);

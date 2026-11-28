@@ -4221,8 +4221,8 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 }
 
 /* Section tabs (Warehouse Item/Locations to Greens): road-sign face (Overpass, after Highway Gothic), more room between them */
-.topnav { gap: clamp(24px, 2.2vw, 48px); } /* 28px at 1280 wide, so Greens still fits with room to spare */
-.topnav button { font-family: "Overpass", var(--disp); font-size: 15px; font-weight: 600; letter-spacing: 0; } /* 15px: all 7 fit at 1280 wide */
+.topnav { gap: clamp(20px, 1.6vw, 48px); } /* 20px at 1280 wide, so Home through Greens all fit */
+.topnav button { font-family: "Overpass", var(--disp); font-size: 15px; font-weight: 600; letter-spacing: 0; } /* 15px: all 8 fit at 1280 wide */
 .topnav button.on { font-weight: 800; }
 @media (max-width: 640px) {
   .topnav { gap: 28px; }
@@ -4787,3 +4787,11 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .grgs button b { margin-left: 4px; font-variant-numeric: tabular-nums; }
 .grgs button[aria-pressed="true"] { background: var(--acc1); color: var(--on-acc); }
 .grgs button:not([aria-pressed="true"]):hover { color: var(--ink); }
+
+/* After signing in: a 3-second welcome before Home. */
+.welcome { position: fixed; inset: 0; z-index: 65; display: grid; place-content: center; justify-items: center; gap: 24px; padding: 16px; background: var(--head); color: var(--ink); text-align: center; }
+.welcome[hidden] { display: none; }
+.welcome .ldmark { width: 96px; height: 96px; }
+.welcome p { margin: 0; font-family: var(--disp); font-size: clamp(32px, 6vw, 64px); font-weight: 700; line-height: 1.1; animation: wlin 0.6s ease-out both; }
+@keyframes wlin { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .welcome p { animation: none; } }

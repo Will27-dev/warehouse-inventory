@@ -4235,8 +4235,8 @@ td.num .catid { display: block; font-size: 12px; font-weight: 500; letter-spacin
 }
 
 /* Section tabs (Warehouse Item/Locations to Greens): road-sign face (Overpass, after Highway Gothic), more room between them */
-.topnav { gap: clamp(24px, 2.2vw, 48px); } /* 28px at 1280 wide, so Greens still fits with room to spare */
-.topnav button { font-family: "Overpass", var(--disp); font-size: 15px; font-weight: 600; letter-spacing: 0; } /* 15px: all 7 fit at 1280 wide */
+.topnav { gap: clamp(20px, 1.6vw, 48px); } /* 20px at 1280 wide, so Home through Greens all fit */
+.topnav button { font-family: "Overpass", var(--disp); font-size: 15px; font-weight: 600; letter-spacing: 0; } /* 15px: all 8 fit at 1280 wide */
 .topnav button.on { font-weight: 800; }
 @media (max-width: 640px) {
   .topnav { gap: 28px; }
@@ -4801,6 +4801,14 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .grgs button b { margin-left: 4px; font-variant-numeric: tabular-nums; }
 .grgs button[aria-pressed="true"] { background: var(--acc1); color: var(--on-acc); }
 .grgs button:not([aria-pressed="true"]):hover { color: var(--ink); }
+
+/* After signing in: a 3-second welcome before Home. */
+.welcome { position: fixed; inset: 0; z-index: 65; display: grid; place-content: center; justify-items: center; gap: 24px; padding: 16px; background: var(--head); color: var(--ink); text-align: center; }
+.welcome[hidden] { display: none; }
+.welcome .ldmark { width: 96px; height: 96px; }
+.welcome p { margin: 0; font-family: var(--disp); font-size: clamp(32px, 6vw, 64px); font-weight: 700; line-height: 1.1; animation: wlin 0.6s ease-out both; }
+@keyframes wlin { from { opacity: 0; transform: translateY(12px); } }
+@media (prefers-reduced-motion: reduce) { .welcome p { animation: none; } }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -4872,6 +4880,10 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
       </dialog>
     </section>
     <!-- Home: the first screen after signing in -->
+    <div class="welcome" id="welcome" role="status" hidden>
+      <img class="ldmark" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8ZGVmcz48Y2xpcFBhdGggaWQ9ImMiPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQwIi8+PC9jbGlwUGF0aD48L2RlZnM+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDkiIGZpbGw9IiMwZjJhNWMiLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmZiIvPgogIDxnIGNsaXAtcGF0aD0idXJsKCNjKSIgc3Ryb2tlPSIjMGYyYTVjIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YyYTYyZSIgc3Ryb2tlPSJub25lIi8+CiAgICA8cGF0aCBkPSJNMCA4MEw1MCA5MEwxMDAgODBWMTAwSDB6IiBmaWxsPSIjMWE3ZmQ0IiBzdHJva2U9Im5vbmUiLz4KICAgIDxwYXRoIGQ9Ik0xNCA0OGgyMnYzMEgxNHpNNjQgNDhoMjJ2MzBINjR6IiBmaWxsPSIjMWE3ZmQ0Ii8+CiAgICA8cGF0aCBkPSJNMTkgNTN2MjBNMjQgNTN2MjBNMjkgNTN2MjBNNzEgNTN2MjBNNzYgNTN2MjBNODEgNTN2MjAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjYiLz4KICAgIDxwYXRoIGQ9Ik0zNCAzNkw1MCAyNEw2NiAzNlY2MEgzNHoiIGZpbGw9IiNmM2UzYzMiLz4KICAgIDxwYXRoIGQ9Ik01MCAyNEw2NiAzNlY2MEg1MHoiIGZpbGw9IiNlMmM5OWEiIHN0cm9rZT0ibm9uZSIvPgogICAgPHBhdGggZD0iTTM0IDM2TDUwIDI0TDY2IDM2VjYwSDM0eiIgZmlsbD0ibm9uZSIvPgogICAgPHBhdGggZD0iTTUwIDI5bDIuNiAyLjYtMi42IDIuNi0yLjYtMi42ek00NCAzNWwyLjYgMi42LTIuNiAyLjYtMi42LTIuNnpNNTYgMzVsMi42IDIuNi0yLjYgMi42LTIuNi0yLjZ6IiBmaWxsPSIjMGYyYTVjIiBzdHJva2U9Im5vbmUiLz4KICAgIDxwYXRoIGQ9Ik0zMCA4MFY1N0w1MCA0M0w3MCA1N1Y4MHoiIGZpbGw9IiNmM2UzYzMiLz4KICAgIDxwYXRoIGQ9Ik01MCA0M0w3MCA1N1Y4MEg1MHoiIGZpbGw9IiNlMmM5OWEiIHN0cm9rZT0ibm9uZSIvPgogICAgPHBhdGggZD0iTTMwIDgwVjU3TDUwIDQzTDcwIDU3VjgwIiBmaWxsPSJub25lIi8+CiAgICA8cGF0aCBkPSJNMjUgNTlMNTAgNDFMNzUgNTkiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPHJlY3QgeD0iMzgiIHk9IjYyIiB3aWR0aD0iMjQiIGhlaWdodD0iMTgiIGZpbGw9IiNmMmE2MmUiLz4KICAgIDxwYXRoIGQ9Ik0zOCA3MWgyNE01MCA2MnYxOCIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgIDxwYXRoIGQ9Ik02IDc3TDUwIDg2TDk0IDc3IiBmaWxsPSJub25lIiBzdHJva2Utd2lkdGg9IjUiLz4KICA8L2c+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBmMmE1YyIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KPC9zdmc+Cg==" alt="" />
+      <p>Welcome, <span id="wlName"></span></p>
+    </div>
     <section class="home" id="home" aria-labelledby="hmH" hidden>
       <header class="hmbar">
         <div class="ldlogo"><img class="ldmark" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAxMDAgMTAwIj4KICA8ZGVmcz48Y2xpcFBhdGggaWQ9ImMiPjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjQwIi8+PC9jbGlwUGF0aD48L2RlZnM+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDkiIGZpbGw9IiMwZjJhNWMiLz4KICA8Y2lyY2xlIGN4PSI1MCIgY3k9IjUwIiByPSI0NSIgZmlsbD0iI2ZmZiIvPgogIDxnIGNsaXAtcGF0aD0idXJsKCNjKSIgc3Ryb2tlPSIjMGYyYTVjIiBzdHJva2Utd2lkdGg9IjIuNSIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CiAgICA8cmVjdCB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgZmlsbD0iI2YyYTYyZSIgc3Ryb2tlPSJub25lIi8+CiAgICA8cGF0aCBkPSJNMCA4MEw1MCA5MEwxMDAgODBWMTAwSDB6IiBmaWxsPSIjMWE3ZmQ0IiBzdHJva2U9Im5vbmUiLz4KICAgIDxwYXRoIGQ9Ik0xNCA0OGgyMnYzMEgxNHpNNjQgNDhoMjJ2MzBINjR6IiBmaWxsPSIjMWE3ZmQ0Ii8+CiAgICA8cGF0aCBkPSJNMTkgNTN2MjBNMjQgNTN2MjBNMjkgNTN2MjBNNzEgNTN2MjBNNzYgNTN2MjBNODEgNTN2MjAiIHN0cm9rZT0iI2ZmZiIgc3Ryb2tlLXdpZHRoPSIxLjYiLz4KICAgIDxwYXRoIGQ9Ik0zNCAzNkw1MCAyNEw2NiAzNlY2MEgzNHoiIGZpbGw9IiNmM2UzYzMiLz4KICAgIDxwYXRoIGQ9Ik01MCAyNEw2NiAzNlY2MEg1MHoiIGZpbGw9IiNlMmM5OWEiIHN0cm9rZT0ibm9uZSIvPgogICAgPHBhdGggZD0iTTM0IDM2TDUwIDI0TDY2IDM2VjYwSDM0eiIgZmlsbD0ibm9uZSIvPgogICAgPHBhdGggZD0iTTUwIDI5bDIuNiAyLjYtMi42IDIuNi0yLjYtMi42ek00NCAzNWwyLjYgMi42LTIuNiAyLjYtMi42LTIuNnpNNTYgMzVsMi42IDIuNi0yLjYgMi42LTIuNi0yLjZ6IiBmaWxsPSIjMGYyYTVjIiBzdHJva2U9Im5vbmUiLz4KICAgIDxwYXRoIGQ9Ik0zMCA4MFY1N0w1MCA0M0w3MCA1N1Y4MHoiIGZpbGw9IiNmM2UzYzMiLz4KICAgIDxwYXRoIGQ9Ik01MCA0M0w3MCA1N1Y4MEg1MHoiIGZpbGw9IiNlMmM5OWEiIHN0cm9rZT0ibm9uZSIvPgogICAgPHBhdGggZD0iTTMwIDgwVjU3TDUwIDQzTDcwIDU3VjgwIiBmaWxsPSJub25lIi8+CiAgICA8cGF0aCBkPSJNMjUgNTlMNTAgNDFMNzUgNTkiIGZpbGw9Im5vbmUiIHN0cm9rZS13aWR0aD0iNCIvPgogICAgPHJlY3QgeD0iMzgiIHk9IjYyIiB3aWR0aD0iMjQiIGhlaWdodD0iMTgiIGZpbGw9IiNmMmE2MmUiLz4KICAgIDxwYXRoIGQ9Ik0zOCA3MWgyNE01MCA2MnYxOCIgc3Ryb2tlLXdpZHRoPSIxLjgiLz4KICAgIDxwYXRoIGQ9Ik02IDc3TDUwIDg2TDk0IDc3IiBmaWxsPSJub25lIiBzdHJva2Utd2lkdGg9IjUiLz4KICA8L2c+CiAgPGNpcmNsZSBjeD0iNTAiIGN5PSI1MCIgcj0iNDAiIGZpbGw9Im5vbmUiIHN0cm9rZT0iIzBmMmE1YyIgc3Ryb2tlLXdpZHRoPSIyLjUiLz4KPC9zdmc+Cg==" alt="" /><b>Granite City Steel</b></div>
@@ -45336,7 +45348,7 @@ var ZXING_Z = [
   $("homeBtn").onclick = function () {
     sideMenu(false);
     if (sess) homePage(true);
-    else $("topnav").children[0].click();
+    else $("topnav").children[1].click();
   };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
@@ -46041,12 +46053,13 @@ var ZXING_Z = [
   function renderTop() {
     $("manageBtn").classList.toggle("on", !!st.manage);
     var nav = $("topnav");
-    if (nav.children.length !== TOPS.length)
-      nav.innerHTML = TOPS.map(function (x, i) {
+    if (nav.children.length !== TOPS.length + 1)
+      nav.innerHTML = '<button data-home>Home</button>' + TOPS.map(function (x, i) {
         return '<button data-top="' + i + '" title="Double-click to rename"></button>';
       }).join("");
+    nav.children[0].hidden = !sess;
     TOPS.forEach(function (x, i) {
-      var b = nav.children[i],
+      var b = nav.children[i + 1],
         on = i === 0 ? st.top == null && st.side == null && !st.manage : st.top === i;
       if (b.textContent !== oname(i)) b.textContent = oname(i);
       b.classList.toggle("on", on);
@@ -46056,7 +46069,8 @@ var ZXING_Z = [
     if (st.top != null) $("topTitle").textContent = oname(st.top);
   }
   $("topnav").addEventListener("click", function (e) {
-    var b = e.target.closest("button");
+    if (e.target.closest("button[data-home]")) return homePage(true);
+    var b = e.target.closest("button[data-top]");
     if (!b) return;
     var i = +b.dataset.top;
     st.side = null;
@@ -46067,7 +46081,7 @@ var ZXING_Z = [
     render();
   });
   $("topnav").addEventListener("dblclick", function (e) {
-    var b = e.target.closest("button");
+    var b = e.target.closest("button[data-top]");
     if (!b) return;
     var i = +b.dataset.top,
       v = prompt("Rename this option:", oname(i));
@@ -49093,9 +49107,22 @@ var ZXING_Z = [
   function hmSet(el, h) {
     if (el._h !== h) el.innerHTML = el._h = h;
   }
+  function myName() {
+    return profOf(sess.email).nick || String(sess.name || sess.email).split(/\s+/)[0];
+  }
+  // After signing in: "Welcome, Name" for 3 seconds, then Home.
+  function welcome() {
+    $("wlName").textContent = myName();
+    $("welcome").hidden = false;
+    cover();
+    setTimeout(function () {
+      $("welcome").hidden = true;
+      homePage(!!sess);
+      if (sess) toast("Signed in as " + sess.email + ".");
+    }, 3000);
+  }
   function renderHome() {
-    var pr = profOf(sess.email),
-      nm = pr.nick || String(sess.name || sess.email).split(/\s+/)[0],
+    var nm = myName(),
       h = new Date().getHours(),
       l = hmItems();
     $("hmH").textContent = (h < 12 ? "Good morning, " : h < 17 ? "Good afternoon, " : "Good evening, ") + nm + ".";
@@ -49164,12 +49191,12 @@ var ZXING_Z = [
     homePage(false);
     if (b.dataset.hmside) return $("tabs").querySelector('[data-side="' + b.dataset.hmside + '"]').click();
     if (b.dataset.hm === "7") $("manageBtn").click();
-    else $("topnav").children[+b.dataset.hm].click();
+    else $("topnav").children[+b.dataset.hm + 1].click();
   });
   // Landing: shown on load to anyone not signed in, until they sign in or choose to browse.
   // Guests get their own page (items and locations only) instead of the app.
   function cover() {
-    var up = !$("landing").hidden || !$("guest").hidden || !$("home").hidden;
+    var up = !$("landing").hidden || !$("guest").hidden || !$("home").hidden || !$("welcome").hidden;
     document.querySelector(".app").inert = up;
     document.querySelector(".gcw").inert = up;
     document.body.classList.toggle("onland", up);
@@ -49284,8 +49311,7 @@ var ZXING_Z = [
     f.pw.value = "";
     landing(false);
     render();
-    homePage(true);
-    toast("Signed in as " + sess.email + ".");
+    welcome();
   }
   $("lgBody").addEventListener("submit", signInSubmit);
   $("ldForm").addEventListener("submit", signInSubmit);

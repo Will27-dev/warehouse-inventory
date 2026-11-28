@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128l" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128m" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -82,6 +82,10 @@
       </dialog>
     </section>
     <!-- Home: the first screen after signing in -->
+    <div class="welcome" id="welcome" role="status" hidden>
+      <img class="ldmark" src="img/logo.svg" alt="" />
+      <p>Welcome, <span id="wlName"></span></p>
+    </div>
     <section class="home" id="home" aria-labelledby="hmH" hidden>
       <header class="hmbar">
         <div class="ldlogo"><img class="ldmark" src="img/logo.svg" alt="" /><b>Granite City Steel</b></div>
@@ -1085,6 +1089,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128l"></script>
+    <script src="js/app.js?v=20261128m"></script>
   </body>
 </html>
