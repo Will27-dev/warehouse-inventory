@@ -3163,12 +3163,13 @@ dialog input, dialog textarea, dialog select { border:0; border-radius: 10px; mi
 /* =====================================================================
    Dark mode (switch in Manage; class "dark" on <html>, saved per browser)
    ===================================================================== */
+/* palette: Navy & Lavender (navy, light grey, orange; lavender second accent) */
 html.dark,
 html.dark * {
-  --panel:#213456; --ink:#E6ECEF; --mute:#9FB0C4; --line:#3D5580; --head:#2A4068;
-  --page:#17253D; --canvas:#17253D; --char:#0F1B30; --tile:#213456;
-  --acc1:#7C9BF5; --on-acc:#0B1526; --sel:#31508F; --hair: rgba(255, 255, 255, .12);
-  --warn: #FF9B80; /* readable on dark cards */
+  --panel:#354665; --ink:#D9DEE4; --mute:#BFC5CF; --line:#5E6C84; --head:#40506D;
+  --page:#263859; --canvas:#263859; --char:#19243A; --tile:#354665;
+  --acc1:#EE6C2C; --on-acc:#0F1624; --acc2:#9D8CD6; --sel:#565A8B; --hair: rgba(255, 255, 255, .12);
+  --warn: #F5A29B; /* readable on dark cards */
 }
 html.dark th { background:var(--head); color:var(--mute); }
 html.dark body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(4) { color:var(--mute); }
