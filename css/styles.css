@@ -4198,8 +4198,17 @@ html.dark { --pie1: #3987e5; --pie2: #d95926; --pie3: #199e70; --pie4: #c98500; 
 .grsec-del { --grc: var(--pie0); }
 
 /* Cat IDs: "Show Cat IDs" box above the item table, yellow triangle per item */
-.catsw { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
-.catsw input { width: 20px; height: 20px; margin: 0; accent-color: #f5b335; }
+.catsw { position: relative; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; margin-top: 4px; font-size: 14px; font-weight: 600; color: var(--ink); cursor: pointer; }
+.catsw input { position: absolute; opacity: 0; width: 1px; height: 1px; margin: 0; }
+/* Slide switch, same look as the Dark mode switch */
+.cstrack { position: relative; width: 54px; height: 30px; flex: none; border-radius: 999px; background: color-mix(in srgb, var(--mute) 35%, transparent); box-shadow: inset 0 0 0 1px var(--mute); transition: background-color .3s ease; }
+.cstrack::after { content: ""; position: absolute; top: 3px; left: 3px; width: 24px; height: 24px; border-radius: 999px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,.25); transition: transform .28s cubic-bezier(.4,0,.2,1); }
+/* Pill: beats the square-corners rule for every element */
+.catsw .cstrack, .catsw .cstrack::after { border-radius: 999px !important; }
+.catsw input:checked + .cstrack { background: var(--acc1); box-shadow: none; }
+.catsw input:checked + .cstrack::after { transform: translateX(24px); }
+.catsw input:focus-visible + .cstrack { outline: 2px solid var(--acc1); outline-offset: 3px; }
+@media (prefers-reduced-motion: reduce) { .cstrack, .cstrack::after { transition: none; } }
 .cattri { width: 44px; height: 44px; margin: -12px -12px -12px -6px; padding: 0; border: 0; background: none; box-shadow: none; vertical-align: middle; cursor: pointer; display: inline-grid; place-items: center; }
 .cattri::before { content: ""; border-left: 11px solid #f5b335; border-top: 7px solid transparent; border-bottom: 7px solid transparent; transition: transform .15s ease; }
 .cattri[aria-expanded="true"]::before { transform: rotate(90deg); }
