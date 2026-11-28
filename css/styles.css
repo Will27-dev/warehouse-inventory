@@ -3067,10 +3067,10 @@ main > section:not([hidden]),
   --char:#13233F;   /* sidebar, dark tags and buttons */
   --canvas:#E6ECEF; /* main page background */
   --tile:#F7F9FA;   /* controls on the canvas */
-  --acc1:#2546B8;   /* main accent: actions, selected tab */
+  --acc1:#C2410C;   /* main accent: actions, selected tab (deep orange: AA as text on white and under white text) */
   --acc2:#B33D17;   /* second accent: attention */
   --on-acc:#fff;    /* text on acc1 / acc2 */
-  --sel:#DCE4FA;    /* selected row / chip tint */
+  --sel:#FBE3D7;    /* selected row / chip tint */
 
   --acc1-hover: color-mix(in srgb, var(--acc1) 82%, #000);
   --acc1-soft: color-mix(in srgb, var(--acc1) 16%, #fff);
@@ -3078,8 +3078,8 @@ main > section:not([hidden]),
   --bg:var(--canvas); --panel:#F7F9FA; --ink:#13233F; --mute:#4A5A72; --line:#C9D3DC; --head:#fff;
   --side:var(--char); --side2:var(--char); --side-ink:var(--on-dark); --side-mute:var(--on-dark-mute);
   --btn:var(--char); --btn-ink:#fff; --tab:var(--char); --warn:#B33D17; --shadow:none;
-  --r-lg: 0;  /* Ledger is square */
-  --r-md: 0;
+  --r-lg: 20px;
+  --r-md: 16px;
   --hair: rgba(19, 35, 63, .14);
 }
 
@@ -3760,9 +3760,7 @@ html.dark { color-scheme: dark; }
 body { font-family: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif; letter-spacing: 0; padding: 0; }
 h1, h2, h3, h4, .brand b, .topnav button, dialog h2, .stat b, .pkname { font-family: var(--disp); }
 
-/* Square corners everywhere; pick-slip marks stay round */
-*, *::before, *::after { border-radius: 0 !important; }
-.pkmark { border-radius: 50% !important; }
+/* Corners: the Soft Bento rounding above applies (rounded look chosen over square). */
 
 /* Full-bleed shell */
 .app { box-shadow: none; min-height: 100vh; grid-template-columns: 280px minmax(0, 1fr); }
@@ -4887,3 +4885,20 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
   #panel tbody td.hist { justify-self: end; align-self: center; }
   #panel tbody td.hist button { margin-right: 0; }
 }
+
+/* =====================================================================
+   Rounded look (chosen over square): pill buttons and tags, rounded cards
+   and fields; cards stand off the panel in dark mode; 14px minimum for
+   supporting text on the items screen.
+   ===================================================================== */
+.panel, dialog { border-radius: 20px; }
+#panel tbody tr { border-radius: 16px; }
+.search, select, input:not([type=checkbox]):not([type=radio]), textarea, #panel tbody td.loc { border-radius: 12px; }
+button, .schip, .lowtag { border-radius: 999px; }
+#status, .catsw #lowN, .head .eyebrow, #statL { font-size: 14px; }
+#panel tbody td.desc { line-height: 1.55; font-size: 14px; }
+#panel .qty span { align-self: center; font-size: 15px; font-weight: 700; color: var(--mute); }
+html.dark #panel tbody tr { background: #44587D; box-shadow: inset 0 0 0 1px rgba(255,255,255,.14), 0 6px 18px rgba(8,14,30,.28); }
+.topnav { border-radius: 0; } /* underline menu: straight rule */
+#mRow .mseg { border-radius: 14px; }
+#mRow .mseg .mbtn { border-radius: 999px; }
