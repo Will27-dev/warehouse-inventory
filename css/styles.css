@@ -5020,3 +5020,68 @@ html.dark .slipsol { --bar: #5fd68c; }
 /* Quick solution form: all three fields share one surface, with readable placeholders. */
 .soladd select, .soladd input, .soladd textarea { border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
 .soladd ::placeholder, #slipDlg ::placeholder { color: var(--mute); opacity: 1; }
+
+/* ---- Warehouse drawings (SVG decor): Home rack, mill footer, floor tape, loaders, Put away conveyor, Delivery route, Greens sprout, toast icons ---- */
+.sv-ink { fill: var(--ink); } .sv-acc { fill: var(--acc1); } .sv-bg { fill: var(--canvas); } .sv-ok { fill: #15803D; }
+.sv-ink-s { stroke: var(--ink); } .sv-acc-s { stroke: var(--acc1); }
+main, .home { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M8 22V8h14M88 74v14H74' fill='none' stroke='%23C2410C' stroke-opacity='.3' stroke-width='3'/%3E%3Cpath d='M48 43v10M43 48h10' stroke='%2313233F' stroke-opacity='.18' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); }
+html.dark main, html.dark .home { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M8 22V8h14M88 74v14H74' fill='none' stroke='%23EE6C2C' stroke-opacity='.32' stroke-width='3'/%3E%3Cpath d='M48 43v10M43 48h10' stroke='%23D9DEE4' stroke-opacity='.16' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.hmleft { position: relative; isolation: isolate; }
+.hmrack { position: absolute; top: 4px; right: 0; width: min(100%, 440px); height: auto; z-index: -1; pointer-events: none; }
+.millfoot { margin-top: 40px; border-radius: var(--r-lg); overflow: hidden; }
+.home .millfoot { flex: none; margin: 24px 0 0; border-radius: 0; }
+.mfsky { display: block; width: 100%; height: 110px; }
+.mf-sky { fill: var(--char); }
+.mf-puff { fill: var(--line); transform-box: fill-box; transform-origin: center; animation: mfPuff 4.8s ease-out infinite; }
+.mf-p2 { animation-delay: -1.6s; } .mf-p3 { animation-delay: -3.2s; }
+@keyframes mfPuff { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(-40px) scale(1.8); opacity: 0; } }
+.mfbar { background: var(--char); color: #F7F9FA; padding: 14px 24px; font-size: 14px; }
+.gscan svg { display: block; width: min(100%, 220px); height: auto; margin: 4px 0 16px; }
+.gs-card { fill: #fff; } .gs-bars { fill: #13233F; }
+.gs-corner { stroke: var(--ink); animation: gsPulse 2.2s ease-in-out infinite alternate; }
+.gs-laser { animation: gsSweep 2.2s ease-in-out infinite alternate; }
+@keyframes gsSweep { to { transform: translateY(104px); } }
+@keyframes gsPulse { to { opacity: .55; } }
+.putconv svg { display: block; width: 100%; max-width: 640px; height: auto; margin: 8px auto 0; }
+.cv-boxr { fill: var(--sel); stroke: var(--ink); stroke-width: 3; }
+.cv-box { animation: cvRide 7.5s linear infinite; } .cv-b2 { animation-delay: -2.5s; } .cv-b3 { animation-delay: -5s; }
+.cv-belt { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+.cv-dash { stroke: var(--acc1); animation: cvBelt .9s linear infinite; }
+.cv-roll { fill: var(--ink); transform-box: fill-box; transform-origin: center; animation: cvSpin 1.2s linear infinite; }
+.cv-spoke { stroke: var(--panel); } .cv-leg { stroke: var(--ink); }
+@keyframes cvRide { to { transform: translateX(720px); } }
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+@keyframes cvBelt { to { stroke-dashoffset: -24; } }
+.dvroute svg { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 0 8px; }
+.dvr-path { stroke: var(--ink); opacity: .55; animation: dvDash 1.2s linear infinite; }
+@keyframes dvDash { to { stroke-dashoffset: -18; } }
+.grsprout { display: block; width: 96px; height: auto; margin: 0 auto 12px; --g: #15803D; }
+html.dark .grsprout { --g: #5FD68C; }
+.sp-stem { fill: none; stroke: var(--g); stroke-dasharray: 100; animation: spStem 1.4s ease-out both; }
+.sp-leaf { fill: var(--g); transform-box: fill-box; animation: spLeaf .5s ease-out both; }
+.sp-l { transform-origin: 100% 100%; animation-delay: .7s; } .sp-r { transform-origin: 0 100%; animation-delay: .95s; } .sp-t { transform-origin: 50% 100%; animation-delay: 1.2s; }
+@keyframes spStem { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes spLeaf { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.fkwrap { display: inline-flex; align-items: center; gap: 12px; }
+.fkload { width: 64px; height: auto; flex: none; }
+.fk-floor { stroke: var(--line); } .fk-road { stroke: var(--line); stroke-dasharray: 24 20; animation: fkRoad .8s linear infinite; }
+.fk-box { fill: var(--sel); stroke: var(--ink); stroke-width: 3; } .fk-hub { fill: var(--panel); }
+.fk-forks { animation: fkLift 2.4s ease-in-out infinite; }
+.fk-wheel { transform-box: fill-box; transform-origin: center; animation: cvSpin 1s linear infinite; }
+@keyframes fkLift { 0%, 15% { transform: translateY(0); } 50%, 65% { transform: translateY(-64px); } 100% { transform: translateY(0); } }
+@keyframes fkRoad { to { stroke-dashoffset: 44; } }
+.tsic { width: 28px; height: 28px; vertical-align: middle; margin: -4px 10px -4px 0; }
+.tb-box { animation: tbDrop .45s cubic-bezier(.3,.7,.4,1) both; }
+.tb-ok { transform-box: fill-box; transform-origin: center; animation: tbPop .35s ease-out .4s both; }
+@keyframes tbDrop { from { transform: translateY(-14px); opacity: 0; } }
+@keyframes tbPop { from { transform: scale(0); } 70% { transform: scale(1.15); } to { transform: scale(1); } }
+.ti-t { stroke-dasharray: 12; stroke-dashoffset: 12; animation: tiTick .25s ease-out forwards; }
+.ti-2 { animation-delay: .25s; } .ti-3 { animation-delay: .5s; }
+@keyframes tiTick { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mf-puff, .gs-corner, .gs-laser, .cv-box, .cv-dash, .cv-roll, .dvr-path, .sp-stem, .sp-leaf, .fk-forks, .fk-wheel, .fk-road, .tb-box, .tb-ok, .ti-t { animation: none; }
+  .ti-t, .sp-stem { stroke-dashoffset: 0; }
+  .mf-puff { opacity: .6; }
+  .gs-laser { transform: translateY(52px); }
+  .cv-box { transform: translateX(170px); } .cv-b2 { transform: translateX(370px); } .cv-b3 { transform: translateX(580px); }
+}

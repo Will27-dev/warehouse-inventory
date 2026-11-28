@@ -5034,6 +5034,71 @@ html.dark .slipsol { --bar: #5fd68c; }
 /* Quick solution form: all three fields share one surface, with readable placeholders. */
 .soladd select, .soladd input, .soladd textarea { border: 1px solid var(--line); background: var(--panel); color: var(--ink); }
 .soladd ::placeholder, #slipDlg ::placeholder { color: var(--mute); opacity: 1; }
+
+/* ---- Warehouse drawings (SVG decor): Home rack, mill footer, floor tape, loaders, Put away conveyor, Delivery route, Greens sprout, toast icons ---- */
+.sv-ink { fill: var(--ink); } .sv-acc { fill: var(--acc1); } .sv-bg { fill: var(--canvas); } .sv-ok { fill: #15803D; }
+.sv-ink-s { stroke: var(--ink); } .sv-acc-s { stroke: var(--acc1); }
+main, .home { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M8 22V8h14M88 74v14H74' fill='none' stroke='%23C2410C' stroke-opacity='.3' stroke-width='3'/%3E%3Cpath d='M48 43v10M43 48h10' stroke='%2313233F' stroke-opacity='.18' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); }
+html.dark main, html.dark .home { background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='96' height='96'%3E%3Cpath d='M8 22V8h14M88 74v14H74' fill='none' stroke='%23EE6C2C' stroke-opacity='.32' stroke-width='3'/%3E%3Cpath d='M48 43v10M43 48h10' stroke='%23D9DEE4' stroke-opacity='.16' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E"); }
+.hmleft { position: relative; isolation: isolate; }
+.hmrack { position: absolute; top: 4px; right: 0; width: min(100%, 440px); height: auto; z-index: -1; pointer-events: none; }
+.millfoot { margin-top: 40px; border-radius: var(--r-lg); overflow: hidden; }
+.home .millfoot { flex: none; margin: 24px 0 0; border-radius: 0; }
+.mfsky { display: block; width: 100%; height: 110px; }
+.mf-sky { fill: var(--char); }
+.mf-puff { fill: var(--line); transform-box: fill-box; transform-origin: center; animation: mfPuff 4.8s ease-out infinite; }
+.mf-p2 { animation-delay: -1.6s; } .mf-p3 { animation-delay: -3.2s; }
+@keyframes mfPuff { 0% { transform: translateY(0) scale(.6); opacity: 0; } 15% { opacity: .9; } 100% { transform: translateY(-40px) scale(1.8); opacity: 0; } }
+.mfbar { background: var(--char); color: #F7F9FA; padding: 14px 24px; font-size: 14px; }
+.gscan svg { display: block; width: min(100%, 220px); height: auto; margin: 4px 0 16px; }
+.gs-card { fill: #fff; } .gs-bars { fill: #13233F; }
+.gs-corner { stroke: var(--ink); animation: gsPulse 2.2s ease-in-out infinite alternate; }
+.gs-laser { animation: gsSweep 2.2s ease-in-out infinite alternate; }
+@keyframes gsSweep { to { transform: translateY(104px); } }
+@keyframes gsPulse { to { opacity: .55; } }
+.putconv svg { display: block; width: 100%; max-width: 640px; height: auto; margin: 8px auto 0; }
+.cv-boxr { fill: var(--sel); stroke: var(--ink); stroke-width: 3; }
+.cv-box { animation: cvRide 7.5s linear infinite; } .cv-b2 { animation-delay: -2.5s; } .cv-b3 { animation-delay: -5s; }
+.cv-belt { fill: var(--panel); stroke: var(--ink); stroke-width: 3; }
+.cv-dash { stroke: var(--acc1); animation: cvBelt .9s linear infinite; }
+.cv-roll { fill: var(--ink); transform-box: fill-box; transform-origin: center; animation: cvSpin 1.2s linear infinite; }
+.cv-spoke { stroke: var(--panel); } .cv-leg { stroke: var(--ink); }
+@keyframes cvRide { to { transform: translateX(720px); } }
+@keyframes cvSpin { to { transform: rotate(360deg); } }
+@keyframes cvBelt { to { stroke-dashoffset: -24; } }
+.dvroute svg { display: block; width: 100%; max-width: 720px; height: auto; margin: 0 0 8px; }
+.dvr-path { stroke: var(--ink); opacity: .55; animation: dvDash 1.2s linear infinite; }
+@keyframes dvDash { to { stroke-dashoffset: -18; } }
+.grsprout { display: block; width: 96px; height: auto; margin: 0 auto 12px; --g: #15803D; }
+html.dark .grsprout { --g: #5FD68C; }
+.sp-stem { fill: none; stroke: var(--g); stroke-dasharray: 100; animation: spStem 1.4s ease-out both; }
+.sp-leaf { fill: var(--g); transform-box: fill-box; animation: spLeaf .5s ease-out both; }
+.sp-l { transform-origin: 100% 100%; animation-delay: .7s; } .sp-r { transform-origin: 0 100%; animation-delay: .95s; } .sp-t { transform-origin: 50% 100%; animation-delay: 1.2s; }
+@keyframes spStem { from { stroke-dashoffset: 100; } to { stroke-dashoffset: 0; } }
+@keyframes spLeaf { 0% { transform: scale(0); } 70% { transform: scale(1.1); } 100% { transform: scale(1); } }
+.fkwrap { display: inline-flex; align-items: center; gap: 12px; }
+.fkload { width: 64px; height: auto; flex: none; }
+.fk-floor { stroke: var(--line); } .fk-road { stroke: var(--line); stroke-dasharray: 24 20; animation: fkRoad .8s linear infinite; }
+.fk-box { fill: var(--sel); stroke: var(--ink); stroke-width: 3; } .fk-hub { fill: var(--panel); }
+.fk-forks { animation: fkLift 2.4s ease-in-out infinite; }
+.fk-wheel { transform-box: fill-box; transform-origin: center; animation: cvSpin 1s linear infinite; }
+@keyframes fkLift { 0%, 15% { transform: translateY(0); } 50%, 65% { transform: translateY(-64px); } 100% { transform: translateY(0); } }
+@keyframes fkRoad { to { stroke-dashoffset: 44; } }
+.tsic { width: 28px; height: 28px; vertical-align: middle; margin: -4px 10px -4px 0; }
+.tb-box { animation: tbDrop .45s cubic-bezier(.3,.7,.4,1) both; }
+.tb-ok { transform-box: fill-box; transform-origin: center; animation: tbPop .35s ease-out .4s both; }
+@keyframes tbDrop { from { transform: translateY(-14px); opacity: 0; } }
+@keyframes tbPop { from { transform: scale(0); } 70% { transform: scale(1.15); } to { transform: scale(1); } }
+.ti-t { stroke-dasharray: 12; stroke-dashoffset: 12; animation: tiTick .25s ease-out forwards; }
+.ti-2 { animation-delay: .25s; } .ti-3 { animation-delay: .5s; }
+@keyframes tiTick { to { stroke-dashoffset: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .mf-puff, .gs-corner, .gs-laser, .cv-box, .cv-dash, .cv-roll, .dvr-path, .sp-stem, .sp-leaf, .fk-forks, .fk-wheel, .fk-road, .tb-box, .tb-ok, .ti-t { animation: none; }
+  .ti-t, .sp-stem { stroke-dashoffset: 0; }
+  .mf-puff { opacity: .6; }
+  .gs-laser { transform: translateY(52px); }
+  .cv-box { transform: translateX(170px); } .cv-b2 { transform: translateX(370px); } .cv-b3 { transform: translateX(580px); }
+}
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -5117,6 +5182,7 @@ html.dark .slipsol { --bar: #5fd68c; }
       </header>
       <div class="hmbody">
         <div class="hmleft">
+          <svg class="hmrack" viewBox="0 30 640 340" aria-hidden="true"><g fill="none" class="sv-ink-s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".28"><path d="M40 40V362M52 40V362M220 40V362M232 40V362M400 40V362M412 40V362M580 40V362M592 40V362"/><path d="M46 48V356M226 48V356M406 48V356M586 48V356" stroke-dasharray="2 9"/><path d="M52 60L40 90M52 120L40 150M232 60L220 90M232 120L220 150M412 60L400 90M412 120L400 150M592 60L580 90M592 120L580 150"/><path d="M60 130h150v8H60zM240 130h150v8H240zM420 130h150v8H420zM60 240h150v8H60zM420 240h150v8H420zM60 346h150v8H60zM240 346h150v8H240z"/><path d="M66 82h64v48H66zM98 82v16M136 96h54v34h-54zM163 96v12M246 70h48v60h-48zM270 70v16M300 90h80v40h-80zM340 90v14M430 98h40v32h-40zM450 98v10M476 76h86v54h-86zM519 76v18M66 196h70v44H66zM101 196v14M142 210h60v30h-60zM172 210v10M432 186h56v54h-56zM460 186v16M494 204h66v36h-66zM527 204v12M68 300h52v46H68zM94 300v14M126 292h76v54h-76zM164 292v16M250 306h60v40h-60zM280 306v12M316 296h66v50h-66zM349 296v14"/></g><path class="sv-acc-s" stroke-width="3" stroke-linecap="round" opacity=".45" d="M52 140H220M232 140H400M412 140H580M52 250H220M232 250H400M412 250H580M52 356H580"/></svg>
           <h1 id="hmH">Welcome back.</h1>
           <p class="hmsub">Pick a section to get started.</p>
           <div class="hmgrid" id="hmGrid"></div>
@@ -5125,6 +5191,7 @@ html.dark .slipsol { --bar: #5fd68c; }
         </div>
         <div class="hmright"><div class="hmcard" id="hmCard" aria-live="polite"></div></div>
       </div>
+      <footer class="millfoot"></footer>
     </section>
     <!-- Guest look-up: items and where they are, nothing else -->
     <section class="guest" id="guest" aria-labelledby="gH" hidden>
@@ -5140,6 +5207,7 @@ html.dark .slipsol { --bar: #5fd68c; }
           </div>
           <span class="gn" id="gN"></span>
         </div>
+        <div class="gscan" id="gScan"><svg viewBox="150 96 340 204" aria-hidden="true"><rect x="186" y="128" width="268" height="140" rx="12" class="gs-card"/><path class="gs-bars" d="M219.0 146h7.2v104h-7.2zM228.6 146h4.8v104h-4.8zM235.8 146h9.6v104h-9.6zM247.8 146h2.4v104h-2.4zM257.4 146h4.8v104h-4.8zM264.6 146h2.4v104h-2.4zM271.8 146h7.2v104h-7.2zM281.4 146h4.8v104h-4.8zM295.8 146h2.4v104h-2.4zM300.6 146h4.8v104h-4.8zM312.6 146h2.4v104h-2.4zM319.8 146h2.4v104h-2.4zM324.6 146h7.2v104h-7.2zM336.6 146h2.4v104h-2.4zM348.6 146h2.4v104h-2.4zM355.8 146h4.8v104h-4.8zM363.0 146h7.2v104h-7.2zM372.6 146h2.4v104h-2.4zM379.8 146h9.6v104h-9.6zM391.8 146h4.8v104h-4.8zM399.0 146h7.2v104h-7.2zM408.6 146h4.8v104h-4.8zM418.2 146h2.4v104h-2.4z"/><path class="gs-corner" d="M166 132v-24h24M474 132v-24h-24M166 264v24h24M474 264v24h-24" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><g class="gs-laser"><rect x="178" y="134" width="284" height="20" class="sv-acc" opacity=".14"/><rect x="178" y="142" width="284" height="3" rx="1.5" class="sv-acc"/></g></svg></div>
         <label class="gsearch"
           ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg
           ><input id="gq" type="search" placeholder="Search items" aria-label="Search items" autocomplete="off"
@@ -5266,6 +5334,7 @@ html.dark .slipsol { --bar: #5fd68c; }
                 <p id="topNote">Content for this section has not been set up yet.</p>
               </div>
             </div>
+            <div class="putconv" id="putConv" hidden><svg viewBox="30 160 580 162" aria-hidden="true"><defs><clipPath id="cvClip"><rect x="40" y="120" width="560" height="112"/></clipPath></defs><g clip-path="url(#cvClip)"><g class="cv-box"><rect class="cv-boxr" x="-70" y="182" width="50" height="50" rx="4"/><path class="sv-acc-s" d="M-45 182v18" stroke-width="5"/></g><g class="cv-box cv-b2"><rect class="cv-boxr" x="-64" y="194" width="40" height="38" rx="4"/><path class="sv-acc-s" d="M-44 194v14" stroke-width="5"/></g><g class="cv-box cv-b3"><rect class="cv-boxr" x="-80" y="170" width="62" height="62" rx="4"/><path class="sv-acc-s" d="M-49 170v20" stroke-width="5"/></g></g><rect class="cv-belt" x="40" y="232" width="560" height="28" rx="14"/><path class="cv-dash" d="M54 233.5H586" stroke-width="3" stroke-dasharray="10 14"/><g class="cv-roll"><circle cx="60" cy="246" r="7"/><path class="cv-spoke" d="M60 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="140" cy="246" r="7"/><path class="cv-spoke" d="M140 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="220" cy="246" r="7"/><path class="cv-spoke" d="M220 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="300" cy="246" r="7"/><path class="cv-spoke" d="M300 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="380" cy="246" r="7"/><path class="cv-spoke" d="M380 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="460" cy="246" r="7"/><path class="cv-spoke" d="M460 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="540" cy="246" r="7"/><path class="cv-spoke" d="M540 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="580" cy="246" r="7"/><path class="cv-spoke" d="M580 241v3" stroke-width="2"/></g><path class="cv-leg" d="M90 260l-14 54M550 260l14 54M60 316h60M520 316h60" stroke-width="4" stroke-linecap="round" fill="none"/></svg></div>
             <div class="empty" id="topEmpty">Nothing here yet.</div>
             <div class="mgpad" id="pkPdf" hidden>
               <div id="pkHome">
@@ -5309,6 +5378,7 @@ html.dark .slipsol { --bar: #5fd68c; }
               </div>
               <div class="stat"><b id="dvN">0</b><span>open trips</span></div>
             </div>
+            <div class="dvroute"><svg viewBox="0 0 640 112" aria-hidden="true"><path class="dvr-path" d="M40 92 C 150 92, 190 44, 320 54 S 500 104, 600 44" fill="none" stroke-width="3" stroke-dasharray="2 16" stroke-linecap="round"/><path class="sv-acc" d="M40 92c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24zM320 54c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24zM600 44c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24z"/><g class="sv-bg"><circle cx="40" cy="68" r="5"/><circle cx="320" cy="30" r="5"/><circle cx="600" cy="20" r="5"/></g><g class="dvtruck" data-rest="translate(320 54)"><animateMotion dur="7s" repeatCount="indefinite" rotate="auto" keyPoints="0;1;1" keyTimes="0;.9;1" calcMode="linear" path="M40 92 C 150 92, 190 44, 320 54 S 500 104, 600 44"/><rect x="-20" y="-14" width="26" height="18" rx="3" class="sv-acc"/><path d="M6 -9h7l6 6v8H6z" class="sv-ink"/><circle cx="-11" cy="6" r="4" class="sv-ink"/><circle cx="12" cy="6" r="4" class="sv-ink"/></g></svg></div>
             <div class="dvbody" id="dvBody"></div>
           </section>
           <section class="panel" id="loginPanel" hidden>
@@ -5723,6 +5793,7 @@ html.dark .slipsol { --bar: #5fd68c; }
             </div>
             <div id="sumBody"></div>
           </section>
+          <footer class="millfoot"></footer>
         </main>
       </div>
     </div>
@@ -45323,6 +45394,7 @@ var ZXING_Z = [
     $("pkPdf").hidden = !(tp === 2 && !onSide);
     $("topEmpty").hidden = !$("pkPdf").hidden;
     $("topNote").hidden = !$("pkPdf").hidden;
+    $("putConv").hidden = !(tp === 3 && !onSide);
     $("inspPanel").hidden = !onInsp;
     $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
@@ -46062,9 +46134,27 @@ var ZXING_Z = [
   function r4(n) {
     return Math.round(n * 10000) / 10000;
   }
+  // Warehouse drawings (SVG): the toast icons, the loading forklift and the mill skyline footer.
+  var TS_BOX = '<svg class="tsic" viewBox="0 0 40 40" aria-hidden="true"><g class="tb-box"><rect x="5" y="15" width="22" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><path class="sv-acc-s" d="M16 15v7" stroke-width="3.5"/></g><g class="tb-ok"><circle cx="29" cy="12" r="8" class="sv-ok"/><path d="M25.5 12l2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>',
+    TS_INSP = '<svg class="tsic" viewBox="0 0 40 40" aria-hidden="true"><rect x="9" y="7" width="22" height="29" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="15" y="4" width="10" height="6" rx="2" fill="currentColor"/><g fill="none" class="sv-acc-s" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="ti-t" d="M14 15l3 3 6-6"/><path class="ti-t ti-2" d="M14 22l3 3 6-6"/><path class="ti-t ti-3" d="M14 29l3 3 6-6"/></g></svg>',
+    FORK_SVG = '<svg class="fkload" viewBox="196 108 250 220" aria-hidden="true"><path class="fk-floor" d="M80 304H560" stroke-width="3" stroke-linecap="round"/><path class="fk-road" d="M80 318H560" stroke-width="3" stroke-linecap="round"/><rect x="214" y="236" width="24" height="44" rx="6" class="sv-ink"/><rect x="230" y="220" width="112" height="60" rx="10" class="sv-acc"/><path class="sv-ink-s" d="M252 220V150H312L334 220M244 150H318" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="344" y="118" width="10" height="172" rx="3" class="sv-ink"/><g class="fk-forks"><rect x="354" y="226" width="8" height="54" rx="2" class="sv-ink"/><rect x="354" y="276" width="72" height="6" rx="2" class="sv-ink"/><rect x="366" y="222" width="54" height="52" rx="4" class="fk-box"/><path class="sv-acc-s" d="M393 222v52" stroke-width="5"/></g><g class="fk-wheel"><circle cx="256" cy="284" r="20" class="sv-ink"/><circle cx="256" cy="284" r="7" class="fk-hub"/></g><g class="fk-wheel"><circle cx="324" cy="284" r="20" class="sv-ink"/><circle cx="324" cy="284" r="7" class="fk-hub"/></g></svg>';
+  function fkLoad(t) {
+    return '<span class="fkwrap">' + FORK_SVG + "<span>" + t + "</span></span>";
+  }
+  document.querySelectorAll(".millfoot").forEach(function (f) {
+    f.innerHTML = '<svg class="mfsky" viewBox="0 70 640 261" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><circle class="mf-puff" cx="177" cy="138" r="9"/><circle class="mf-puff mf-p2" cx="177" cy="138" r="9"/><circle class="mf-puff mf-p3" cx="177" cy="138" r="9"/><circle class="mf-puff" cx="438" cy="118" r="10"/><circle class="mf-puff mf-p2" cx="438" cy="118" r="10"/><circle class="mf-puff mf-p3" cx="438" cy="118" r="10"/><circle class="mf-puff" cx="586" cy="168" r="8"/><circle class="mf-puff mf-p2" cx="586" cy="168" r="8"/><circle class="mf-puff mf-p3" cx="586" cy="168" r="8"/><path class="mf-sky" d="M0 331V300H40V270H90V300H120V250H150V300H170V150H184V300H210V230L250 210V300H260V260L290 240V260L320 240V260L350 240V300H370V200Q392 178 414 200V300H430V130H446V300H470V265H540V240H560V300H580V180H592V300H640V331Z"/><path class="sv-acc" opacity=".9" d="M381 232h22v6h-22zM381 248h22v6h-22zM486 282h8v8h-8zM502 282h8v8h-8zM518 282h8v8h-8z"/></svg><div class="mfbar">Granite City Steel storeroom</div>';
+  });
+  // The delivery truck moves with SMIL, which CSS can't pause: park it at the middle stop instead.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+    document.querySelectorAll("animateMotion").forEach(function (a) {
+      a.parentNode.setAttribute("transform", a.parentNode.dataset.rest);
+      a.remove();
+    });
   function toast(msg) {
     var e = $("toast");
     e.textContent = msg;
+    var ic = /^Saved/.test(msg) ? TS_BOX : /^Inspection sheet finished/.test(msg) ? TS_INSP : "";
+    if (ic) e.insertAdjacentHTML("afterbegin", ic);
     e.hidden = false;
     clearTimeout(toastT);
     toastT = setTimeout(function () {
@@ -48217,7 +48307,7 @@ var ZXING_Z = [
       fnote = !cloudOn()
         ? ""
         : !dlf.at[a.id]
-          ? '<p class="dlfnote">Loading cloud photos…</p>'
+          ? '<p class="dlfnote">' + fkLoad("Loading cloud photos…") + "</p>"
           : !fl.length
             ? '<p class="dlfnote">No cloud photos for “' +
               esc(a.name) +
@@ -50106,6 +50196,7 @@ var ZXING_Z = [
       if (list.length < GMAX) list.push(i);
     });
     $("gN").textContent = n.toLocaleString() + (n === 1 ? " item" : " items");
+    $("gScan").hidden = !!terms.length;
     $("gRows").innerHTML = list
       .map(function (i) {
         return (
@@ -52437,7 +52528,7 @@ var ZXING_Z = [
       return r.g === grAllG;
     });
     var mat = !Object.keys(rows).length
-      ? '<div class="empty">No greens counted at any location yet. Select Create greens count to start.</div>'
+      ? '<div class="empty"><svg class="grsprout" viewBox="250 110 140 230" aria-hidden="true"><path class="sp-stem" d="M320 252C320 226 314 204 322 160" stroke-width="5" stroke-linecap="round"/><path class="sp-leaf sp-l" d="M320 214C300 210 286 196 282 176C302 178 316 192 320 214Z"/><path class="sp-leaf sp-r" d="M321 192C340 186 354 172 358 152C338 156 324 170 321 192Z"/><path class="sp-leaf sp-t" d="M322 162C314 150 314 136 322 124C330 136 330 150 322 162Z"/><rect x="262" y="246" width="116" height="18" rx="5" class="sv-acc"/><path d="M272 264h96l-12 66h-72z" class="sv-acc" opacity=".85"/></svg>No greens counted at any location yet. Select Create greens count to start.</div>'
       : sw + (rl.length
       ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
         sites
@@ -54582,7 +54673,7 @@ var ZXING_Z = [
             return x.id === id;
           });
     if (!f) return;
-    $("inspNote").textContent = "Loading “" + f.name + "”…";
+    $("inspNote").innerHTML = fkLoad("Loading “" + esc(f.name) + "”…");
     try {
       var blob = f.file ? await sbDownload("inspection-pdfs", TP_DIR + f.file) : await tpBlob(id);
       if (!blob) {

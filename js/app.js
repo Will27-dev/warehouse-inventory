@@ -429,6 +429,7 @@
     $("pkPdf").hidden = !(tp === 2 && !onSide);
     $("topEmpty").hidden = !$("pkPdf").hidden;
     $("topNote").hidden = !$("pkPdf").hidden;
+    $("putConv").hidden = !(tp === 3 && !onSide);
     $("inspPanel").hidden = !onInsp;
     $("dvPanel").hidden = !onDv;
     $("contactsPanel").hidden = !(onSide && st.side === 1);
@@ -1168,9 +1169,27 @@
   function r4(n) {
     return Math.round(n * 10000) / 10000;
   }
+  // Warehouse drawings (SVG): the toast icons, the loading forklift and the mill skyline footer.
+  var TS_BOX = '<svg class="tsic" viewBox="0 0 40 40" aria-hidden="true"><g class="tb-box"><rect x="5" y="15" width="22" height="20" rx="2" fill="none" stroke="currentColor" stroke-width="2.5"/><path class="sv-acc-s" d="M16 15v7" stroke-width="3.5"/></g><g class="tb-ok"><circle cx="29" cy="12" r="8" class="sv-ok"/><path d="M25.5 12l2.5 2.5 4.5-5" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></g></svg>',
+    TS_INSP = '<svg class="tsic" viewBox="0 0 40 40" aria-hidden="true"><rect x="9" y="7" width="22" height="29" rx="3" fill="none" stroke="currentColor" stroke-width="2.5"/><rect x="15" y="4" width="10" height="6" rx="2" fill="currentColor"/><g fill="none" class="sv-acc-s" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path class="ti-t" d="M14 15l3 3 6-6"/><path class="ti-t ti-2" d="M14 22l3 3 6-6"/><path class="ti-t ti-3" d="M14 29l3 3 6-6"/></g></svg>',
+    FORK_SVG = '<svg class="fkload" viewBox="196 108 250 220" aria-hidden="true"><path class="fk-floor" d="M80 304H560" stroke-width="3" stroke-linecap="round"/><path class="fk-road" d="M80 318H560" stroke-width="3" stroke-linecap="round"/><rect x="214" y="236" width="24" height="44" rx="6" class="sv-ink"/><rect x="230" y="220" width="112" height="60" rx="10" class="sv-acc"/><path class="sv-ink-s" d="M252 220V150H312L334 220M244 150H318" fill="none" stroke-width="6" stroke-linecap="round" stroke-linejoin="round"/><rect x="344" y="118" width="10" height="172" rx="3" class="sv-ink"/><g class="fk-forks"><rect x="354" y="226" width="8" height="54" rx="2" class="sv-ink"/><rect x="354" y="276" width="72" height="6" rx="2" class="sv-ink"/><rect x="366" y="222" width="54" height="52" rx="4" class="fk-box"/><path class="sv-acc-s" d="M393 222v52" stroke-width="5"/></g><g class="fk-wheel"><circle cx="256" cy="284" r="20" class="sv-ink"/><circle cx="256" cy="284" r="7" class="fk-hub"/></g><g class="fk-wheel"><circle cx="324" cy="284" r="20" class="sv-ink"/><circle cx="324" cy="284" r="7" class="fk-hub"/></g></svg>';
+  function fkLoad(t) {
+    return '<span class="fkwrap">' + FORK_SVG + "<span>" + t + "</span></span>";
+  }
+  document.querySelectorAll(".millfoot").forEach(function (f) {
+    f.innerHTML = '<svg class="mfsky" viewBox="0 70 640 261" preserveAspectRatio="xMaxYMax meet" aria-hidden="true"><circle class="mf-puff" cx="177" cy="138" r="9"/><circle class="mf-puff mf-p2" cx="177" cy="138" r="9"/><circle class="mf-puff mf-p3" cx="177" cy="138" r="9"/><circle class="mf-puff" cx="438" cy="118" r="10"/><circle class="mf-puff mf-p2" cx="438" cy="118" r="10"/><circle class="mf-puff mf-p3" cx="438" cy="118" r="10"/><circle class="mf-puff" cx="586" cy="168" r="8"/><circle class="mf-puff mf-p2" cx="586" cy="168" r="8"/><circle class="mf-puff mf-p3" cx="586" cy="168" r="8"/><path class="mf-sky" d="M0 331V300H40V270H90V300H120V250H150V300H170V150H184V300H210V230L250 210V300H260V260L290 240V260L320 240V260L350 240V300H370V200Q392 178 414 200V300H430V130H446V300H470V265H540V240H560V300H580V180H592V300H640V331Z"/><path class="sv-acc" opacity=".9" d="M381 232h22v6h-22zM381 248h22v6h-22zM486 282h8v8h-8zM502 282h8v8h-8zM518 282h8v8h-8z"/></svg><div class="mfbar">Granite City Steel storeroom</div>';
+  });
+  // The delivery truck moves with SMIL, which CSS can't pause: park it at the middle stop instead.
+  if (matchMedia("(prefers-reduced-motion: reduce)").matches)
+    document.querySelectorAll("animateMotion").forEach(function (a) {
+      a.parentNode.setAttribute("transform", a.parentNode.dataset.rest);
+      a.remove();
+    });
   function toast(msg) {
     var e = $("toast");
     e.textContent = msg;
+    var ic = /^Saved/.test(msg) ? TS_BOX : /^Inspection sheet finished/.test(msg) ? TS_INSP : "";
+    if (ic) e.insertAdjacentHTML("afterbegin", ic);
     e.hidden = false;
     clearTimeout(toastT);
     toastT = setTimeout(function () {
@@ -3323,7 +3342,7 @@
       fnote = !cloudOn()
         ? ""
         : !dlf.at[a.id]
-          ? '<p class="dlfnote">Loading cloud photos…</p>'
+          ? '<p class="dlfnote">' + fkLoad("Loading cloud photos…") + "</p>"
           : !fl.length
             ? '<p class="dlfnote">No cloud photos for “' +
               esc(a.name) +
@@ -5212,6 +5231,7 @@
       if (list.length < GMAX) list.push(i);
     });
     $("gN").textContent = n.toLocaleString() + (n === 1 ? " item" : " items");
+    $("gScan").hidden = !!terms.length;
     $("gRows").innerHTML = list
       .map(function (i) {
         return (
@@ -7543,7 +7563,7 @@
       return r.g === grAllG;
     });
     var mat = !Object.keys(rows).length
-      ? '<div class="empty">No greens counted at any location yet. Select Create greens count to start.</div>'
+      ? '<div class="empty"><svg class="grsprout" viewBox="250 110 140 230" aria-hidden="true"><path class="sp-stem" d="M320 252C320 226 314 204 322 160" stroke-width="5" stroke-linecap="round"/><path class="sp-leaf sp-l" d="M320 214C300 210 286 196 282 176C302 178 316 192 320 214Z"/><path class="sp-leaf sp-r" d="M321 192C340 186 354 172 358 152C338 156 324 170 321 192Z"/><path class="sp-leaf sp-t" d="M322 162C314 150 314 136 322 124C330 136 330 150 322 162Z"/><rect x="262" y="246" width="116" height="18" rx="5" class="sv-acc"/><path d="M272 264h96l-12 66h-72z" class="sv-acc" opacity=".85"/></svg>No greens counted at any location yet. Select Create greens count to start.</div>'
       : sw + (rl.length
       ? '<div class="tw"><table class="sumtbl gramat"><thead><tr><th>Size</th>' +
         sites
@@ -9688,7 +9708,7 @@
             return x.id === id;
           });
     if (!f) return;
-    $("inspNote").textContent = "Loading “" + f.name + "”…";
+    $("inspNote").innerHTML = fkLoad("Loading “" + esc(f.name) + "”…");
     try {
       var blob = f.file ? await sbDownload("inspection-pdfs", TP_DIR + f.file) : await tpBlob(id);
       if (!blob) {

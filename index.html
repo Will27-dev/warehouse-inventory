@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261129r" />
+    <link rel="stylesheet" href="css/styles.css?v=20261129t" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -94,6 +94,7 @@
       </header>
       <div class="hmbody">
         <div class="hmleft">
+          <svg class="hmrack" viewBox="0 30 640 340" aria-hidden="true"><g fill="none" class="sv-ink-s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".28"><path d="M40 40V362M52 40V362M220 40V362M232 40V362M400 40V362M412 40V362M580 40V362M592 40V362"/><path d="M46 48V356M226 48V356M406 48V356M586 48V356" stroke-dasharray="2 9"/><path d="M52 60L40 90M52 120L40 150M232 60L220 90M232 120L220 150M412 60L400 90M412 120L400 150M592 60L580 90M592 120L580 150"/><path d="M60 130h150v8H60zM240 130h150v8H240zM420 130h150v8H420zM60 240h150v8H60zM420 240h150v8H420zM60 346h150v8H60zM240 346h150v8H240z"/><path d="M66 82h64v48H66zM98 82v16M136 96h54v34h-54zM163 96v12M246 70h48v60h-48zM270 70v16M300 90h80v40h-80zM340 90v14M430 98h40v32h-40zM450 98v10M476 76h86v54h-86zM519 76v18M66 196h70v44H66zM101 196v14M142 210h60v30h-60zM172 210v10M432 186h56v54h-56zM460 186v16M494 204h66v36h-66zM527 204v12M68 300h52v46H68zM94 300v14M126 292h76v54h-76zM164 292v16M250 306h60v40h-60zM280 306v12M316 296h66v50h-66zM349 296v14"/></g><path class="sv-acc-s" stroke-width="3" stroke-linecap="round" opacity=".45" d="M52 140H220M232 140H400M412 140H580M52 250H220M232 250H400M412 250H580M52 356H580"/></svg>
           <h1 id="hmH">Welcome back.</h1>
           <p class="hmsub">Pick a section to get started.</p>
           <div class="hmgrid" id="hmGrid"></div>
@@ -102,6 +103,7 @@
         </div>
         <div class="hmright"><div class="hmcard" id="hmCard" aria-live="polite"></div></div>
       </div>
+      <footer class="millfoot"></footer>
     </section>
     <!-- Guest look-up: items and where they are, nothing else -->
     <section class="guest" id="guest" aria-labelledby="gH" hidden>
@@ -117,6 +119,7 @@
           </div>
           <span class="gn" id="gN"></span>
         </div>
+        <div class="gscan" id="gScan"><svg viewBox="150 96 340 204" aria-hidden="true"><rect x="186" y="128" width="268" height="140" rx="12" class="gs-card"/><path class="gs-bars" d="M219.0 146h7.2v104h-7.2zM228.6 146h4.8v104h-4.8zM235.8 146h9.6v104h-9.6zM247.8 146h2.4v104h-2.4zM257.4 146h4.8v104h-4.8zM264.6 146h2.4v104h-2.4zM271.8 146h7.2v104h-7.2zM281.4 146h4.8v104h-4.8zM295.8 146h2.4v104h-2.4zM300.6 146h4.8v104h-4.8zM312.6 146h2.4v104h-2.4zM319.8 146h2.4v104h-2.4zM324.6 146h7.2v104h-7.2zM336.6 146h2.4v104h-2.4zM348.6 146h2.4v104h-2.4zM355.8 146h4.8v104h-4.8zM363.0 146h7.2v104h-7.2zM372.6 146h2.4v104h-2.4zM379.8 146h9.6v104h-9.6zM391.8 146h4.8v104h-4.8zM399.0 146h7.2v104h-7.2zM408.6 146h4.8v104h-4.8zM418.2 146h2.4v104h-2.4z"/><path class="gs-corner" d="M166 132v-24h24M474 132v-24h-24M166 264v24h24M474 264v24h-24" fill="none" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"/><g class="gs-laser"><rect x="178" y="134" width="284" height="20" class="sv-acc" opacity=".14"/><rect x="178" y="142" width="284" height="3" rx="1.5" class="sv-acc"/></g></svg></div>
         <label class="gsearch"
           ><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7" /><path d="M20 20l-4-4" /></svg
           ><input id="gq" type="search" placeholder="Search items" aria-label="Search items" autocomplete="off"
@@ -243,6 +246,7 @@
                 <p id="topNote">Content for this section has not been set up yet.</p>
               </div>
             </div>
+            <div class="putconv" id="putConv" hidden><svg viewBox="30 160 580 162" aria-hidden="true"><defs><clipPath id="cvClip"><rect x="40" y="120" width="560" height="112"/></clipPath></defs><g clip-path="url(#cvClip)"><g class="cv-box"><rect class="cv-boxr" x="-70" y="182" width="50" height="50" rx="4"/><path class="sv-acc-s" d="M-45 182v18" stroke-width="5"/></g><g class="cv-box cv-b2"><rect class="cv-boxr" x="-64" y="194" width="40" height="38" rx="4"/><path class="sv-acc-s" d="M-44 194v14" stroke-width="5"/></g><g class="cv-box cv-b3"><rect class="cv-boxr" x="-80" y="170" width="62" height="62" rx="4"/><path class="sv-acc-s" d="M-49 170v20" stroke-width="5"/></g></g><rect class="cv-belt" x="40" y="232" width="560" height="28" rx="14"/><path class="cv-dash" d="M54 233.5H586" stroke-width="3" stroke-dasharray="10 14"/><g class="cv-roll"><circle cx="60" cy="246" r="7"/><path class="cv-spoke" d="M60 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="140" cy="246" r="7"/><path class="cv-spoke" d="M140 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="220" cy="246" r="7"/><path class="cv-spoke" d="M220 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="300" cy="246" r="7"/><path class="cv-spoke" d="M300 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="380" cy="246" r="7"/><path class="cv-spoke" d="M380 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="460" cy="246" r="7"/><path class="cv-spoke" d="M460 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="540" cy="246" r="7"/><path class="cv-spoke" d="M540 241v3" stroke-width="2"/></g><g class="cv-roll"><circle cx="580" cy="246" r="7"/><path class="cv-spoke" d="M580 241v3" stroke-width="2"/></g><path class="cv-leg" d="M90 260l-14 54M550 260l14 54M60 316h60M520 316h60" stroke-width="4" stroke-linecap="round" fill="none"/></svg></div>
             <div class="empty" id="topEmpty">Nothing here yet.</div>
             <div class="mgpad" id="pkPdf" hidden>
               <div id="pkHome">
@@ -286,6 +290,7 @@
               </div>
               <div class="stat"><b id="dvN">0</b><span>open trips</span></div>
             </div>
+            <div class="dvroute"><svg viewBox="0 0 640 112" aria-hidden="true"><path class="dvr-path" d="M40 92 C 150 92, 190 44, 320 54 S 500 104, 600 44" fill="none" stroke-width="3" stroke-dasharray="2 16" stroke-linecap="round"/><path class="sv-acc" d="M40 92c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24zM320 54c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24zM600 44c-9-11-14-18-14-24a14 14 0 0 1 28 0c0 6-5 13-14 24z"/><g class="sv-bg"><circle cx="40" cy="68" r="5"/><circle cx="320" cy="30" r="5"/><circle cx="600" cy="20" r="5"/></g><g class="dvtruck" data-rest="translate(320 54)"><animateMotion dur="7s" repeatCount="indefinite" rotate="auto" keyPoints="0;1;1" keyTimes="0;.9;1" calcMode="linear" path="M40 92 C 150 92, 190 44, 320 54 S 500 104, 600 44"/><rect x="-20" y="-14" width="26" height="18" rx="3" class="sv-acc"/><path d="M6 -9h7l6 6v8H6z" class="sv-ink"/><circle cx="-11" cy="6" r="4" class="sv-ink"/><circle cx="12" cy="6" r="4" class="sv-ink"/></g></svg></div>
             <div class="dvbody" id="dvBody"></div>
           </section>
           <section class="panel" id="loginPanel" hidden>
@@ -700,6 +705,7 @@
             </div>
             <div id="sumBody"></div>
           </section>
+          <footer class="millfoot"></footer>
         </main>
       </div>
     </div>
@@ -1178,6 +1184,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261129r"></script>
+    <script src="js/app.js?v=20261129t"></script>
   </body>
 </html>
