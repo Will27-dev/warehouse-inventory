@@ -181,111 +181,63 @@
       grand += c;
     });
     var h =
-      '<div class="mbtns"><button class="mbtn' +
-      (allSel ? " on" : "") +
-      '" data-sel="a" style="--oc:#2f7fd1" aria-pressed="' +
-      allSel +
-      '">All Locations<span class="c">' +
-      grand.toLocaleString() +
-      "</span></button>" +
-      order
-        .map(function (g) {
-          var tot = 0;
-          TABS.forEach(function (t, i) {
-            if (t.g === g) tot += m.counts[i];
-          });
-          return (
-            '<button class="mbtn' +
-            (g === gCur ? " on" : "") +
-            '" data-sel="g' +
-            g +
-            '" style="--oc:' +
-            GROUPS[g].c +
-            '" aria-pressed="' +
-            (g === gCur) +
-            '">' +
-            esc(gname(g)) +
-            '<span class="c">' +
-            tot.toLocaleString() +
-            "</span></button>"
-          );
-        })
-        .join("") +
-      "</div>";
-    if (allSel) {
-      h +=
-        '<div class="schips" aria-label="All sub-tabs"><button class="schip on" data-sel="a" style="--c:#2f7fd1">All sub-tabs</button>';
-      order.forEach(function (g) {
-        TABS.forEach(function (t, i) {
-          if (t.g !== g) return;
-          h +=
-            '<button class="schip" data-sel="t' +
-            t.id +
-            '" style="--c:' +
-            t.c +
-            '"><i class="dot"></i>' +
-            esc(tname(i)) +
-            '<span class="c">' +
-            m.counts[i].toLocaleString() +
-            "</span></button>";
-        });
-      });
-      h += "</div>";
-    } else if (gCur >= 0 && GROUPS[gCur]) {
-      h +=
-        '<div class="schips" aria-label="Sub-tabs of ' +
-        esc(gname(gCur)) +
-        '"><button class="schip' +
-        (sel === "g" + gCur ? " on" : "") +
-        '" data-sel="g' +
-        gCur +
-        '" style="--c:' +
-        GROUPS[gCur].c +
-        '">All ' +
-        esc(gname(gCur)) +
-        "</button>";
-      // Inside a master tab, drop its name from the sub-tab chips ("Warehouse 1 Bin Floor 1" -> "Bin Floor 1").
-      var gl = gname(gCur).toLowerCase();
+      '<div class="msel"><div class="mbtns mseg" role="group" aria-label="Master tabs"><button class="mbtn' +
+      (allSel ? " on" : "") + '" data-sel="a" aria-pressed="' + allSel + '">All<span class="c">' + grand.toLocaleString() + "</span></button>" +
+      order.map(function (g) {
+        var tot = 0;
+        TABS.forEach(function (t, i) { if (t.g === g) tot += m.counts[i]; });
+        return '<button class="mbtn' + (g === gCur ? " on" : "") + '" data-sel="g' + g + '" aria-pressed="' + (g === gCur) + '">' +
+          esc(gname(g)) + '<span class="c">' + tot.toLocaleString() + "</span></button>";
+      }).join("") + "</div>";
+    // One menu for the sub-tabs: those of the picked master, or all of them grouped by master.
+    var o = allSel ? '<option value="a" selected>All sub-tabs</option>' : "";
+    order.forEach(function (g) {
+      if (!allSel && g !== gCur) return;
+      // Inside a master, drop its name from the sub-tab ("Warehouse 1 Bin Floor 1" -> "Bin Floor 1").
+      var gl = gname(g).toLowerCase();
+      o += allSel ? '<optgroup label="' + esc(gname(g)) + '">' : '<option value="g' + g + '"' + (sel === "g" + g ? " selected" : "") + ">All of " + esc(gname(g)) + "</option>";
       TABS.forEach(function (t, i) {
-        if (t.g !== gCur) return;
-        var nm = tname(i),
-          sh = nm.toLowerCase().indexOf(gl) === 0 ? nm.slice(gl.length).replace(/^[\s,.:–-]+/, "") : "";
-        h +=
-          '<button class="schip' +
-          (sel === "t" + t.id ? " on" : "") +
-          '" data-sel="t' +
-          t.id +
-          '" style="--c:' +
-          t.c +
-          '" title="' +
-          esc(nm) +
-          '"><i class="dot"></i>' +
-          esc(sh || nm) +
-          '<span class="c">' +
-          m.counts[i].toLocaleString() +
-          "</span></button>";
+        if (t.g !== g) return;
+        var nm = tname(i), sh = nm.toLowerCase().indexOf(gl) === 0 ? nm.slice(gl.length).replace(/^[\s,.:–-]+/, "") : "";
+        o += '<option value="t' + t.id + '"' + (sel === "t" + t.id ? " selected" : "") + ">" + esc(sh || nm) + " (" + m.counts[i].toLocaleString() + ")</option>";
       });
-      h += '<button class="schip add" data-add="' + gCur + '">+ Add sub-tab</button></div>';
-    }
+      if (allSel) o += "</optgroup>";
+    });
+    if (!allSel && gCur >= 0) o += '<option value="add' + gCur + '">+ Add sub-tab</option>';
+    h += '<label class="subsel">Sub-tab<select id="subSel">' + o + "</select></label></div>";
+    var f = document.activeElement && document.activeElement.id === "subSel";
     $("mRow").innerHTML = h;
+    if (f) $("subSel").focus();
+    // Phones: scroll the master bar so the picked one shows.
+    var on = $("mRow").querySelector(".mseg .on");
+    if (on) on.parentNode.scrollLeft = on.offsetLeft - 16;
   }
   $("mRow").addEventListener("click", function (e) {
     var b = e.target.closest("button");
     if (!b) return;
-    if (b.dataset.add !== undefined) {
-      if (!can("tabs")) {
-        deny("add or remove tabs");
-        return;
-      }
-      openSub(+b.dataset.add);
-      return;
-    }
     var s = b.dataset.sel;
     if (!s) return;
     st.top = null;
     st.side = null;
     st.sel = s;
     st.lastSel = s;
+    shown = PAGE;
+    save();
+    render();
+  });
+  // Sub-tab menu: pick a sub-tab, or "+ Add sub-tab".
+  $("mRow").addEventListener("change", function (e) {
+    var v = e.target.value;
+    if (e.target.id !== "subSel") return;
+    if (v.indexOf("add") === 0) {
+      render();
+      if (!can("tabs")) return deny("add or remove tabs");
+      return openSub(+v.slice(3));
+    }
+    st.top = null;
+    st.side = null;
+    st.sel = v;
+    st.lastSel = v;
     shown = PAGE;
     save();
     render();

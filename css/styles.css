@@ -4796,3 +4796,14 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .welcome p { margin: 0; font-family: var(--disp); font-size: clamp(32px, 6vw, 64px); font-weight: 700; line-height: 1.1; animation: wlin 0.6s ease-out both; }
 @keyframes wlin { from { opacity: 0; transform: translateY(12px); } }
 @media (prefers-reduced-motion: reduce) { .welcome p { animation: none; } }
+
+/* Items screen: masters as one joined bar, sub-tabs in one menu beside it. */
+#mRow .msel { display: flex; flex-wrap: wrap; gap: 12px 16px; align-items: center; margin-bottom: 16px; }
+#mRow .mseg { position: relative; display: inline-flex; gap: 0; padding: 0; max-width: 100%; overflow-x: auto; border: 2px solid var(--line); background: var(--panel); }
+#mRow .mseg .mbtn { flex: none; min-height: 44px; padding: 0 18px; border: 0; border-radius: 0; background: none; color: var(--ink); font-size: 15px; transform: none; box-shadow: none; }
+#mRow .mseg .mbtn + .mbtn { border-left: 1px solid var(--line); }
+#mRow .mseg .mbtn:hover { background: var(--head); }
+#mRow .mseg .mbtn.on { background: var(--acc1); color: var(--on-acc); }
+#mRow .subsel { display: inline-flex; align-items: center; gap: 10px; color: var(--mute); font-weight: 600; }
+#mRow .subsel select { min-height: 44px; min-width: 260px; padding: 0 12px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-weight: 600; }
+@media (max-width: 700px) { #mRow .mseg { width: 100%; } #mRow .subsel { width: 100%; } #mRow .subsel select { flex: 1; min-width: 0; } }
