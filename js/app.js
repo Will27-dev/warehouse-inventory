@@ -10508,6 +10508,9 @@
     authKeep(null);
     setSess(null);
     st.manage = false;
+    // Straight back to the first screen.
+    homePage(false);
+    landing(true);
   }
 
   /* ---------- People ---------- */
