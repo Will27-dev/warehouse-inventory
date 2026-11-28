@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261129o" />
+    <link rel="stylesheet" href="css/styles.css?v=20261129q" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -527,10 +527,8 @@
               </div>
             </div>
             <div class="inhome" id="inHome">
-              <div class="dd" id="inDD">
-                <button class="redbtn" id="inCreate">Create Inspection Sheet</button>
-                <div class="ddmenu" id="inMenu" hidden></div>
-              </div>
+              <button class="redbtn" data-insp="fork">Forklift Inspection Sheet</button>
+              <button class="redbtn" data-insp="truck">Truck Inspection Sheet</button>
             </div>
             <div id="inWork" hidden>
               <div class="inbar">
@@ -1180,6 +1178,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261129o"></script>
+    <script src="js/app.js?v=20261129q"></script>
   </body>
 </html>

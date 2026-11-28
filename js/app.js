@@ -141,31 +141,18 @@
       (i === 3 ? (inspKey() === "s3" ? "Inspection Sheet" : "Option 4") : SIDES[i])
     );
   }
-  // The two inspection sheets, shown under Inspection Sheet in the sidebar and on Home.
-  var INSP_SUBS = [
-    ["fork", "Forklift Inspection Sheet"],
-    ["truck", "Truck Inspection Sheet"],
-  ];
   function renderTabs(m) {
     var box = $("tabs");
-    if (!box.querySelector(".subtabs"))
+    if (box.children.length !== SIDES.length)
       box.innerHTML = SIDES.map(function (x, i) {
         return (
           '<button role="tab" data-side="' +
           i +
-          '" style="--c:#f5b335" title="Double-click to rename"><i class="dot"></i><span class="lb"></span></button>' +
-          (i === 3
-            ? '<div class="subtabs">' +
-              INSP_SUBS.map(function (s) {
-                return '<button type="button" data-insp="' + s[0] + '">' + s[1] + "</button>";
-              }).join("") +
-              "</div>"
-            : "")
+          '" style="--c:#f5b335" title="Double-click to rename"><i class="dot"></i><span class="lb"></span></button>'
         );
       }).join("");
-    box.querySelector(".subtabs").hidden = inspKey() !== "s3";
     SIDES.forEach(function (x, i) {
-      var b = box.querySelector('[data-side="' + i + '"]'),
+      var b = box.children[i],
         lb = b.querySelector(".lb");
       if (lb.textContent !== sname(i)) lb.textContent = sname(i);
       b.setAttribute("aria-selected", String(st.side === i));
@@ -757,7 +744,6 @@
   };
   $("tabs").addEventListener("click", function (e) {
     var b = e.target.closest("button");
-    if (b && b.dataset.insp) return inspGo(b.dataset.insp);
     if (!b || b.dataset.side === undefined) return;
     sideMenu(false);
     st.side = +b.dataset.side;
@@ -5116,12 +5102,7 @@
       .join(""));
     hmSet($("hmSide"), SIDES.map(function (x, i) {
       return (
-        '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>' +
-        (i === 3 && inspKey() === "s3"
-          ? INSP_SUBS.map(function (s) {
-              return '<li class="hminsp"><button type="button" data-hminsp="' + s[0] + '"><span>' + s[1] + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>';
-            }).join("")
-          : "")
+        '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>'
       );
     }).join("") +
       // Low stock: straight to the items at or below their low stock level.
@@ -5181,11 +5162,6 @@
       $("q").value = "";
       homePage(false);
       return $("topnav").children[1].click();
-    }
-    var hi = e.target.closest("button[data-hminsp]");
-    if (hi) {
-      homePage(false);
-      return inspGo(hi.dataset.hminsp);
     }
     var b = e.target.closest("button[data-hm], button[data-hmside], #hmProf");
     if (!b) return;
@@ -6813,7 +6789,6 @@
       tpCloudErr = x instanceof TypeError ? "offline" : x.message;
     }
     renderTemplates();
-    if (inMenuOn) renderInsp();
   }
   // Per-device settings for a cloud template (page turn, typed question text), kept in st.tplSet by
   // name. The first time, they start from a template of the same name saved on this device.
@@ -8409,7 +8384,6 @@
   }
   var INSC = 2,
     ins = null,
-    inMenuOn = false,
     pdfjsP = null,
     shUrls = [],
     shRec = null;
@@ -9673,61 +9647,29 @@
       key.charAt(0) === "s" ? sname(+key.slice(1)) : oname(+key.slice(1));
     $("inWork").hidden = !ins;
     $("inHome").hidden = !!ins;
-    $("inMenu").hidden = !inMenuOn || !!ins;
     $("inspNote").textContent = ins
       ? "Answer every question, then select Finish."
       : sess
-        ? "Start a new inspection sheet from the template library."
+        ? "Choose the sheet you need."
         : "Sign in to create an inspection sheet.";
-    var tpls = inspTpls();
-    if (inMenuOn && !ins)
-      $("inMenu").innerHTML =
-        tpls.length
-          ? tpls
-              .map(function (cf) {
-                var f = tpCloudRef(cf);
-                return (
-                  '<button class="ddopt" data-tpl="' +
-                  esc(f.id) +
-                  '"><span>' +
-                  esc(f.name) +
-                  "</span>" +
-                  (f.note ? '<span class="c">' + esc(f.note) + "</span>" : "") +
-                  "</button>"
-                );
-              })
-              .join("")
-          : '<div class="xn">' +
-            (tpCloudErr === "offline"
-              ? "Offline: templates load when you're back online."
-              : tpCloudErr
-                ? "Couldn't load the templates: " + esc(tpCloudErr)
-                : !tpCloud
-                  ? "Loading templates…"
-                  : "GCW.TRUCK and GCW.FORK aren't uploaded yet. A manager can upload them under Manage → Templates.") +
-            "</div>";
   }
+  // The Forklift / Truck buttons: start that sheet from its cloud template (GCW.FORK / GCW.TRUCK).
   async function inspGo(kind) {
-    $("tabs").querySelector('[data-side="3"]').click();
     if (!sess) return toast("Sign in first so your name can be filled in on the sheet.");
-    if (ins) return toast("Finish the sheet you've started, or select Cancel, first.");
-    if (!tpCloud) await tpCloudScan();
-    var cf = inspTpls().find(function (c) {
-      return kind === "fork" ? /fork/i.test(c.name) : /truck/i.test(c.name);
+    await tpCloudScan(); // a fresh list each time
+    var cf = (tpCloud || []).find(function (c) {
+      var n = c.name.replace(/\.pdf$/i, "").trim();
+      return kind === "fork" ? /^gcw\.?\s*fork(lift)?$/i.test(n) : /^gcw\.?\s*truck$/i.test(n);
     });
     if (!cf)
       return toast(
         tpCloudErr === "offline"
           ? "Offline: the inspection sheets load when you're back online."
-          : "GCW." + kind.toUpperCase() + " isn't uploaded yet. A manager can upload it under Manage → Templates."
+          : tpCloudErr
+            ? "Couldn't load the inspection sheets: " + tpCloudErr
+            : "GCW." + kind.toUpperCase() + " isn't uploaded yet. A manager can upload it under Manage → Templates."
       );
     startInsp(tpCloudRef(cf).id);
-  }
-  // Only the inspection forms (other templates, like GCW.GREENS, are for other tabs).
-  function inspTpls() {
-    return (tpCloud || []).filter(function (cf) {
-      return /^gcw\.?\s*(truck|fork(lift)?)$/i.test(cf.name.replace(/\.pdf$/i, "").trim());
-    });
   }
   function opDefault() {
     return sess ? sess.name || sess.email : "";
@@ -9884,29 +9826,9 @@
       toast("That sheet could not be opened: " + msg.slice(0, 70));
     }
   }
-  $("inCreate").addEventListener("click", function (e) {
-    e.stopPropagation();
-    if (!sess) {
-      toast("Sign in first so your name can be filled in on the sheet.");
-      return;
-    }
-    inMenuOn = !inMenuOn;
-    if (inMenuOn) tpCloudScan(); // fresh list from the cloud each time the menu opens
-    renderInsp();
-  });
-  $("inMenu").addEventListener("click", function (e) {
-    e.stopPropagation();
-    var b = e.target.closest("button[data-tpl]");
-    if (!b) return;
-    inMenuOn = false;
-    renderInsp();
-    startInsp(b.dataset.tpl);
-  });
-  document.addEventListener("click", function () {
-    if (inMenuOn) {
-      inMenuOn = false;
-      renderInsp();
-    }
+  $("inHome").addEventListener("click", function (e) {
+    var b = e.target.closest("button[data-insp]");
+    if (b) inspGo(b.dataset.insp);
   });
   $("inQs").addEventListener("click", function (e) {
     var li = e.target.closest("li.inq");
