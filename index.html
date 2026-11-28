@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261129t" />
+    <link rel="stylesheet" href="css/styles.css?v=20261129u" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -707,6 +707,11 @@
           </section>
           <footer class="millfoot"></footer>
         </main>
+        <aside class="rail" id="rail" aria-label="Recent activity and tips" hidden>
+          <section class="railcard"><h2>Recent activity</h2><ul id="railAct"></ul></section>
+          <section class="railcard railtips"><h2>Tips for this page</h2><ul id="railTips"></ul></section>
+          <svg class="railrack" viewBox="0 0 220 360" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g fill="none" class="sv-ink-s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".35"><path d="M20 10V354M30 10V354M190 10V354M200 10V354M18 10h14M188 10h14"/><path d="M25 18V348M195 18V348" stroke-dasharray="2 9"/><path d="M30 30L20 60M30 90L20 120M30 150L20 180M30 210L20 240M30 270L20 300M200 30L190 60M200 90L190 120M200 150L190 180M200 210L190 240M200 270L190 300"/><path d="M40 110h140v8H40zM40 226h140v8H40zM40 342h140v8H40z"/><path d="M46 62h60v48H46zM76 62v14M112 76h62v34h-62zM143 76v12M48 170h78v56H48zM87 170v16M132 188h44v38h-44zM154 188v12M46 292h52v50H46zM72 292v14M104 280h72v62h-72zM140 280v18"/><path d="M0 356H220"/></g><path class="sv-acc-s" stroke-width="3" stroke-linecap="round" opacity=".55" d="M30 120H190M30 236H190M30 352H190"/></svg>
+        </aside>
       </div>
     </div>
 
@@ -1184,6 +1189,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261129t"></script>
+    <script src="js/app.js?v=20261129u"></script>
   </body>
 </html>

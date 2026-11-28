@@ -401,6 +401,41 @@
   /* =====================================================================
      Warehouse Item/Locations page: item table, search, quantities, transfers
      ===================================================================== */
+  // Wide screens: a right-hand panel with the last 3 things done (everyone's for managers, your own otherwise) and 3 tips for the page.
+  var RAIL_TIPS = [
+    ["Search by item number, description or locator. Add more words to narrow the list.", "Turn on Low stock only to see what's running low.", "Select Transfer to move items between locations."],
+    ["Type in the search bar, or choose a location from the menu, to list items.", "Select an item in the list first, then choose Create EWO.", "Add the requester and where the part goes, then print the GCW.EWO sheet."],
+    ["Drop pick slip PDFs on the page, or select Choose PDFs.", "Work through the slip line by line, marking what's picked and flagging anything short.", "Pick slips stay only until you close or reload the page, so submit before you leave."],
+    ["Put Away is still being set up.", "To add new stock for now, go to Warehouse Item/Locations and select Add item.", "To move stock between locations, select Transfer on Warehouse Item/Locations."],
+    ["Select Create new manifest to start a trip, then scan each box onto it.", "Select Done Loading once every box is on the truck.", "Select Submit manifest to send a fully delivered trip to Manage."],
+    ["Choose a date, then select Create daily summary.", "It lists each person's pick lists, put aways, deliveries and Greens moves for that day.", "Pick an earlier date to look back at a past shift."],
+    ["Select a location to see it by size and count it.", "Select Save for later to finish a count another time, then Continue to pick it up.", "Transfers saved for later wait under Transferable until someone approves them."],
+  ];
+  function renderRail(k) {
+    $("rail").hidden = !(k >= 0 && RAIL_TIPS[k]);
+    if ($("rail").hidden) return;
+    var mgr = isMgr(),
+      me = curEmail(),
+      acts = (st.audit || [])
+        .filter(function (e) {
+          return e.text && (mgr || e.by === me);
+        })
+        .slice(-3)
+        .reverse();
+    $("railAct").innerHTML = acts.length
+      ? acts
+          .map(function (e) {
+            var when = new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+            return "<li>" + esc(e.text) + "<small>" + (mgr ? esc(whoName(e.by)) + ", " : "") + esc(when) + "</small></li>";
+          })
+          .join("")
+      : '<li class="m">Nothing yet. What you do shows up here.</li>';
+    $("railTips").innerHTML = RAIL_TIPS[k]
+      .map(function (t) {
+        return "<li>" + esc(t) + "</li>";
+      })
+      .join("");
+  }
   function render() {
     if (!$("guest").hidden) renderGuest(); // item data can arrive after the guest page opens
     if (st.top === 6 && !can("greens")) st.top = null;
@@ -464,6 +499,7 @@
     if (!$("solPanel").hidden) renderSol();
     if (tp === 5) renderSummary();
     if (onEwos) renderEwosPage();
+    renderRail(onSide || onMg ? -1 : onInv ? 0 : tp);
     if (!onInv) return;
     var list = m.list,
       vis = list.slice(0, shown);

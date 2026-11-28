@@ -5099,6 +5099,24 @@ html.dark .grsprout { --g: #5FD68C; }
   .gs-laser { transform: translateY(52px); }
   .cv-box { transform: translateX(170px); } .cv-b2 { transform: translateX(370px); } .cv-b3 { transform: translateX(580px); }
 }
+
+/* ---- Right-hand panel on wide screens: recent activity, tips for the page, pallet rack column in the bottom third ---- */
+.rail { display: none; }
+@media (min-width: 1600px) {
+  .app { grid-template-columns: 240px minmax(0, 1fr) 320px; grid-template-areas: "side top top" "side main rail"; }
+  .rail:not([hidden]) { grid-area: rail; display: flex; flex-direction: column; gap: 16px; position: sticky; top: var(--railtop, 120px); height: calc(100vh - var(--railtop, 120px)); box-sizing: border-box; padding: 16px 24px 24px 0; }
+}
+.railcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; color: var(--ink); }
+.railcard h2 { margin: 0 0 8px; font-family: var(--disp); font-size: 17px; }
+.railcard ul { list-style: none; margin: 0; padding: 0; }
+.railcard li { padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
+.railcard li:first-child { border-top: 0; padding-top: 4px; }
+.railcard li.m, .railcard small { color: var(--mute); }
+.railcard small { display: block; font-size: 13px; margin-top: 2px; }
+.railtips li { position: relative; padding-left: 18px; }
+.railtips li::before { content: ""; position: absolute; left: 0; top: 18px; width: 8px; height: 8px; border-radius: 2px; background: var(--acc1); }
+.railtips li:first-child::before { top: 12px; }
+.railrack { flex: 0 1 33vh; min-height: 0; width: 100%; margin-top: auto; }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -5795,6 +5813,11 @@ html.dark .grsprout { --g: #5FD68C; }
           </section>
           <footer class="millfoot"></footer>
         </main>
+        <aside class="rail" id="rail" aria-label="Recent activity and tips" hidden>
+          <section class="railcard"><h2>Recent activity</h2><ul id="railAct"></ul></section>
+          <section class="railcard railtips"><h2>Tips for this page</h2><ul id="railTips"></ul></section>
+          <svg class="railrack" viewBox="0 0 220 360" preserveAspectRatio="xMidYMax meet" aria-hidden="true"><g fill="none" class="sv-ink-s" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" opacity=".35"><path d="M20 10V354M30 10V354M190 10V354M200 10V354M18 10h14M188 10h14"/><path d="M25 18V348M195 18V348" stroke-dasharray="2 9"/><path d="M30 30L20 60M30 90L20 120M30 150L20 180M30 210L20 240M30 270L20 300M200 30L190 60M200 90L190 120M200 150L190 180M200 210L190 240M200 270L190 300"/><path d="M40 110h140v8H40zM40 226h140v8H40zM40 342h140v8H40z"/><path d="M46 62h60v48H46zM76 62v14M112 76h62v34h-62zM143 76v12M48 170h78v56H48zM87 170v16M132 188h44v38h-44zM154 188v12M46 292h52v50H46zM72 292v14M104 280h72v62h-72zM140 280v18"/><path d="M0 356H220"/></g><path class="sv-acc-s" stroke-width="3" stroke-linecap="round" opacity=".55" d="M30 120H190M30 236H190M30 352H190"/></svg>
+        </aside>
       </div>
     </div>
 
@@ -45366,6 +45389,41 @@ var ZXING_Z = [
   /* =====================================================================
      Warehouse Item/Locations page: item table, search, quantities, transfers
      ===================================================================== */
+  // Wide screens: a right-hand panel with the last 3 things done (everyone's for managers, your own otherwise) and 3 tips for the page.
+  var RAIL_TIPS = [
+    ["Search by item number, description or locator. Add more words to narrow the list.", "Turn on Low stock only to see what's running low.", "Select Transfer to move items between locations."],
+    ["Type in the search bar, or choose a location from the menu, to list items.", "Select an item in the list first, then choose Create EWO.", "Add the requester and where the part goes, then print the GCW.EWO sheet."],
+    ["Drop pick slip PDFs on the page, or select Choose PDFs.", "Work through the slip line by line, marking what's picked and flagging anything short.", "Pick slips stay only until you close or reload the page, so submit before you leave."],
+    ["Put Away is still being set up.", "To add new stock for now, go to Warehouse Item/Locations and select Add item.", "To move stock between locations, select Transfer on Warehouse Item/Locations."],
+    ["Select Create new manifest to start a trip, then scan each box onto it.", "Select Done Loading once every box is on the truck.", "Select Submit manifest to send a fully delivered trip to Manage."],
+    ["Choose a date, then select Create daily summary.", "It lists each person's pick lists, put aways, deliveries and Greens moves for that day.", "Pick an earlier date to look back at a past shift."],
+    ["Select a location to see it by size and count it.", "Select Save for later to finish a count another time, then Continue to pick it up.", "Transfers saved for later wait under Transferable until someone approves them."],
+  ];
+  function renderRail(k) {
+    $("rail").hidden = !(k >= 0 && RAIL_TIPS[k]);
+    if ($("rail").hidden) return;
+    var mgr = isMgr(),
+      me = curEmail(),
+      acts = (st.audit || [])
+        .filter(function (e) {
+          return e.text && (mgr || e.by === me);
+        })
+        .slice(-3)
+        .reverse();
+    $("railAct").innerHTML = acts.length
+      ? acts
+          .map(function (e) {
+            var when = new Date(e.ts).toLocaleString([], { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+            return "<li>" + esc(e.text) + "<small>" + (mgr ? esc(whoName(e.by)) + ", " : "") + esc(when) + "</small></li>";
+          })
+          .join("")
+      : '<li class="m">Nothing yet. What you do shows up here.</li>';
+    $("railTips").innerHTML = RAIL_TIPS[k]
+      .map(function (t) {
+        return "<li>" + esc(t) + "</li>";
+      })
+      .join("");
+  }
   function render() {
     if (!$("guest").hidden) renderGuest(); // item data can arrive after the guest page opens
     if (st.top === 6 && !can("greens")) st.top = null;
@@ -45429,6 +45487,7 @@ var ZXING_Z = [
     if (!$("solPanel").hidden) renderSol();
     if (tp === 5) renderSummary();
     if (onEwos) renderEwosPage();
+    renderRail(onSide || onMg ? -1 : onInv ? 0 : tp);
     if (!onInv) return;
     var list = m.list,
       vis = list.slice(0, shown);

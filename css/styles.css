@@ -5085,3 +5085,21 @@ html.dark .grsprout { --g: #5FD68C; }
   .gs-laser { transform: translateY(52px); }
   .cv-box { transform: translateX(170px); } .cv-b2 { transform: translateX(370px); } .cv-b3 { transform: translateX(580px); }
 }
+
+/* ---- Right-hand panel on wide screens: recent activity, tips for the page, pallet rack column in the bottom third ---- */
+.rail { display: none; }
+@media (min-width: 1600px) {
+  .app { grid-template-columns: 240px minmax(0, 1fr) 320px; grid-template-areas: "side top top" "side main rail"; }
+  .rail:not([hidden]) { grid-area: rail; display: flex; flex-direction: column; gap: 16px; position: sticky; top: var(--railtop, 120px); height: calc(100vh - var(--railtop, 120px)); box-sizing: border-box; padding: 16px 24px 24px 0; }
+}
+.railcard { background: var(--panel); border: 1px solid var(--line); border-radius: var(--r-lg); padding: 18px 20px; color: var(--ink); }
+.railcard h2 { margin: 0 0 8px; font-family: var(--disp); font-size: 17px; }
+.railcard ul { list-style: none; margin: 0; padding: 0; }
+.railcard li { padding: 10px 0; border-top: 1px solid var(--line); font-size: 15px; line-height: 1.4; }
+.railcard li:first-child { border-top: 0; padding-top: 4px; }
+.railcard li.m, .railcard small { color: var(--mute); }
+.railcard small { display: block; font-size: 13px; margin-top: 2px; }
+.railtips li { position: relative; padding-left: 18px; }
+.railtips li::before { content: ""; position: absolute; left: 0; top: 18px; width: 8px; height: 8px; border-radius: 2px; background: var(--acc1); }
+.railtips li:first-child::before { top: 12px; }
+.railrack { flex: 0 1 33vh; min-height: 0; width: 100%; margin-top: auto; }
