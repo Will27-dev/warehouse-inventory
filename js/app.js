@@ -4544,15 +4544,27 @@
     [].forEach.call($("hmNav").children, function (b) {
       b.classList.toggle("on", !!r && b.dataset.hm === String(r[0]));
     });
-    c.innerHTML = r
+    var h = r
       ? '<span class="hmic">' + HM_SVG(r[3]) + "</span><h2>" + esc(r[1]) + "</h2><p>" + esc(r[2]) + '</p><button type="button" class="primary" data-hm="' + r[0] + '">Open ' + esc(r[1]) + "</button>"
       : '<span class="hmic">' + HM_SVG('<path d="M5 3l14 8-6 1.5L9.5 19z"/>') + "</span><h2>What's each section for?</h2><p>Point at a section in the top row to see what it does, then select it to open it.</p>";
-    if (anim) {
-      c.classList.remove("swap");
-      void c.offsetWidth; // restart the fade
-      c.classList.add("swap");
+    if (!anim) {
+      // A redraw (sync, rename) leaves a card that's already showing, or mid-slide, alone.
+      if (c._h !== h && !c.classList.contains("out")) c.innerHTML = c._h = h;
+      return;
     }
+    // The old text fades up and out, then the new text slides up from below as it fades in.
+    clearTimeout(hmT);
+    c._h = h;
+    c.classList.remove("in");
+    c.classList.add("out");
+    hmT = setTimeout(function () {
+      c.innerHTML = h;
+      c.classList.remove("out");
+      void c.offsetWidth; // restart the slide
+      c.classList.add("in");
+    }, 160);
   }
+  var hmT = 0;
   $("hmNav").addEventListener("mouseover", function (e) {
     var b = e.target.closest("button[data-hm]");
     if (b && b.dataset.hm !== String(hmKey)) hmShow(b.dataset.hm, true);

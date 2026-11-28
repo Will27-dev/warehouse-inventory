@@ -4597,29 +4597,37 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .hmprof { flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 18px 4px 4px; border: 0; border-radius: 999px; background: var(--char); color: #fff; font-weight: 700; white-space: nowrap; }
 .hmprof:hover { background: var(--acc1); color: var(--on-acc); }
 .hmprof .avatar { width: 36px; height: 36px; font-size: 13px; }
-.hmbody { flex: 1; display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 24px; margin: 24px clamp(16px, 4vw, 48px); }
-.hmleft { padding: 48px 24px 24px; }
+.hmbody { flex: 1; display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 24px; margin: 16px clamp(16px, 4vw, 48px) 24px; }
+.hmleft { padding: 24px 8px 0; }
 .hmleft h1 { margin: 0; font-family: var(--disp); font-size: clamp(36px, 4vw, 56px); line-height: 1.05; letter-spacing: -.03em; }
-.hmsub { margin: 16px 0 32px; font-size: 18px; line-height: 1.45; color: var(--mute); }
+.hmsub { margin: 12px 0 24px; font-size: 18px; line-height: 1.45; color: var(--mute); }
 .hmsh { margin: 0 0 12px; font-size: 15px; color: var(--mute); }
-.hmside { display: grid; gap: 8px; max-width: 440px; margin: 0; padding: 0; list-style: none; }
+.hmside { display: grid; gap: 8px; margin: 0; padding: 0; list-style: none; }
 .hmside button { display: flex; align-items: center; gap: 12px; width: 100%; min-height: 56px; padding: 0 16px; border: 1px solid var(--line); border-radius: 14px; background: var(--head); color: var(--ink); font-size: 15px; font-weight: 700; text-align: left; }
 .hmside button:hover { border-color: var(--acc1); }
 .hmside svg { flex: none; width: 22px; height: 22px; color: var(--acc1); }
 .hmside .chev { margin-left: auto; width: 18px; height: 18px; color: var(--mute); }
-.hmright { display: grid; place-items: center; padding: 48px 24px; background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line); }
-.hmcard { width: min(440px, 100%); padding: 32px; background: var(--panel); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 18px 40px rgba(19, 35, 63, .1); }
-.hmcard.swap { animation: hmIn .22s cubic-bezier(.16, 1, .3, 1); }
-@keyframes hmIn { from { opacity: 0; transform: translateY(6px); } }
+.hmright { display: flex; }
+.hmcard { flex: 1; display: flex; flex-direction: column; justify-content: center; align-items: flex-start; overflow: hidden; padding: clamp(32px, 4vw, 64px); background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 18px 40px rgba(19, 35, 63, .1); }
+/* Hovering a new section: the old text fades up and out, the new text slides up from below as it fades in. */
+.hmcard.out > * { animation: hmOut .16s ease-in forwards; }
+.hmcard.in > * { animation: hmUp .55s cubic-bezier(.16, 1, .3, 1) both; }
+.hmcard.in > :nth-child(2) { animation-delay: .06s; }
+.hmcard.in > :nth-child(3) { animation-delay: .12s; }
+.hmcard.in > :nth-child(4) { animation-delay: .18s; }
+@keyframes hmUp { from { opacity: 0; transform: translateY(40px); } }
+@keyframes hmOut { to { opacity: 0; transform: translateY(-16px); } }
+.hmcard .hmic { width: 80px; height: 80px; border-radius: 20px; }
+.hmcard .hmic svg { width: 40px; height: 40px; }
 .hmic { display: grid; place-items: center; flex: none; width: 56px; height: 56px; border-radius: 16px; background: var(--sel); color: var(--acc1); }
 .hmic svg { width: 28px; height: 28px; }
-.hmcard h2 { margin: 20px 0 8px; font-family: var(--disp); font-size: 28px; letter-spacing: -.02em; }
-.hmcard p { margin: 0 0 24px; font-size: 17px; line-height: 1.5; color: var(--mute); }
-.hmcard .primary { min-height: 44px; padding: 0 22px; border: 0; border-radius: 999px; background: var(--acc1); color: var(--on-acc); font-weight: 700; }
+.hmcard h2 { margin: 32px 0 12px; font-family: var(--disp); font-size: clamp(32px, 3.4vw, 52px); line-height: 1.05; letter-spacing: -.02em; }
+.hmcard p { max-width: 40ch; margin: 0 0 32px; font-size: clamp(18px, 1.5vw, 22px); line-height: 1.5; color: var(--mute); }
+.hmcard .primary { min-height: 52px; padding: 0 28px; font-size: 17px; border: 0; border-radius: 999px; background: var(--acc1); color: var(--on-acc); font-weight: 700; }
 .hmcard .primary:hover { background: var(--acc1-hover); }
 .hmgrid { display: none; }
 .home button:focus-visible { outline: 3px solid var(--acc1); outline-offset: 2px; }
-@media (prefers-reduced-motion: reduce) { .hmcard.swap { animation: none; } }
+@media (prefers-reduced-motion: reduce) { .hmcard.in > *, .hmcard.out > * { animation: none; } }
 /* Narrow screens have no hover: the sections become cards with their description, under the greeting. */
 @media (max-width: 1099px) {
   .hmbar { position: static; padding: 8px 8px 8px 16px; }
@@ -4638,6 +4646,36 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
   .hmside { max-width: none; }
 }
 @media (max-width: 480px) { .hmprof .pl { display: none; } .hmprof { padding-right: 4px; } }
+
+/* First screen: bigger headline, and the app cards behind it move like a live feed
+   (columns drift, rows get checked off, a barcode gets scanned, a trip fills up).
+   Stand-in until a background video is made; reduce motion stops it (global rule above). */
+.ldhero { grid-template-columns: minmax(0, 6fr) minmax(0, 5fr); }
+.ldcopy h1 { font-size: clamp(56px, 7.2vw, 120px); line-height: .98; }
+.ldcopy p { max-width: 30ch; font-size: clamp(22px, 2vw, 30px); }
+.ldcol { animation: ldDrift 24s ease-in-out infinite alternate; }
+.ldcol2 { animation-duration: 28s; animation-direction: alternate-reverse; }
+.ldcol3 { animation-duration: 32s; }
+@keyframes ldDrift { from { transform: translateY(-64px); } to { transform: translateY(64px); } }
+.ldrow i { animation: ldCheck 9s ease-in-out infinite; }
+.ldrow:nth-child(3) i { animation-delay: 1.2s; }
+.ldrow:nth-child(4) i { animation-delay: 2.4s; }
+.ldrow:nth-child(5) i { animation-delay: 3.6s; }
+.ldrow:nth-child(6) i { animation-delay: 4.8s; }
+@keyframes ldCheck { 0%, 12% { background: transparent; } 18%, 82% { background: var(--acc1); box-shadow: none; } 90%, 100% { background: transparent; } }
+.ldcode { position: relative; overflow: hidden; }
+.ldcode::after { content: ""; position: absolute; inset: 0; border-left: 3px solid var(--acc2); animation: ldScan 2.6s ease-in-out infinite alternate; }
+@keyframes ldScan { from { transform: translateX(4%); } to { transform: translateX(94%); } }
+.ldprog i { animation: ldFill 7s ease-in-out infinite; transform-origin: left; }
+@keyframes ldFill { 0% { transform: scaleX(.1); } 70%, 100% { transform: scaleX(1.5); } }
+.ldsizes span:nth-child(4), .ldsizes span:nth-child(7) { animation: ldTick 6s steps(1) infinite; }
+.ldsizes span:nth-child(7) { animation-delay: 3s; }
+@keyframes ldTick { 50% { background: var(--acc1); box-shadow: none; } }
+@media (max-width: 760px) {
+  .ldhero { grid-template-columns: minmax(0, 1fr); }
+  .ldcopy h1 { font-size: 48px; }
+  .ldcopy p { font-size: 20px; }
+}
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -48965,15 +49003,27 @@ var ZXING_Z = [
     [].forEach.call($("hmNav").children, function (b) {
       b.classList.toggle("on", !!r && b.dataset.hm === String(r[0]));
     });
-    c.innerHTML = r
+    var h = r
       ? '<span class="hmic">' + HM_SVG(r[3]) + "</span><h2>" + esc(r[1]) + "</h2><p>" + esc(r[2]) + '</p><button type="button" class="primary" data-hm="' + r[0] + '">Open ' + esc(r[1]) + "</button>"
       : '<span class="hmic">' + HM_SVG('<path d="M5 3l14 8-6 1.5L9.5 19z"/>') + "</span><h2>What's each section for?</h2><p>Point at a section in the top row to see what it does, then select it to open it.</p>";
-    if (anim) {
-      c.classList.remove("swap");
-      void c.offsetWidth; // restart the fade
-      c.classList.add("swap");
+    if (!anim) {
+      // A redraw (sync, rename) leaves a card that's already showing, or mid-slide, alone.
+      if (c._h !== h && !c.classList.contains("out")) c.innerHTML = c._h = h;
+      return;
     }
+    // The old text fades up and out, then the new text slides up from below as it fades in.
+    clearTimeout(hmT);
+    c._h = h;
+    c.classList.remove("in");
+    c.classList.add("out");
+    hmT = setTimeout(function () {
+      c.innerHTML = h;
+      c.classList.remove("out");
+      void c.offsetWidth; // restart the slide
+      c.classList.add("in");
+    }, 160);
   }
+  var hmT = 0;
   $("hmNav").addEventListener("mouseover", function (e) {
     var b = e.target.closest("button[data-hm]");
     if (b && b.dataset.hm !== String(hmKey)) hmShow(b.dataset.hm, true);
