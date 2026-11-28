@@ -3906,9 +3906,10 @@
       "Inspection Sheets",
       "Analytics",
       "Greens Management",
+      "Issues",
     ],
     // Left-to-right order of the Manage buttons (indexes into MGOPTS; mgOpt stays the index).
-    MGORDER = [0, 1, 2, 3, 4, 6, 5],
+    MGORDER = [0, 1, 2, 3, 4, 6, 5, 7],
     // Short descriptions shown under each Manage option.
     MGTIPS = [
       "Add people, change their access, and choose what each person is allowed to do.",
@@ -3918,6 +3919,7 @@
       "Finished inspection sheets, plus the inspection PDFs stored in the cloud.",
       "The top 10 departments that order on pick lists, and the top 10 items they order, this month and last month.",
       "See what each location holds, count greens, and transfer them between locations.",
+      "App problems people reported. Tick Resolved to let them know.",
     ],
     MGICONS = [
       '<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',
@@ -3927,6 +3929,7 @@
       '<rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 12l2 2 4-4"/>',
       '<path d="M4 20V10M10 20V4M16 20v-7M21 20H3"/>',
       '<path d="M5 19c0-8 5-13 14-14 0 9-5 14-13 14z"/><path d="M5 19c3-4 6-7 10-9"/>',
+      '<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/>',
     ];
   // Signed-in person (cloud account). Kept on the device so people stay signed in.
   try {
@@ -4085,15 +4088,21 @@
   }
   function updateProfileBtn() {
     var b = $("profileBtn");
+    $("apBtn").hidden = !sess;
     if (!sess) {
       b.hidden = true;
       b.innerHTML = "";
       return;
     }
     var pr = profOf(sess.email),
-      label = pr.nick || String(sess.name || sess.email).split(/\s+/)[0];
+      label = pr.nick || String(sess.name || sess.email).split(/\s+/)[0],
+      news = issNews().length;
     b.hidden = false;
-    b.innerHTML = avatarHtml(sess.email, sess.name) + '<span class="pl">' + esc(label) + "</span>";
+    b.innerHTML =
+      avatarHtml(sess.email, sess.name) + '<span class="pl">' + esc(label) + "</span>" + (news ? '<i class="pfdot" aria-hidden="true"></i>' : "");
+    $("pfBadge").hidden = !news;
+    $("pfBadge").textContent = news;
+    $("pfBell").setAttribute("aria-label", news ? "Notifications, " + news + " new" : "Notifications");
     b.title = "Your profile · " + sess.email + " (" + ROLE_LABEL[sess.role] + ")";
   }
   var pfPic = "";
@@ -4125,10 +4134,136 @@
     pfShowPic();
     pfWorkSel = null;
     renderPfWork();
+    pfNotes(false);
     $("profileBtn").classList.add("on");
     $("profDlg").showModal();
   }
   $("profileBtn").onclick = openProfile;
+
+  /* ---------- App problems: people report, the owner ticks Resolved, the reporter's bell lights up ----------
+     Reports and ticks ride the activity log (e.issue, e.issueRes), which syncs to every device.
+     What the reporter has seen is kept on their profile (prefs.issSeen). */
+  function issAll() {
+    var res = {},
+      list = [];
+    (st.audit || [])
+      .slice()
+      .sort(function (a, b) {
+        return a.ts - b.ts;
+      })
+      .forEach(function (e) {
+        if (e.issueRes) res[e.issueRes.id] = e.issueRes.on ? e.ts : 0; // the latest tick wins
+        if (e.issue) list.push({ id: e.issue.id, text: e.issue.text, by: e.by, ts: e.ts });
+      });
+    return list
+      .map(function (r) {
+        r.res = res[r.id] || 0;
+        return r;
+      })
+      .reverse();
+  }
+  // My reports resolved since I last opened the bell.
+  function issNews() {
+    if (!sess) return [];
+    var seen = profOf(sess.email).issSeen || 0;
+    return issAll().filter(function (r) {
+      return r.by === sess.email && r.res > seen;
+    });
+  }
+  function issWhen(ts) {
+    return new Date(ts).toLocaleString([], { month: "short", day: "numeric", year: "numeric", hour: "numeric", minute: "2-digit" });
+  }
+  $("apBtn").onclick = function () {
+    sideMenu(false);
+    if (!sess) return toast("Sign in to report a problem.");
+    $("apForm").reset();
+    $("apMsg").textContent = "";
+    $("apDlg").showModal();
+  };
+  $("apCancel").onclick = function () {
+    $("apDlg").close();
+  };
+  $("apForm").addEventListener("submit", function (e) {
+    var t = this.elements.msg.value.trim();
+    if (!t) {
+      e.preventDefault();
+      $("apMsg").textContent = "Describe the problem first.";
+      return;
+    }
+    audit("Issues", "Reported an app problem");
+    st.audit[st.audit.length - 1].issue = { id: nid("is"), text: t };
+    save();
+    toast("Sent to Admin. The bell on your profile lights up when it's resolved.");
+  });
+  $("apForm").elements.msg.addEventListener("input", function () {
+    $("apMsg").textContent = "";
+  });
+  function renderIssues() {
+    var list = issAll().sort(function (a, b) {
+        return !a.res !== !b.res ? (a.res ? 1 : -1) : b.ts - a.ts; // open first, then newest first
+      }),
+      open = list.filter(function (r) {
+        return !r.res;
+      }).length;
+    $("isBox").innerHTML = list.length
+      ? '<p class="mgnote" style="padding:0 0 12px">' + open + (open === 1 ? " open problem" : " open problems") +
+        ". Tick Resolved and the person who reported it sees it under the bell on their profile.</p>" +
+        '<div class="tw" style="border:1px solid var(--line);border-radius:10px"><table class="sumtbl istbl"><thead><tr><th>Problem</th><th>From</th><th>Reported</th><th>Resolved</th></tr></thead><tbody>' +
+        list
+          .map(function (r) {
+            return (
+              '<tr class="' + (r.res ? "isdone" : "") + '"><td class="istxt">' + esc(r.text) + "</td><td>" + esc(whoName(r.by)) + "<small>" + esc(r.by) +
+              "</small></td><td>" + issWhen(r.ts) + '</td><td><label class="isres"><input type="checkbox" data-iss="' + esc(r.id) + '"' +
+              (r.res ? " checked" : "") + ">Resolved</label>" + (r.res ? "<small>" + issWhen(r.res) + "</small>" : "") + "</td></tr>"
+            );
+          })
+          .join("") +
+        "</tbody></table></div>"
+      : '<div class="empty" style="padding:26px 0">No problems reported yet. They show here when someone uses App problems? in the left menu.</div>';
+  }
+  $("isBox").addEventListener("change", function (e) {
+    var c = e.target.closest("input[data-iss]");
+    if (!c || !isOwner()) return;
+    audit("Issues", c.checked ? "Marked an app problem resolved" : "Reopened an app problem");
+    st.audit[st.audit.length - 1].issueRes = { id: c.dataset.iss, on: c.checked };
+    save();
+    renderManage();
+    updateProfileBtn(); // the owner's own reports light their bell too
+  });
+  // The bell, top right of Your profile: my resolved reports, the new ones marked.
+  function pfNotes(open) {
+    $("pfNotes").hidden = !open;
+    $("pfBell").setAttribute("aria-expanded", String(open));
+    if (!open) return;
+    var me = sess.email,
+      news = issNews().map(function (r) {
+        return r.id;
+      }),
+      mine = issAll().filter(function (r) {
+        return r.by === me && r.res;
+      });
+    $("pfNotes").innerHTML =
+      "<h3>Resolved problems</h3>" +
+      (mine.length
+        ? "<ul>" +
+          mine
+            .map(function (r) {
+              var n = news.indexOf(r.id) >= 0;
+              return '<li class="' + (n ? "new" : "") + '"><b>' + (n ? "New: resolved " : "Resolved ") + issWhen(r.res) + "</b><span>" + esc(r.text) + "</span></li>";
+            })
+            .join("") +
+          "</ul>"
+        : "<p>Nothing yet. When Admin resolves a problem you reported, it shows here.</p>");
+    if (news.length && st.profiles) {
+      st.profiles[me] = Object.assign({}, profOf(me), { issSeen: Date.now() });
+      cloudSavePrefs();
+      save();
+      updateProfileBtn();
+    }
+  }
+  $("pfBell").onclick = function () {
+    pfNotes($("pfNotes").hidden);
+  };
 
   /* ---------- Your profile: the person's own EWOs, pick lists, put aways and delivery trips ---------- */
   var pfWorkSel = null;
@@ -4514,7 +4649,9 @@
       return (
         '<li><button type="button" data-hmside="' + i + '">' + HM_SVG(HM_SIDE[i]) + "<span>" + esc(sname(i)) + '</span><svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>'
       );
-    }).join(""));
+    }).join("") +
+      // App problems? (signed in only): report a bug to the owner.
+      (sess ? '<li><button type="button" data-hmap>' + HM_SVG('<circle cx="12" cy="12" r="9"/><path d="M12 7v6M12 17h.01"/>') + "<span>App problems?</span>" + '<svg class="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m9 6 6 6-6 6"/></svg></button></li>' : ""));
     hmShow(hmKey, false);
   }
   // The middle card: what the hovered (or focused) section is for.
@@ -4557,6 +4694,7 @@
     if (b && b.dataset.hm !== String(hmKey)) hmShow(b.dataset.hm, true);
   });
   $("home").addEventListener("click", function (e) {
+    if (e.target.closest("button[data-hmap]")) return $("apBtn").click();
     var b = e.target.closest("button[data-hm], button[data-hmside], #hmProf");
     if (!b) return;
     if (b.id === "hmProf") return openProfile();
@@ -4761,6 +4899,12 @@
     if (i === 6) {
       var ns = grSheets().length;
       return [ns, ns === 1 ? "count sheet" : "count sheets"];
+    }
+    if (i === 7) {
+      var no = issAll().filter(function (r) {
+        return !r.res;
+      }).length;
+      return [no, no === 1 ? "open problem" : "open problems", no > 0];
     }
     if (i === 5) {
       var np = anStats(anRange(0)).slips.length;
@@ -5428,7 +5572,8 @@
     $("mgN").textContent = ok ? st.users.length : "–";
     $("mgN").nextElementSibling.textContent = ok && st.users.length === 1 ? "user" : "users";
     if (!ok) return;
-    if (mgOpt < 0) mgOpt = mgLast;
+    if (mgLast === 7 && !isOwner()) mgLast = 0; // Issues is the owner's
+    if (mgOpt < 0 || (mgOpt === 7 && !isOwner())) mgOpt = mgLast;
     if (mgOpt !== 5) mgLast = mgOpt;
     var nav = $("mgNav");
     if (!nav.querySelector("[data-opt]"))
@@ -5452,6 +5597,7 @@
       b.setAttribute("aria-label", x);
       b.setAttribute("aria-current", i === mgOpt ? "page" : "false");
       b.classList.toggle("on", i === mgOpt);
+      b.hidden = i === 7 && !isOwner();
       $("mgOpt" + i).hidden = i !== mgOpt;
       var s = mgStatus(i);
       b.querySelector(".mgst b").textContent = s[0];
@@ -5476,6 +5622,7 @@
     if (mgOpt !== 5) $("anBox").innerHTML = "";
     else if (!$("anBox").firstChild) renderAn();
     if (mgOpt === 6) renderGr();
+    if (mgOpt === 7) renderIssues();
     if (mgOpt === 4) {
       renderFinished();
       fdRender();
@@ -10108,7 +10255,7 @@
     if (st.audit.length > 2000) {
       var cut = st.audit.length - 2000;
       st.audit = st.audit.filter(function (e, i) {
-        return i >= cut || e.insp || e.inspdel || e.gr || e.gt || e.grdel || e.ms || e.pick;
+        return i >= cut || e.insp || e.inspdel || e.gr || e.gt || e.grdel || e.ms || e.pick || e.issue || e.issueRes;
       });
     }
   }

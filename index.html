@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128s" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128u" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -150,6 +150,7 @@
         <div class="sidemenu" id="sideMenu">
           <div>
             <div class="tabs" id="tabs" role="tablist" aria-orientation="vertical"></div>
+            <div class="tabs"><button id="apBtn" hidden><i class="dot"></i><span class="lb">App problems?</span></button></div>
           </div>
           <div class="sidefoot"><button class="ghost" id="editNames">Edit tab names</button></div>
         </div>
@@ -454,6 +455,9 @@
                   <div id="grSheets" hidden></div>
                   <div id="grAll"></div>
                 </div>
+              </div>
+              <div id="mgOpt7" hidden>
+                <div class="mgpad" id="isBox"></div>
               </div>
             </div>
           </section>
@@ -816,6 +820,8 @@
     </dialog>
     <dialog id="profDlg">
       <form method="dialog" id="profForm">
+        <button type="button" class="pfbell" id="pfBell" aria-label="Notifications" aria-expanded="false" aria-controls="pfNotes"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6 8a6 6 0 0 1 12 0c0 7 3 9 3 9H3s3-2 3-9"/><path d="M10.3 21a1.94 1.94 0 0 0 3.4 0"/></svg><span class="pfbadge" id="pfBadge" hidden></span></button>
+        <div class="pfnotes" id="pfNotes" hidden></div>
         <h2>Your profile</h2>
         <div class="pftop">
           <div class="pfleft">
@@ -865,6 +871,18 @@
         <div class="actions">
           <span class="sp"></span><button type="button" id="pfCancel">Cancel</button
           ><button class="primary" value="save">Save</button>
+        </div>
+      </form>
+    </dialog>
+    <dialog id="apDlg">
+      <form method="dialog" id="apForm">
+        <h2>App problems?</h2>
+        <p class="aphint">Tell Admin what went wrong: what you tapped, what you expected, and what happened instead.</p>
+        <label>What happened<textarea name="msg" rows="6" maxlength="1000" placeholder="Example: On Pick List, Submit did nothing after I scanned the last item."></textarea></label>
+        <p class="mgmsg" id="apMsg" role="alert"></p>
+        <div class="actions">
+          <span class="sp"></span><button type="button" id="apCancel">Cancel</button
+          ><button class="primary" value="send">Send to Admin</button>
         </div>
       </form>
     </dialog>
@@ -1092,6 +1110,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128s"></script>
+    <script src="js/app.js?v=20261128u"></script>
   </body>
 </html>

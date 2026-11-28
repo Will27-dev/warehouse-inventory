@@ -4817,3 +4817,28 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 
 /* Manage → Users: room for "Last logged in" under the name on phones. */
 #mgRows td.cname { min-width: 150px; }
+
+/* App problems: report dialog (left menu), the owner's Issues list (Manage), and the bell on Your profile. */
+#apDlg { width: min(560px, calc(100vw - 32px)); }
+#apForm label { display: flex; flex-direction: column; gap: 6px; font-weight: 700; }
+#apForm textarea { width: 100%; min-height: 140px; padding: 12px; font: inherit; resize: vertical; }
+.aphint { margin: 4px 0 16px; color: var(--mute); }
+.istbl .istxt { min-width: 220px; max-width: 60ch; white-space: pre-wrap; overflow-wrap: anywhere; }
+.istbl tr.isdone .istxt { color: var(--mute); }
+.istbl td small { display: block; color: var(--mute); font-size: 12.5px; }
+.isres { display: inline-flex; align-items: center; gap: 8px; min-height: 44px; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.isres input { width: 20px; height: 20px; margin: 0; accent-color: var(--acc1); }
+#profForm { position: relative; }
+.pfbell { position: absolute; top: 0; right: 0; display: grid; place-items: center; width: 44px; height: 44px; min-height: 44px; padding: 0; border: 0; background: none; color: var(--ink); }
+.pfbell:hover, .pfbell[aria-expanded="true"] { background: var(--sel); }
+.pfbadge { position: absolute; top: 4px; right: 4px; min-width: 18px; height: 18px; padding: 0 5px; background: var(--acc1); color: var(--on-acc); font-size: 11px; font-weight: 800; line-height: 18px; text-align: center; }
+.pfnotes { position: absolute; top: 48px; right: 0; z-index: 5; width: min(360px, calc(100% - 8px)); max-height: 360px; overflow: auto; padding: 16px; background: var(--panel); box-shadow: 0 0 0 1px var(--line), 0 12px 28px rgba(0, 0, 0, .25); }
+.pfnotes h3 { margin: 0 0 8px; font-size: 15px; }
+.pfnotes ul { margin: 0; padding: 0; list-style: none; }
+.pfnotes li { padding: 10px 0; border-top: 1px solid var(--line); }
+.pfnotes li b { display: block; font-size: 13px; color: var(--mute); }
+.pfnotes li.new b { color: var(--acc1); }
+.pfnotes li span { display: block; margin-top: 4px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pfnotes p { margin: 0; color: var(--mute); }
+.profilebtn { position: relative; }
+.pfdot { position: absolute; top: 4px; right: 6px; width: 10px; height: 10px; border-radius: 50% !important; background: var(--acc1); box-shadow: 0 0 0 2px var(--tile); }
