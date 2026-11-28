@@ -5525,7 +5525,9 @@
             (isHid(u.email) ? "hid" : "") +
             '"><td class="cname">' +
             esc(u.name || "–") +
-            "</td><td>" +
+            "<small>Last logged in " +
+            (profOf(u.email).lastIn ? dvWhen(profOf(u.email).lastIn) : "not recorded yet") +
+            "</small></td><td>" +
             esc(u.email) +
             '</td><td><span class="pill role-' +
             u.role +
@@ -9609,7 +9611,8 @@
   function fdRender() {
     var box = $("mgFolder");
     if (!box) return;
-    var h = '<h3 class="fdsec">Cloud PDFs</h3>';
+    var h = "";
+    $("fdCount").textContent = cloudOn() && !fdErr ? fdFiles.length + (fdFiles.length === 1 ? " PDF" : " PDFs") : "";
     if (!cloudOn()) {
       box.innerHTML = h + '<p class="fdnote">Sign in to see the inspection PDFs stored in the cloud.</p>';
       return;
@@ -10452,6 +10455,11 @@
     setSess({ uid: a.uid, email: me.email, name: me.name || me.email, role: me.role, perms: me.perms });
     if (!snapGet()) snapAdopt(); // first sign-in here: download, don't overwrite the cloud
     await cloudSync(true);
+    // Last logged in (Manage → Users) rides the person's prefs; set only after a good pull so older prefs never overwrite the cloud's.
+    if (!cloudErr && st.profiles && st.profiles[sess.email]) {
+      st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { lastIn: Date.now() });
+      cloudSavePrefs();
+    }
   }
   function cloudSignOut() {
     var a = authGet();

@@ -4822,6 +4822,15 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 #mRow .subsel { display: inline-flex; align-items: center; gap: 10px; color: var(--mute); font-weight: 600; }
 #mRow .subsel select { min-height: 44px; min-width: 260px; padding: 0 12px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-weight: 600; }
 @media (max-width: 700px) { #mRow .mseg { width: 100%; } #mRow .subsel { width: 100%; } #mRow .subsel select { flex: 1; min-width: 0; } }
+
+/* Manage → Inspection Sheets: finished sheets first, the cloud templates in a folder below. */
+.fdfold { margin-top: 24px; }
+.fdfold > summary { min-height: 44px; }
+.fdfold > summary svg { flex: none; color: var(--acc1); }
+#mgFolder.mgdbody { margin-bottom: 0; padding-top: 14px; }
+
+/* Manage → Users: room for "Last logged in" under the name on phones. */
+#mgRows td.cname { min-width: 150px; }
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -5219,9 +5228,12 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
               <div id="mgOpt3" hidden><div class="mgpad" id="mgMaterial"></div></div>
               <div id="mgOpt4" hidden>
                 <div class="mgpad">
-                  <div id="mgFolder"></div>
                   <h3 class="fdsec">Finished inspection sheets</h3>
                   <div id="mgFinished"></div>
+                  <details class="mgdet fdfold">
+                    <summary><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg><span class="who"><b>Templates in the cloud</b><small>The blank forms people fill in</small></span><span class="cnt" id="fdCount"></span></summary>
+                    <div class="mgdbody" id="mgFolder"></div>
+                  </details>
                 </div>
               </div>
               <div id="mgOpt5" hidden>
@@ -50118,7 +50130,9 @@ var ZXING_Z = [
             (isHid(u.email) ? "hid" : "") +
             '"><td class="cname">' +
             esc(u.name || "–") +
-            "</td><td>" +
+            "<small>Last logged in " +
+            (profOf(u.email).lastIn ? dvWhen(profOf(u.email).lastIn) : "not recorded yet") +
+            "</small></td><td>" +
             esc(u.email) +
             '</td><td><span class="pill role-' +
             u.role +
@@ -54202,7 +54216,8 @@ var ZXING_Z = [
   function fdRender() {
     var box = $("mgFolder");
     if (!box) return;
-    var h = '<h3 class="fdsec">Cloud PDFs</h3>';
+    var h = "";
+    $("fdCount").textContent = cloudOn() && !fdErr ? fdFiles.length + (fdFiles.length === 1 ? " PDF" : " PDFs") : "";
     if (!cloudOn()) {
       box.innerHTML = h + '<p class="fdnote">Sign in to see the inspection PDFs stored in the cloud.</p>';
       return;
@@ -55045,6 +55060,11 @@ var ZXING_Z = [
     setSess({ uid: a.uid, email: me.email, name: me.name || me.email, role: me.role, perms: me.perms });
     if (!snapGet()) snapAdopt(); // first sign-in here: download, don't overwrite the cloud
     await cloudSync(true);
+    // Last logged in (Manage → Users) rides the person's prefs; set only after a good pull so older prefs never overwrite the cloud's.
+    if (!cloudErr && st.profiles && st.profiles[sess.email]) {
+      st.profiles[sess.email] = Object.assign({}, profOf(sess.email), { lastIn: Date.now() });
+      cloudSavePrefs();
+    }
   }
   function cloudSignOut() {
     var a = authGet();

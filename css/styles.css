@@ -4808,3 +4808,12 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 #mRow .subsel { display: inline-flex; align-items: center; gap: 10px; color: var(--mute); font-weight: 600; }
 #mRow .subsel select { min-height: 44px; min-width: 260px; padding: 0 12px; border: 2px solid var(--line); background: var(--panel); color: var(--ink); font: inherit; font-weight: 600; }
 @media (max-width: 700px) { #mRow .mseg { width: 100%; } #mRow .subsel { width: 100%; } #mRow .subsel select { flex: 1; min-width: 0; } }
+
+/* Manage → Inspection Sheets: finished sheets first, the cloud templates in a folder below. */
+.fdfold { margin-top: 24px; }
+.fdfold > summary { min-height: 44px; }
+.fdfold > summary svg { flex: none; color: var(--acc1); }
+#mgFolder.mgdbody { margin-bottom: 0; padding-top: 14px; }
+
+/* Manage → Users: room for "Last logged in" under the name on phones. */
+#mgRows td.cname { min-width: 150px; }

@@ -11,7 +11,7 @@
       rel="stylesheet"
       href="https://fonts.googleapis.com/css2?family=Familjen+Grotesk:wght@400;500;700&family=Overpass:wght@600;800&family=Atkinson+Hyperlegible:wght@400;700&display=swap"
     />
-    <link rel="stylesheet" href="css/styles.css?v=20261128q" />
+    <link rel="stylesheet" href="css/styles.css?v=20261128s" />
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
       (function () {
@@ -408,9 +408,12 @@
               <div id="mgOpt3" hidden><div class="mgpad" id="mgMaterial"></div></div>
               <div id="mgOpt4" hidden>
                 <div class="mgpad">
-                  <div id="mgFolder"></div>
                   <h3 class="fdsec">Finished inspection sheets</h3>
                   <div id="mgFinished"></div>
+                  <details class="mgdet fdfold">
+                    <summary><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" aria-hidden="true"><path d="M3 6a1 1 0 0 1 1-1h5l2 2h9a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1z"/></svg><span class="who"><b>Templates in the cloud</b><small>The blank forms people fill in</small></span><span class="cnt" id="fdCount"></span></summary>
+                    <div class="mgdbody" id="mgFolder"></div>
+                  </details>
                 </div>
               </div>
               <div id="mgOpt5" hidden>
@@ -1089,6 +1092,6 @@
     <!-- items-data.js has its own version tag: change it only when the item data changes,
          so app updates don't re-download 5.2 MB. The PDF and barcode readers load on first use. -->
     <script src="js/data/items-data.js?v=data-20261123"></script>
-    <script src="js/app.js?v=20261128q"></script>
+    <script src="js/app.js?v=20261128s"></script>
   </body>
 </html>
