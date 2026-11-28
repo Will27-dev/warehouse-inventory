@@ -4254,6 +4254,7 @@
      What the reporter has seen is kept on their profile (prefs.issSeen). */
   function issAll() {
     var res = {},
+      note = {},
       list = [];
     (st.audit || [])
       .slice()
@@ -4261,12 +4262,16 @@
         return a.ts - b.ts;
       })
       .forEach(function (e) {
-        if (e.issueRes) res[e.issueRes.id] = e.issueRes.on ? e.ts : 0; // the latest tick wins
+        if (e.issueRes) {
+          res[e.issueRes.id] = e.issueRes.on ? e.ts : 0; // the latest tick wins
+          note[e.issueRes.id] = e.issueRes.on ? e.issueRes.note || "" : "";
+        }
         if (e.issue) list.push({ id: e.issue.id, text: e.issue.text, by: e.by, ts: e.ts });
       });
     return list
       .map(function (r) {
         r.res = res[r.id] || 0;
+        r.note = note[r.id] || "";
         return r;
       })
       .reverse();
@@ -4316,13 +4321,17 @@
       }).length;
     $("isBox").innerHTML = list.length
       ? '<p class="mgnote" style="padding:0 0 12px">' + open + (open === 1 ? " open problem" : " open problems") +
-        ". Tick Resolved and the person who reported it sees it under the bell on their profile.</p>" +
+        ". Add a note if you like, then tick Resolved: the person who reported it sees both under the bell on their profile.</p>" +
         '<div class="tw" style="border:1px solid var(--line);border-radius:10px"><table class="sumtbl istbl"><thead><tr><th>Problem</th><th>From</th><th>Reported</th><th>Resolved</th></tr></thead><tbody>' +
         list
           .map(function (r) {
             return (
               '<tr class="' + (r.res ? "isdone" : "") + '"><td class="istxt">' + esc(r.text) + "</td><td>" + esc(whoName(r.by)) + "<small>" + esc(r.by) +
-              "</small></td><td>" + issWhen(r.ts) + '</td><td><label class="isres"><input type="checkbox" data-iss="' + esc(r.id) + '"' +
+              "</small></td><td>" + issWhen(r.ts) + "</td><td>" +
+              (r.res
+                ? r.note ? '<p class="isnotetxt">' + esc(r.note) + "</p>" : ""
+                : '<input class="isnote" data-isnote="' + esc(r.id) + '" maxlength="300" placeholder="Note to them (optional)" aria-label="Note to the person who reported it">') +
+              '<label class="isres"><input type="checkbox" data-iss="' + esc(r.id) + '"' +
               (r.res ? " checked" : "") + ">Resolved</label>" + (r.res ? "<small>" + issWhen(r.res) + "</small>" : "") + "</td></tr>"
             );
           })
@@ -4334,7 +4343,8 @@
     var c = e.target.closest("input[data-iss]");
     if (!c || !isOwner()) return;
     audit("Issues", c.checked ? "Marked an app problem resolved" : "Reopened an app problem");
-    st.audit[st.audit.length - 1].issueRes = { id: c.dataset.iss, on: c.checked };
+    var n = c.checked ? $("isBox").querySelector('input[data-isnote="' + c.dataset.iss + '"]') : null;
+    st.audit[st.audit.length - 1].issueRes = { id: c.dataset.iss, on: c.checked, note: n ? n.value.trim() : "" };
     save();
     renderManage();
     updateProfileBtn(); // the owner's own reports light their bell too
@@ -4358,7 +4368,7 @@
           mine
             .map(function (r) {
               var n = news.indexOf(r.id) >= 0;
-              return '<li class="' + (n ? "new" : "") + '"><b>' + (n ? "New: resolved " : "Resolved ") + issWhen(r.res) + "</b><span>" + esc(r.text) + "</span></li>";
+              return '<li class="' + (n ? "new" : "") + '"><b>' + (n ? "New: resolved " : "Resolved ") + issWhen(r.res) + "</b><span>" + esc(r.text) + "</span>" + (r.note ? '<span class="isreply">Admin: ' + esc(r.note) + "</span>" : "") + "</li>";
             })
             .join("") +
           "</ul>"
@@ -5730,6 +5740,8 @@
     $("mgHidCount").textContent = "(" + hiddenList().length + ")";
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
+    // Only the screens that list people use Show hidden users.
+    $("mgShowHidden").parentNode.hidden = [0, 1, 3, 4].indexOf(mgOpt) < 0;
     if (!$("mgDay").value) $("mgDay").value = dayOf(Date.now());
     if (mgOpt === 1) {
       renderManifests();

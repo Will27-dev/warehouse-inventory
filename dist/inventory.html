@@ -4886,6 +4886,21 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .catsw #lowN { color: var(--mute); font-weight: 500; }
 .lowtag { display: block; width: fit-content; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--warn); }
 #panel tbody td.hist { grid-area: hist; justify-self: start; }
+
+/* App problems: Admin's note when resolving */
+.isnote { display: block; width: 100%; min-width: 180px; min-height: 44px; margin: 0 0 6px; padding: 0 12px; font: inherit; font-size: 14px; }
+.isnotetxt { margin: 0 0 6px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pfnotes li .isreply { color: var(--mute); font-style: italic; }
+
+/* Phones: shorter item tiles. History sits beside the quantity; buttons stay 44px. */
+@media (max-width: 600px) {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody { gap: 12px; padding: 12px; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { padding: 14px; grid-template-areas: "num edit" "desc desc" "loc loc" "qty hist"; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel.xmode tbody tr { grid-template-areas: "sel sel" "num edit" "desc desc" "loc loc" "qty hist"; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(5) { zoom: 1; }
+  #panel tbody td.hist { justify-self: end; align-self: center; }
+  #panel tbody td.hist button { margin-right: 0; }
+}
 </style>
     <script>
       /* Apply dark mode before the page draws: the signed-in person's profile, or this device's setting. */
@@ -48952,6 +48967,7 @@ var ZXING_Z = [
      What the reporter has seen is kept on their profile (prefs.issSeen). */
   function issAll() {
     var res = {},
+      note = {},
       list = [];
     (st.audit || [])
       .slice()
@@ -48959,12 +48975,16 @@ var ZXING_Z = [
         return a.ts - b.ts;
       })
       .forEach(function (e) {
-        if (e.issueRes) res[e.issueRes.id] = e.issueRes.on ? e.ts : 0; // the latest tick wins
+        if (e.issueRes) {
+          res[e.issueRes.id] = e.issueRes.on ? e.ts : 0; // the latest tick wins
+          note[e.issueRes.id] = e.issueRes.on ? e.issueRes.note || "" : "";
+        }
         if (e.issue) list.push({ id: e.issue.id, text: e.issue.text, by: e.by, ts: e.ts });
       });
     return list
       .map(function (r) {
         r.res = res[r.id] || 0;
+        r.note = note[r.id] || "";
         return r;
       })
       .reverse();
@@ -49014,13 +49034,17 @@ var ZXING_Z = [
       }).length;
     $("isBox").innerHTML = list.length
       ? '<p class="mgnote" style="padding:0 0 12px">' + open + (open === 1 ? " open problem" : " open problems") +
-        ". Tick Resolved and the person who reported it sees it under the bell on their profile.</p>" +
+        ". Add a note if you like, then tick Resolved: the person who reported it sees both under the bell on their profile.</p>" +
         '<div class="tw" style="border:1px solid var(--line);border-radius:10px"><table class="sumtbl istbl"><thead><tr><th>Problem</th><th>From</th><th>Reported</th><th>Resolved</th></tr></thead><tbody>' +
         list
           .map(function (r) {
             return (
               '<tr class="' + (r.res ? "isdone" : "") + '"><td class="istxt">' + esc(r.text) + "</td><td>" + esc(whoName(r.by)) + "<small>" + esc(r.by) +
-              "</small></td><td>" + issWhen(r.ts) + '</td><td><label class="isres"><input type="checkbox" data-iss="' + esc(r.id) + '"' +
+              "</small></td><td>" + issWhen(r.ts) + "</td><td>" +
+              (r.res
+                ? r.note ? '<p class="isnotetxt">' + esc(r.note) + "</p>" : ""
+                : '<input class="isnote" data-isnote="' + esc(r.id) + '" maxlength="300" placeholder="Note to them (optional)" aria-label="Note to the person who reported it">') +
+              '<label class="isres"><input type="checkbox" data-iss="' + esc(r.id) + '"' +
               (r.res ? " checked" : "") + ">Resolved</label>" + (r.res ? "<small>" + issWhen(r.res) + "</small>" : "") + "</td></tr>"
             );
           })
@@ -49032,7 +49056,8 @@ var ZXING_Z = [
     var c = e.target.closest("input[data-iss]");
     if (!c || !isOwner()) return;
     audit("Issues", c.checked ? "Marked an app problem resolved" : "Reopened an app problem");
-    st.audit[st.audit.length - 1].issueRes = { id: c.dataset.iss, on: c.checked };
+    var n = c.checked ? $("isBox").querySelector('input[data-isnote="' + c.dataset.iss + '"]') : null;
+    st.audit[st.audit.length - 1].issueRes = { id: c.dataset.iss, on: c.checked, note: n ? n.value.trim() : "" };
     save();
     renderManage();
     updateProfileBtn(); // the owner's own reports light their bell too
@@ -49056,7 +49081,7 @@ var ZXING_Z = [
           mine
             .map(function (r) {
               var n = news.indexOf(r.id) >= 0;
-              return '<li class="' + (n ? "new" : "") + '"><b>' + (n ? "New: resolved " : "Resolved ") + issWhen(r.res) + "</b><span>" + esc(r.text) + "</span></li>";
+              return '<li class="' + (n ? "new" : "") + '"><b>' + (n ? "New: resolved " : "Resolved ") + issWhen(r.res) + "</b><span>" + esc(r.text) + "</span>" + (r.note ? '<span class="isreply">Admin: ' + esc(r.note) + "</span>" : "") + "</li>";
             })
             .join("") +
           "</ul>"
@@ -50428,6 +50453,8 @@ var ZXING_Z = [
     $("mgHidCount").textContent = "(" + hiddenList().length + ")";
     $("mgShowHidden").checked = mgShowHid;
     $("mgDayWrap").hidden = !(mgOpt === 1 || mgOpt === 3);
+    // Only the screens that list people use Show hidden users.
+    $("mgShowHidden").parentNode.hidden = [0, 1, 3, 4].indexOf(mgOpt) < 0;
     if (!$("mgDay").value) $("mgDay").value = dayOf(Date.now());
     if (mgOpt === 1) {
       renderManifests();

@@ -4872,3 +4872,18 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
 .catsw #lowN { color: var(--mute); font-weight: 500; }
 .lowtag { display: block; width: fit-content; margin: 0 0 8px; padding: 4px 10px; border-radius: 999px; font-size: 12px; font-weight: 700; background: color-mix(in srgb, var(--warn) 18%, transparent); color: var(--ink); box-shadow: inset 0 0 0 1px var(--warn); }
 #panel tbody td.hist { grid-area: hist; justify-self: start; }
+
+/* App problems: Admin's note when resolving */
+.isnote { display: block; width: 100%; min-width: 180px; min-height: 44px; margin: 0 0 6px; padding: 0 12px; font: inherit; font-size: 14px; }
+.isnotetxt { margin: 0 0 6px; font-size: 14px; white-space: pre-wrap; overflow-wrap: anywhere; }
+.pfnotes li .isreply { color: var(--mute); font-style: italic; }
+
+/* Phones: shorter item tiles. History sits beside the quantity; buttons stay 44px. */
+@media (max-width: 600px) {
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody { gap: 12px; padding: 12px; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody tr { padding: 14px; grid-template-areas: "num edit" "desc desc" "loc loc" "qty hist"; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel.xmode tbody tr { grid-template-areas: "sel sel" "num edit" "desc desc" "loc loc" "qty hist"; }
+  body:not(.ontop):not(.onside):not(.onsum) #panel tbody td:nth-child(5) { zoom: 1; }
+  #panel tbody td.hist { justify-self: end; align-self: center; }
+  #panel tbody td.hist button { margin-right: 0; }
+}
