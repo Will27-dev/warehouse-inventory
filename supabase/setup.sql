@@ -80,7 +80,8 @@ grant select, update on public.profiles to authenticated;
 insert into public.profiles (id, email, name)
   select id, lower(email), split_part(email, '@', 1) from auth.users
   on conflict (id) do nothing;
-update public.profiles set role = 'owner', name = 'Owner' where email = 'wmashburn@uss.com';
+-- Put the owner's sign-in email in place of owner@example.com before running.
+update public.profiles set role = 'owner', name = 'Owner' where email = 'owner@example.com';
 
 -- ---------- Shared app data: quantities, quantity log, contacts, EWOs, activity ----------
 -- coll: 'inventory' (item edits/added/removed), 'qlog' (quantity log), 'contacts',
