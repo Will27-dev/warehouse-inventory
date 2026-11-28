@@ -4589,10 +4589,10 @@ html.dark .ldlegal a:hover, html.dark .lglegal a:hover, html.dark .ldnote a:hove
    shortcuts on the left, and a card in the middle describing the section you point at. */
 .home { position: fixed; inset: 0; z-index: 55; display: flex; flex-direction: column; overflow: auto; background: var(--canvas); color: var(--ink); }
 .home[hidden] { display: none; }
-.hmbar { position: sticky; top: 16px; z-index: 2; display: flex; align-items: center; gap: 16px; margin: 16px clamp(16px, 4vw, 48px) 0; padding: 8px 8px 8px 20px; background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 12px 28px rgba(19, 35, 63, .08); }
+.hmbar { position: sticky; top: 16px; z-index: 2; display: flex; align-items: center; gap: clamp(16px, 3vw, 48px); margin: 16px clamp(16px, 4vw, 48px) 0; padding: 8px 8px 8px 20px; background: var(--head); border-radius: var(--r-lg); box-shadow: 0 0 0 1px var(--line), 0 12px 28px rgba(19, 35, 63, .08); }
 .hmbar .ldlogo { flex: none; }
-.hmnav { flex: 1; display: flex; justify-content: center; flex-wrap: wrap; gap: 4px; }
-.hmnav button { min-height: 44px; padding: 0 14px; border: 0; border-radius: 999px; background: none; color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap; }
+.hmnav { flex: 1; min-width: 0; display: flex; flex-wrap: wrap; justify-content: space-evenly; gap: 4px 8px; }
+.hmnav button { min-height: 44px; padding: 0 clamp(10px, 1.1vw, 18px); border: 0; border-radius: 999px; background: none; color: var(--ink); font-size: 14px; font-weight: 700; white-space: nowrap; }
 .hmnav button:hover, .hmnav button.on { background: var(--sel); }
 .hmprof { flex: none; display: inline-flex; align-items: center; gap: 10px; min-height: 44px; padding: 4px 18px 4px 4px; border: 0; border-radius: 999px; background: var(--char); color: #fff; font-weight: 700; white-space: nowrap; }
 .hmprof:hover { background: var(--acc1); color: var(--on-acc); }
